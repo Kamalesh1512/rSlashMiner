@@ -1,45 +1,52 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { motion } from "framer-motion"
-import { Hash, ArrowRight, Loader2, Slash } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { motion } from "framer-motion";
+import { Hash, ArrowRight, Loader2, Slash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function SignupPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords don't match",{
+      toast.error("Passwords don't match", {
         description: "Please make sure your passwords match.",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/register", {
@@ -52,34 +59,37 @@ export default function SignupPage() {
           email: formData.email,
           password: formData.password,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to register")
+        throw new Error(data.message || "Failed to register");
       }
 
-      toast.success("Account created!",{
+      toast.success("Account created!", {
         description: "You can now sign in with your credentials.",
-      })
+      });
 
       // Sign in the user automatically
       await signIn("credentials", {
         redirect: false,
         email: formData.email,
         password: formData.password,
-      })
+      });
 
-      router.push("/chat")
+      router.push("/chat");
     } catch (error) {
-      toast.error( "Registration failed",{
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-      })
+      toast.error("Registration failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
@@ -90,17 +100,21 @@ export default function SignupPage() {
         className="w-full max-w-md"
       >
         <div className="mb-8 flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500">
-            <Slash className="h-6 w-6 text-primary" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black">
+            <Slash className="h-5 w-5" />
           </div>
           <h1 className="text-3xl font-bold">Create an account</h1>
-          <p className="text-muted-foreground">Sign up for rSlashMiner to get started</p>
+          <p className="text-muted-foreground">
+            Sign up for rSlashMiner to get started
+          </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
-            <CardDescription>Enter your information to create an account</CardDescription>
+            <CardDescription>
+              Enter your information to create an account
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,7 +166,11 @@ export default function SignupPage() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-orange-500" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full bg-orange-500"
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -169,7 +187,9 @@ export default function SignupPage() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t"></div>
               </div>
-              <div className="relative bg-card px-4 text-sm text-muted-foreground">Or continue with</div>
+              <div className="relative bg-card px-4 text-sm text-muted-foreground">
+                Or continue with
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Button variant="outline" onClick={() => signIn("google")}>
@@ -208,12 +228,14 @@ export default function SignupPage() {
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link
+            href="/login"
+            className="font-medium text-primary hover:underline"
+          >
             Sign in <ArrowRight className="inline h-3 w-3" />
           </Link>
         </p>
       </motion.div>
     </div>
-  )
+  );
 }
-

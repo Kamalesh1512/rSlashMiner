@@ -44,7 +44,7 @@ export default function Hero() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button size="lg" asChild className="w-full sm:w-auto">
-              <Link href="#signup">
+              <Link href="/signup">
                 Start For Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

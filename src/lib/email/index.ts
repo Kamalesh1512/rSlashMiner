@@ -18,11 +18,11 @@ interface SendVerificationEmailParams {
 }
 
 export async function sendVerificationEmail({ to, token, username }: SendVerificationEmailParams) {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+  const baseUrl = process.env.NEXTAUTH_URL
   const verificationUrl = `${baseUrl}/api/auth/verify/${token}`
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM || '"rSlashMiner" <noreply@rslashminer.com>',
+    from: process.env.EMAIL_FROM,
     to,
     subject: "Verify your email address",
     text: `Hello ${username},\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nIf you did not request this email, please ignore it.\n\nThanks,\nThe rSlashMiner Team`,
@@ -53,7 +53,7 @@ interface SendPasswordResetEmailParams {
 }
 
 export async function sendPasswordResetEmail({ to, token, username }: SendPasswordResetEmailParams) {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+  const baseUrl = process.env.NEXTAUTH_URL
   const resetUrl = `${baseUrl}/reset-password/${token}`
 
   await transporter.sendMail({

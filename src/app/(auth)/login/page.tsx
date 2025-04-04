@@ -66,9 +66,9 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <div className="mb-8 flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500">
-            <Slash className="h-6 w-6 text-primary" />
-          </div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black">
+          <Slash className="h-5 w-5" />
+        </div>
           <h1 className="text-3xl font-bold">Welcome back</h1>
           <p className="text-muted-foreground">Sign in to your rSlashMiner account</p>
         </div>
