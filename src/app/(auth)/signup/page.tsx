@@ -78,7 +78,7 @@ export default function SignupPage() {
         password: formData.password,
       });
 
-      router.push("/chat");
+      router.push("/agent");
     } catch (error) {
       toast.error("Registration failed", {
         description:

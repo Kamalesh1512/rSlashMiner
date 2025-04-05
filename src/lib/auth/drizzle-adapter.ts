@@ -10,7 +10,8 @@ import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
 
 interface CustomAdapterUser extends AdapterUser {
-  subscription: boolean | null;
+  subscriptionTier: string | null;
+  subscriptionExpiresAt : Date
 }
 
 export function DrizzleAdapter(): Adapter {

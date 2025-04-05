@@ -1,62 +1,80 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Loader2, Plus, X, ArrowLeft, ArrowRight, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Slider } from "@/components/ui/slider"
-import { toast } from "sonner"
-import { generateKeywords, suggestSubreddits } from "@/lib/ai/keyword-generator"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Plus, X, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { toast } from "sonner";
+import { generateKeywords, suggestSubreddits } from "@/actions/text-generator";
 
 interface AgentCreationFormProps {
-  userId: string
+  userId: string;
 }
 
-type FormStep = "business" | "subreddits" | "keywords" | "notifications" | "review"
+type FormStep =
+  | "business"
+  | "subreddits"
+  | "keywords"
+  | "notifications"
+  | "review";
 
 interface FormData {
-  name: string
-  description: string
-  industry: string
-  subreddits: string[]
-  suggestedSubreddits: string[]
-  keywords: string[]
-  suggestedKeywords: string[]
-  notificationMethod: "email" | "whatsapp" | "both"
-  notificationFrequency: "realtime" | "hourly" | "daily" | "weekly"
-  relevanceThreshold: number
-  whatsappNumber: string
-  scheduleType: "always" | "specific"
+  name: string;
+  description: string;
+  industry: string;
+  subreddits: string[];
+  suggestedSubreddits: string[];
+  keywords: string[];
+  suggestedKeywords: string[];
+  notificationMethod: "email" | "whatsapp" | "both";
+  notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
+  relevanceThreshold: number;
+  whatsappNumber: string;
+  scheduleType: "always" | "specific";
   scheduleDays: {
-    monday: boolean
-    tuesday: boolean
-    wednesday: boolean
-    thursday: boolean
-    friday: boolean
-    saturday: boolean
-    sunday: boolean
-  }
-  scheduleTime: string
+    monday: boolean;
+    tuesday: boolean;
+    wednesday: boolean;
+    thursday: boolean;
+    friday: boolean;
+    saturday: boolean;
+    sunday: boolean;
+  };
+  scheduleTime: string;
 }
 
 export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
-  const router = useRouter()
-  const [currentStep, setCurrentStep] = useState<FormStep>("business")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [newSubreddit, setNewSubreddit] = useState("")
-  const [newKeyword, setNewKeyword] = useState("")
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<FormStep>("business");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [newSubreddit, setNewSubreddit] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -81,206 +99,239 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       sunday: true,
     },
     scheduleTime: "09:00",
-  })
+  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }))
-  }
+    setFormData((prev) => ({ ...prev, [name]: checked }));
+  };
 
-  const handleScheduleDayChange = (day: keyof FormData["scheduleDays"], checked: boolean) => {
+  const handleScheduleDayChange = (
+    day: keyof FormData["scheduleDays"],
+    checked: boolean
+  ) => {
     setFormData((prev) => ({
       ...prev,
       scheduleDays: {
         ...prev.scheduleDays,
         [day]: checked,
       },
-    }))
-  }
+    }));
+  };
 
   const handleSliderChange = (value: number[]) => {
-    setFormData((prev) => ({ ...prev, relevanceThreshold: value[0] }))
-  }
+    setFormData((prev) => ({ ...prev, relevanceThreshold: value[0] }));
+  };
 
   const addSubreddit = () => {
-    if (!newSubreddit.trim()) return
+    if (!newSubreddit.trim()) return;
 
     // Remove 'r/' prefix if present
-    const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "")
+    const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "");
 
     if (formData.subreddits.includes(formattedSubreddit)) {
-      toast.error("Duplicate subreddit",{
+      toast.error("Duplicate subreddit", {
         description: "This subreddit is already in your list.",
-      })
-      return
+      });
+      return;
     }
 
     setFormData((prev) => ({
       ...prev,
       subreddits: [...prev.subreddits, formattedSubreddit],
-    }))
-    setNewSubreddit("")
-  }
+    }));
+    setNewSubreddit("");
+  };
 
   const removeSubreddit = (subreddit: string) => {
     setFormData((prev) => ({
       ...prev,
-      subreddits: prev.subreddits.filter((s:string) => s !== subreddit),
-    }))
-  }
+      subreddits: prev.subreddits.filter((s: string) => s !== subreddit),
+    }));
+  };
 
   const addSuggestedSubreddit = (subreddit: string) => {
     if (formData.subreddits.includes(subreddit)) {
-      toast.error("Duplicate subreddit",{
+      toast.error("Duplicate subreddit", {
         description: "This subreddit is already in your list.",
-      })
-      return
+      });
+      return;
     }
 
     setFormData((prev) => ({
       ...prev,
       subreddits: [...prev.subreddits, subreddit],
-      suggestedSubreddits: prev.suggestedSubreddits.filter((s:string) => s !== subreddit),
-    }))
-  }
+      suggestedSubreddits: prev.suggestedSubreddits.filter(
+        (s: string) => s !== subreddit
+      ),
+    }));
+  };
 
   const addKeyword = () => {
-    if (!newKeyword.trim()) return
+    if (!newKeyword.trim()) return;
 
     if (formData.keywords.includes(newKeyword.trim())) {
-      toast("Duplicate keyword",{
+      toast("Duplicate keyword", {
         description: "This keyword is already in your list.",
-      })
-      return
+      });
+      return;
     }
 
     setFormData((prev) => ({
       ...prev,
       keywords: [...prev.keywords, newKeyword.trim()],
-    }))
-    setNewKeyword("")
-  }
+    }));
+    setNewKeyword("");
+  };
 
   const removeKeyword = (keyword: string) => {
     setFormData((prev) => ({
       ...prev,
-      keywords: prev.keywords.filter((k:string) => k !== keyword),
-    }))
-  }
+      keywords: prev.keywords.filter((k: string) => k !== keyword),
+    }));
+  };
 
   const addSuggestedKeyword = (keyword: string) => {
     if (formData.keywords.includes(keyword)) {
-      toast( "Duplicate keyword",{
+      toast("Duplicate keyword", {
         description: "This keyword is already in your list.",
-      })
-      return
+      });
+      return;
     }
 
     setFormData((prev) => ({
       ...prev,
       keywords: [...prev.keywords, keyword],
-      suggestedKeywords: prev.suggestedKeywords.filter((k:string) => k !== keyword),
-    }))
-  }
+      suggestedKeywords: prev.suggestedKeywords.filter(
+        (k: string) => k !== keyword
+      ),
+    }));
+  };
 
   const generateSuggestions = async () => {
     if (!formData.description || !formData.industry) {
-      toast.error( "Missing information",{
-        description: "Please provide a business description and industry to generate suggestions.",
-      })
-      return
+      toast.error("Missing information", {
+        description:
+          "Please provide a business description and industry to generate suggestions.",
+      });
+      return;
     }
 
-    setIsGenerating(true)
+    setIsGenerating(true);
 
     try {
       // Generate keywords
-      const keywordsResult = await generateKeywords(formData.description, formData.industry)
+      const keywordsResult = await generateKeywords(
+        formData.description,
+        formData.industry
+      );
 
       // Generate subreddits
-      const subredditsResult = await suggestSubreddits(formData.description, formData.industry)
+      const subredditsResult = await suggestSubreddits(
+        formData.description,
+        formData.industry
+      );
 
-      setFormData((prev) => ({
-        ...prev,
-        suggestedKeywords: keywordsResult.filter((k:string) => !prev.keywords.includes(k)),
-        suggestedSubreddits: subredditsResult.filter((s:string) => !prev.subreddits.includes(s)),
-      }))
+      if (keywordsResult.status <= 201 && subredditsResult.status <= 201) {
+        const keywords = keywordsResult.data as string[];
+        const subreddits = subredditsResult.data as string[];
+        setFormData((prev) => ({
+          ...prev,
+          suggestedKeywords: keywords.filter(
+            (k: string) => !prev.keywords.includes(k)
+          ),
+          suggestedSubreddits: subreddits.filter(
+            (s: string) => !prev.subreddits.includes(s)
+          ),
+        }));
 
-      toast.success( "Suggestions generated",{
-        description: "We've generated keyword and subreddit suggestions based on your business details.",
-      })
+        toast.success("Suggestions generated", {
+          description:
+            "We've generated keyword and subreddit suggestions based on your business details.",
+        });
+      }
     } catch (error) {
-      toast.error("Generation failed",{
+      toast.error("Generation failed", {
         description: "Failed to generate suggestions. Please try again.",
-      })
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const nextStep = () => {
     if (currentStep === "business") {
       if (!formData.name || !formData.description || !formData.industry) {
-        toast.error("Missing information",{
+        toast.error("Missing information", {
           description: "Please fill in all required fields.",
-        })
-        return
+        });
+        return;
       }
-      setCurrentStep("subreddits")
+      setCurrentStep("subreddits");
     } else if (currentStep === "subreddits") {
       if (formData.subreddits.length === 0) {
-        toast.error("No subreddits added",{
+        toast.error("No subreddits added", {
           description: "Please add at least one subreddit to monitor.",
-        })
-        return
+        });
+        return;
       }
-      setCurrentStep("keywords")
+      setCurrentStep("keywords");
     } else if (currentStep === "keywords") {
       if (formData.keywords.length === 0) {
-        toast.error("No keywords added",{
+        toast.error("No keywords added", {
           description: "Please add at least one keyword to track.",
-        })
-        return
+        });
+        return;
       }
-      setCurrentStep("notifications")
+      setCurrentStep("notifications");
     } else if (currentStep === "notifications") {
-      if (formData.notificationMethod === "whatsapp" || formData.notificationMethod === "both") {
+      if (
+        formData.notificationMethod === "whatsapp" ||
+        formData.notificationMethod === "both"
+      ) {
         if (!formData.whatsappNumber) {
-          toast.error("WhatsApp number required",{
+          toast.error("WhatsApp number required", {
             description: "Please provide a WhatsApp number for notifications.",
-          })
-          return
+          });
+          return;
         }
       }
 
-      if (formData.scheduleType === "specific" && !Object.values(formData.scheduleDays).some(Boolean)) {
-        toast("Schedule days required",{
+      if (
+        formData.scheduleType === "specific" &&
+        !Object.values(formData.scheduleDays).some(Boolean)
+      ) {
+        toast("Schedule days required", {
           description: "Please select at least one day for the agent to run.",
-        })
-        return
+        });
+        return;
       }
 
-      setCurrentStep("review")
+      setCurrentStep("review");
     }
-  }
+  };
 
   const prevStep = () => {
-    if (currentStep === "subreddits") setCurrentStep("business")
-    else if (currentStep === "keywords") setCurrentStep("subreddits")
-    else if (currentStep === "notifications") setCurrentStep("keywords")
-    else if (currentStep === "review") setCurrentStep("notifications")
-  }
+    if (currentStep === "subreddits") setCurrentStep("business");
+    else if (currentStep === "keywords") setCurrentStep("subreddits");
+    else if (currentStep === "notifications") setCurrentStep("keywords");
+    else if (currentStep === "review") setCurrentStep("notifications");
+  };
 
   const handleSubmit = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/agents", {
@@ -305,34 +356,37 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           subreddits: formData.subreddits,
           keywords: formData.keywords,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create agent")
+        throw new Error(data.message || "Failed to create agent");
       }
 
-      toast.success("Agent created",{
-        description: "Your Reddit monitoring agent has been created successfully.",
-      })
+      toast.success("Agent created", {
+        description:
+          "Your Reddit monitoring agent has been created successfully.",
+      });
 
-      router.push("/agents")
+      router.push("/agents");
     } catch (error) {
-      toast.error("Error",{
-        description: error instanceof Error ? error.message : "Failed to create agent",
-      })
+      toast.error("Error", {
+        description:
+          error instanceof Error ? error.message : "Failed to create agent",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Create Reddit Monitoring Agent</CardTitle>
         <CardDescription>
-          Set up an AI agent to monitor Reddit for potential customers interested in your business.
+          Set up an AI agent to monitor Reddit for potential customers
+          interested in your business.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -352,7 +406,15 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               >
                 1
               </div>
-              <span className={currentStep === "business" ? "font-medium" : "text-muted-foreground"}>Business</span>
+              <span
+                className={
+                  currentStep === "business"
+                    ? "font-medium"
+                    : "text-muted-foreground"
+                }
+              >
+                Business
+              </span>
             </div>
             <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
             <div className="flex items-center gap-2">
@@ -368,20 +430,38 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               >
                 2
               </div>
-              <span className={currentStep === "subreddits" ? "font-medium" : "text-muted-foreground"}>Subreddits</span>
+              <span
+                className={
+                  currentStep === "subreddits"
+                    ? "font-medium"
+                    : "text-muted-foreground"
+                }
+              >
+                Subreddits
+              </span>
             </div>
             <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "keywords" || currentStep === "notifications" || currentStep === "review"
+                  currentStep === "keywords" ||
+                  currentStep === "notifications" ||
+                  currentStep === "review"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
                 3
               </div>
-              <span className={currentStep === "keywords" ? "font-medium" : "text-muted-foreground"}>Keywords</span>
+              <span
+                className={
+                  currentStep === "keywords"
+                    ? "font-medium"
+                    : "text-muted-foreground"
+                }
+              >
+                Keywords
+              </span>
             </div>
             <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
             <div className="flex items-center gap-2">
@@ -394,7 +474,13 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               >
                 4
               </div>
-              <span className={currentStep === "notifications" ? "font-medium" : "text-muted-foreground"}>
+              <span
+                className={
+                  currentStep === "notifications"
+                    ? "font-medium"
+                    : "text-muted-foreground"
+                }
+              >
                 Notifications
               </span>
             </div>
@@ -402,12 +488,22 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "review" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  currentStep === "review"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 5
               </div>
-              <span className={currentStep === "review" ? "font-medium" : "text-muted-foreground"}>Review</span>
+              <span
+                className={
+                  currentStep === "review"
+                    ? "font-medium"
+                    : "text-muted-foreground"
+                }
+              >
+                Review
+              </span>
             </div>
           </div>
         </div>
@@ -432,26 +528,42 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   onChange={handleInputChange}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Give your agent a descriptive name to help you identify it later.
+                  Give your agent a descriptive name to help you identify it
+                  later.
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="industry">Business Industry</Label>
-                <Select value={formData.industry} onValueChange={(value) => handleSelectChange("industry", value)}>
+                <Select
+                  value={formData.industry}
+                  onValueChange={(value) =>
+                    handleSelectChange("industry", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select an industry" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="technology">Technology & SaaS</SelectItem>
-                    <SelectItem value="ecommerce">E-commerce & Retail</SelectItem>
+                    <SelectItem value="technology">
+                      Technology & SaaS
+                    </SelectItem>
+                    <SelectItem value="ecommerce">
+                      E-commerce & Retail
+                    </SelectItem>
                     <SelectItem value="finance">Finance & Fintech</SelectItem>
                     <SelectItem value="health">Health & Wellness</SelectItem>
-                    <SelectItem value="education">Education & E-learning</SelectItem>
-                    <SelectItem value="marketing">Marketing & Advertising</SelectItem>
+                    <SelectItem value="education">
+                      Education & E-learning
+                    </SelectItem>
+                    <SelectItem value="marketing">
+                      Marketing & Advertising
+                    </SelectItem>
                     <SelectItem value="food">Food & Beverage</SelectItem>
                     <SelectItem value="travel">Travel & Hospitality</SelectItem>
-                    <SelectItem value="entertainment">Entertainment & Media</SelectItem>
+                    <SelectItem value="entertainment">
+                      Entertainment & Media
+                    </SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -468,8 +580,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   rows={5}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Provide a detailed description of your business, including what problems it solves, target audience,
-                  and unique selling points. This helps our AI generate better keyword and subreddit suggestions.
+                  Provide a detailed description of your business, including
+                  what problems it solves, target audience, and unique selling
+                  points. This helps our AI generate better keyword and
+                  subreddit suggestions.
                 </p>
               </div>
             </motion.div>
@@ -490,7 +604,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   variant="outline"
                   size="sm"
                   onClick={generateSuggestions}
-                  disabled={isGenerating || !formData.description || !formData.industry}
+                  disabled={
+                    isGenerating || !formData.description || !formData.industry
+                  }
                 >
                   {isGenerating ? (
                     <>
@@ -511,12 +627,16 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     onChange={(e) => setNewSubreddit(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        e.preventDefault()
-                        addSubreddit()
+                        e.preventDefault();
+                        addSubreddit();
                       }
                     }}
                   />
-                  <Button type="button" onClick={addSubreddit} disabled={!newSubreddit.trim()}>
+                  <Button
+                    type="button"
+                    onClick={addSubreddit}
+                    disabled={!newSubreddit.trim()}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add
                   </Button>
@@ -527,7 +647,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   {formData.subreddits.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {formData.subreddits.map((subreddit) => (
-                        <Badge key={subreddit} variant="secondary" className="flex items-center gap-1">
+                        <Badge
+                          key={subreddit}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
                           r/{subreddit}
                           <Button
                             variant="ghost"
@@ -541,7 +665,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No subreddits added yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No subreddits added yet.
+                    </p>
                   )}
                 </div>
 
@@ -584,7 +710,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   variant="outline"
                   size="sm"
                   onClick={generateSuggestions}
-                  disabled={isGenerating || !formData.description || !formData.industry}
+                  disabled={
+                    isGenerating || !formData.description || !formData.industry
+                  }
                 >
                   {isGenerating ? (
                     <>
@@ -605,12 +733,16 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     onChange={(e) => setNewKeyword(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        e.preventDefault()
-                        addKeyword()
+                        e.preventDefault();
+                        addKeyword();
                       }
                     }}
                   />
-                  <Button type="button" onClick={addKeyword} disabled={!newKeyword.trim()}>
+                  <Button
+                    type="button"
+                    onClick={addKeyword}
+                    disabled={!newKeyword.trim()}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add
                   </Button>
@@ -621,7 +753,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   {formData.keywords.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {formData.keywords.map((keyword) => (
-                        <Badge key={keyword} variant="secondary" className="flex items-center gap-1">
+                        <Badge
+                          key={keyword}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
                           {keyword}
                           <Button
                             variant="ghost"
@@ -635,14 +771,18 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No keywords added yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No keywords added yet.
+                    </p>
                   )}
                 </div>
 
                 {formData.suggestedKeywords.length > 0 && (
                   <div className="space-y-2 mt-6">
                     <Label>Suggested Keywords</Label>
-                    <p className="text-sm text-muted-foreground">Click on a keyword to add it to your tracking list.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Click on a keyword to add it to your tracking list.
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {formData.suggestedKeywords.map((keyword) => (
                         <Badge
@@ -672,7 +812,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
             >
               <Tabs defaultValue="notifications" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
+                  <TabsTrigger value="notifications">
+                    Notification Settings
+                  </TabsTrigger>
                   <TabsTrigger value="schedule">Schedule Settings</TabsTrigger>
                 </TabsList>
 
@@ -682,20 +824,27 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       <Label>Notification Method</Label>
                       <Select
                         value={formData.notificationMethod}
-                        onValueChange={(value) => handleSelectChange("notificationMethod", value)}
+                        onValueChange={(value) =>
+                          handleSelectChange("notificationMethod", value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select notification method" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="email">Email Only</SelectItem>
-                          <SelectItem value="whatsapp">WhatsApp Only</SelectItem>
-                          <SelectItem value="both">Both Email and WhatsApp</SelectItem>
+                          <SelectItem value="whatsapp">
+                            WhatsApp Only
+                          </SelectItem>
+                          <SelectItem value="both">
+                            Both Email and WhatsApp
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {(formData.notificationMethod === "whatsapp" || formData.notificationMethod === "both") && (
+                    {(formData.notificationMethod === "whatsapp" ||
+                      formData.notificationMethod === "both") && (
                       <div className="space-y-2">
                         <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
                         <Input
@@ -706,7 +855,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           onChange={handleInputChange}
                         />
                         <p className="text-sm text-muted-foreground">
-                          Enter your WhatsApp number with country code (e.g., +1 for US).
+                          Enter your WhatsApp number with country code (e.g., +1
+                          for US).
                         </p>
                       </div>
                     )}
@@ -715,27 +865,34 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       <Label>Notification Frequency</Label>
                       <Select
                         value={formData.notificationFrequency}
-                        onValueChange={(value) => handleSelectChange("notificationFrequency", value)}
+                        onValueChange={(value) =>
+                          handleSelectChange("notificationFrequency", value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select frequency" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="realtime">Real-time (As Found)</SelectItem>
+                          <SelectItem value="realtime">
+                            Real-time (As Found)
+                          </SelectItem>
                           <SelectItem value="hourly">Hourly Digest</SelectItem>
                           <SelectItem value="daily">Daily Digest</SelectItem>
                           <SelectItem value="weekly">Weekly Digest</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-sm text-muted-foreground">
-                        How often you want to receive notifications about potential matches.
+                        How often you want to receive notifications about
+                        potential matches.
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <Label>Relevance Threshold</Label>
-                        <span className="text-sm">{formData.relevanceThreshold}%</span>
+                        <span className="text-sm">
+                          {formData.relevanceThreshold}%
+                        </span>
                       </div>
                       <Slider
                         value={[formData.relevanceThreshold]}
@@ -745,7 +902,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         onValueChange={handleSliderChange}
                       />
                       <p className="text-sm text-muted-foreground">
-                        Only notify you when the AI determines the content is at least this relevant to your business.
+                        Only notify you when the AI determines the content is at
+                        least this relevant to your business.
                       </p>
                     </div>
                   </div>
@@ -763,7 +921,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                             name="scheduleType"
                             value="always"
                             checked={formData.scheduleType === "always"}
-                            onChange={() => handleSelectChange("scheduleType", "always")}
+                            onChange={() =>
+                              handleSelectChange("scheduleType", "always")
+                            }
                             className="h-4 w-4 text-primary"
                           />
                           <Label htmlFor="always" className="font-normal">
@@ -777,7 +937,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                             name="scheduleType"
                             value="specific"
                             checked={formData.scheduleType === "specific"}
-                            onChange={() => handleSelectChange("scheduleType", "specific")}
+                            onChange={() =>
+                              handleSelectChange("scheduleType", "specific")
+                            }
                             className="h-4 w-4 text-primary"
                           />
                           <Label htmlFor="specific" className="font-normal">
@@ -792,20 +954,31 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         <div className="space-y-2">
                           <Label>Days to Run</Label>
                           <div className="grid grid-cols-7 gap-2">
-                            {Object.entries(formData.scheduleDays).map(([day, isEnabled]) => (
-                              <div key={day} className="flex flex-col items-center">
-                                <Label htmlFor={day} className="mb-1 text-xs uppercase">
-                                  {day.slice(0, 3)}
-                                </Label>
-                                <Switch
-                                  id={day}
-                                  checked={isEnabled}
-                                  onCheckedChange={(checked) =>
-                                    handleScheduleDayChange(day as keyof FormData["scheduleDays"], checked)
-                                  }
-                                />
-                              </div>
-                            ))}
+                            {Object.entries(formData.scheduleDays).map(
+                              ([day, isEnabled]) => (
+                                <div
+                                  key={day}
+                                  className="flex flex-col items-center"
+                                >
+                                  <Label
+                                    htmlFor={day}
+                                    className="mb-1 text-xs uppercase"
+                                  >
+                                    {day.slice(0, 3)}
+                                  </Label>
+                                  <Switch
+                                    id={day}
+                                    checked={isEnabled}
+                                    onCheckedChange={(checked) =>
+                                      handleScheduleDayChange(
+                                        day as keyof FormData["scheduleDays"],
+                                        checked
+                                      )
+                                    }
+                                  />
+                                </div>
+                              )
+                            )}
                           </div>
                         </div>
 
@@ -819,7 +992,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                             onChange={handleInputChange}
                           />
                           <p className="text-sm text-muted-foreground">
-                            The agent will run at this time on the selected days.
+                            The agent will run at this time on the selected
+                            days.
                           </p>
                         </div>
                       </>
@@ -840,9 +1014,12 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               className="space-y-6"
             >
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Review Your Agent Configuration</h3>
+                <h3 className="text-lg font-medium">
+                  Review Your Agent Configuration
+                </h3>
                 <p className="text-muted-foreground">
-                  Please review the details below before creating your Reddit monitoring agent.
+                  Please review the details below before creating your Reddit
+                  monitoring agent.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -859,14 +1036,18 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           <span className="text-sm">{formData.industry}</span>
                         </div>
                         <div>
-                          <span className="text-sm font-medium">Description:</span>{" "}
+                          <span className="text-sm font-medium">
+                            Description:
+                          </span>{" "}
                           <p className="text-sm mt-1">{formData.description}</p>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium">Subreddits to Monitor</h4>
+                      <h4 className="text-sm font-medium">
+                        Subreddits to Monitor
+                      </h4>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {formData.subreddits.map((subreddit) => (
                           <Badge key={subreddit} variant="secondary">
@@ -890,7 +1071,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
                   <div className="space-y-4">
                     <div>
-                      <h4 className="text-sm font-medium">Notification Settings</h4>
+                      <h4 className="text-sm font-medium">
+                        Notification Settings
+                      </h4>
                       <div className="mt-2 space-y-2">
                         <div>
                           <span className="text-sm font-medium">Method:</span>{" "}
@@ -898,31 +1081,42 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                             {formData.notificationMethod === "email"
                               ? "Email Only"
                               : formData.notificationMethod === "whatsapp"
-                                ? "WhatsApp Only"
-                                : "Email and WhatsApp"}
+                              ? "WhatsApp Only"
+                              : "Email and WhatsApp"}
                           </span>
                         </div>
-                        {(formData.notificationMethod === "whatsapp" || formData.notificationMethod === "both") && (
+                        {(formData.notificationMethod === "whatsapp" ||
+                          formData.notificationMethod === "both") && (
                           <div>
-                            <span className="text-sm font-medium">WhatsApp Number:</span>{" "}
-                            <span className="text-sm">{formData.whatsappNumber}</span>
+                            <span className="text-sm font-medium">
+                              WhatsApp Number:
+                            </span>{" "}
+                            <span className="text-sm">
+                              {formData.whatsappNumber}
+                            </span>
                           </div>
                         )}
                         <div>
-                          <span className="text-sm font-medium">Frequency:</span>{" "}
+                          <span className="text-sm font-medium">
+                            Frequency:
+                          </span>{" "}
                           <span className="text-sm">
                             {formData.notificationFrequency === "realtime"
                               ? "Real-time (As Found)"
                               : formData.notificationFrequency === "hourly"
-                                ? "Hourly Digest"
-                                : formData.notificationFrequency === "daily"
-                                  ? "Daily Digest"
-                                  : "Weekly Digest"}
+                              ? "Hourly Digest"
+                              : formData.notificationFrequency === "daily"
+                              ? "Daily Digest"
+                              : "Weekly Digest"}
                           </span>
                         </div>
                         <div>
-                          <span className="text-sm font-medium">Relevance Threshold:</span>{" "}
-                          <span className="text-sm">{formData.relevanceThreshold}%</span>
+                          <span className="text-sm font-medium">
+                            Relevance Threshold:
+                          </span>{" "}
+                          <span className="text-sm">
+                            {formData.relevanceThreshold}%
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -933,7 +1127,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         <div>
                           <span className="text-sm font-medium">Type:</span>{" "}
                           <span className="text-sm">
-                            {formData.scheduleType === "always" ? "Run continuously" : "Run on specific days/times"}
+                            {formData.scheduleType === "always"
+                              ? "Run continuously"
+                              : "Run on specific days/times"}
                           </span>
                         </div>
                         {formData.scheduleType === "specific" && (
@@ -943,13 +1139,18 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                               <span className="text-sm">
                                 {Object.entries(formData.scheduleDays)
                                   .filter(([_, isEnabled]) => isEnabled)
-                                  .map(([day]) => day.charAt(0).toUpperCase() + day.slice(1))
+                                  .map(
+                                    ([day]) =>
+                                      day.charAt(0).toUpperCase() + day.slice(1)
+                                  )
                                   .join(", ")}
                               </span>
                             </div>
                             <div>
                               <span className="text-sm font-medium">Time:</span>{" "}
-                              <span className="text-sm">{formData.scheduleTime}</span>
+                              <span className="text-sm">
+                                {formData.scheduleTime}
+                              </span>
                             </div>
                           </>
                         )}
@@ -969,7 +1170,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
             Back
           </Button>
         ) : (
-          <Button type="button" variant="outline" onClick={() => router.push("/agents")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/agents")}
+          >
             Cancel
           </Button>
         )}
@@ -996,6 +1201,5 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }
-

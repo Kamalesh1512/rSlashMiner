@@ -7,9 +7,18 @@ import { useSession } from "next-auth/react"
 import { Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import AgentCreationForm from "@/components/agents/agent-creation-form"
-// import { checkAgentCreationLimit } from "@/lib/subscription"
 
-export default function CreateAgentPage() {
+
+interface CreateAgentProps{
+    creationLimit:{
+        canCreate:boolean
+        used: number,
+        limit:number
+        tier:string
+    }
+}
+
+export default function CreateAgentPage({creationLimit}:CreateAgentProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(false)
@@ -26,23 +35,23 @@ export default function CreateAgentPage() {
     }
 
     if (status === "authenticated" && session?.user?.id) {
-    //   const checkLimit = async () => {
-    //     try {
-    //       const result = await checkAgentCreationLimit(session.user.id)
-    //       setCanCreateAgent(result.canCreate)
-    //       setLimitInfo(result)
-    //     } catch (error) {
-    //       toast.error("Error",{
-    //         description: "Failed to check subscription limits",
-    //       })
-    //     } finally {
-    //       setIsLoading(false)
-    //     }
-    //   }
+      const checkLimit = async () => {
+        try {
+          const result = creationLimit
+          setCanCreateAgent(result.canCreate)
+          setLimitInfo(result)
+        } catch (error) {
+          toast.error("Error",{
+            description: "Failed to check subscription limits",
+          })
+        } finally {
+          setIsLoading(false)
+        }
+      }
 
-    //   checkLimit()
+      checkLimit()
     }
-    /// [status, session, router, toast]
+
   }, [status, session, router, toast])
 
   if (status === "loading" || isLoading) {
@@ -54,10 +63,9 @@ export default function CreateAgentPage() {
   }
 
   return (
-    <div className="container max-w-4xl py-10">
+    <div className="flex flex-col items-center justify-normal p-5">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Create Agent</h1>
           <p className="text-muted-foreground">
             Set up an AI agent to monitor Reddit for potential customers interested in your business.
           </p>
@@ -97,4 +105,5 @@ export default function CreateAgentPage() {
 
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { checkAgentCreationLimit } from "@/lib/check-subscriptions/subscriptions"
 

@@ -10,11 +10,11 @@ export async function middleware(req: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (isAuthenticated && isAuthPage) {
-    return NextResponse.redirect(new URL("/chat", req.url))
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   // Redirect unauthenticated users to login page if they try to access protected routes
-  if (!isAuthenticated && req.nextUrl.pathname.startsWith("/chat")) {
+  if (!isAuthenticated && req.nextUrl.pathname.startsWith("/agent")) {
     return NextResponse.redirect(new URL("/login", req.url))
   }
 
@@ -22,6 +22,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/chat/:path*", "/login", "/signup"],
+  matcher: ["/dashboard/:path*", "/login", "/signup"],
 }
 

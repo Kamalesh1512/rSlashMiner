@@ -46,7 +46,7 @@ export default function LoginPage() {
           description: result.error,
         })
       } else {
-        router.push("/chat")
+        router.push("/agent")
       }
     } catch (error) {
         toast.error("Login failed",{
