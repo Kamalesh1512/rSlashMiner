@@ -10,6 +10,8 @@ import ProfileForm from "@/components/settings/profile-form";
 import ThemeSelector from "@/components/settings/theme-selector";
 import SecuritySettings from "@/components/settings/security-settings";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { SubscriptionstatusProps } from "@/lib/types";
+import SubscriptionStatus from "@/components/global/subscription-status";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -24,19 +26,41 @@ export default function SettingsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState("profile");
+  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionstatusProps['creationLimit']>();
+
+
+  const fetchSubscriptionLimit = async () => {
+    try {
+      const res = await fetch("/api/subscription/check-limit");
+
+      if (res.ok) {
+        const response = await res.json();
+        setSubscriptionDetails(response.data);
+      } 
+    } catch (error) {
+      console.error("Error fetching subscription details:", error);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
+    if (status === "authenticated") {
+      fetchSubscriptionLimit()
+    }
   }, [status, router]);
 
-  if (status === "loading") {
+
+
+
+  if (status === "loading" || !subscriptionDetails) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  
   }
 
   return (
@@ -66,10 +90,11 @@ export default function SettingsPage() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -87,6 +112,11 @@ export default function SettingsPage() {
           <TabsContent value="security" className="space-y-6">
             <Card>
               <SecuritySettings />
+            </Card>
+          </TabsContent>
+          <TabsContent value="subscription" className="space-y-6">
+            <Card>
+              <SubscriptionStatus creationLimit={subscriptionDetails}/>
             </Card>
           </TabsContent>
         </Tabs>

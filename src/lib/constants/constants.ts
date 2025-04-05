@@ -1,3 +1,4 @@
+import { RecentResult } from "@/app/(protectedpages)/dashboard/_components/recents-details";
 import { LayoutDashboard, Bot, Search, Bell, Settings, HelpCircle, BarChart3 } from "lucide-react"
 
 /**
@@ -438,3 +439,57 @@ export function fallbackKeywords(industry:string):string[] {
     },
   ]
   
+
+  // Hardcoded data
+export const recentResults: RecentResult[] = [
+  {
+    id: "1",
+    title: "Looking for a tool to analyze customer feedback",
+    subreddit: "SaaS",
+    timestamp: "2 hours ago",
+    content:
+      "I'm looking for a tool that can help me analyze customer feedback from multiple sources. Any recommendations?",
+    relevanceScore: 92,
+    agentId: "1",
+  },
+  {
+    id: "2",
+    title: "Need help finding a Reddit monitoring solution",
+    subreddit: "marketing",
+    timestamp: "5 hours ago",
+    content:
+      "Does anyone know of a good tool to monitor Reddit for mentions of my brand? I've been doing it manually but it's too time-consuming.",
+    relevanceScore: 98,
+    agentId: "2",
+  },
+  {
+    id: "3",
+    title: "Frustrated with current analytics options",
+    subreddit: "startups",
+    timestamp: "1 day ago",
+    content:
+      "I've tried several analytics tools but none of them give me the insights I need for my specific industry. Anyone else facing this problem?",
+    relevanceScore: 75,
+    agentId: "1",
+  },
+  {
+    id: "4",
+    title: "Best way to track competitor mentions?",
+    subreddit: "EntrepreneurRideAlong",
+    timestamp: "2 days ago",
+    content:
+      "What's the best way to track when competitors are mentioned on social media? Specifically interested in Reddit and Twitter.",
+    relevanceScore: 88,
+    agentId: "3",
+  },
+  {
+    id: "5",
+    title: "How to find early adopters for B2B SaaS?",
+    subreddit: "SaaS",
+    timestamp: "3 days ago",
+    content:
+      "I'm struggling to find early adopters for my B2B SaaS product. Has anyone had success finding them on Reddit or other platforms?",
+    relevanceScore: 85,
+    agentId: "1",
+  },
+]

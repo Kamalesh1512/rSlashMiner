@@ -14,7 +14,8 @@ interface CreateAgentProps{
         canCreate:boolean
         used: number,
         limit:number
-        tier:string
+        tier:string,
+        monitoringRequests:number
     }
 }
 

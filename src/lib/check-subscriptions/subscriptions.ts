@@ -33,10 +33,11 @@ export async function checkAgentCreationLimit(userId: string) {
     throw new Error("User not found")
   }
 
-  const tier = user[0].subscriptionTier || "free"
+  const tier = user[0].subscriptionTier
   const tierConfig = SUBSCRIPTION_LIMITS[tier as keyof typeof SUBSCRIPTION_LIMITS]
   const limit = tierConfig.agentCreationLimit
   const period = tierConfig.agentCreationPeriod
+  const monitoringRequestsLimit = tierConfig.monitoringRequestsLimit
 
   // Get the start date based on the period
   const startDate = new Date()
@@ -81,6 +82,8 @@ export async function checkAgentCreationLimit(userId: string) {
     limit,
     tier,
     period,
+    monitoringRequests:monitoringRequestsLimit
+
   }
 }
 
@@ -95,7 +98,7 @@ export async function incrementAgentCreationCount(userId: string) {
     throw new Error("User not found")
   }
 
-  const tier = user[0].subscriptionTier || "free"
+  const tier = user[0].subscriptionTier
   const period = SUBSCRIPTION_LIMITS[tier as keyof typeof SUBSCRIPTION_LIMITS].agentCreationPeriod
 
   // Get the start date based on the period

@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { checkAgentCreationLimit } from '@/lib/check-subscriptions/subscriptions'
 import React from 'react'
-import CreateAgentPage from './_components/create-agent'
+import CreateAgentPage from '../_components/create-agent'
 
 const page = async () => {
   //agent create main page
