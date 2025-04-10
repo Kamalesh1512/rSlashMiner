@@ -46,7 +46,7 @@ export default function LoginPage() {
           description: result.error,
         })
       } else {
-        router.push("/agent")
+        router.push("/dashboard")
       }
     } catch (error) {
         toast.error("Login failed",{
@@ -121,7 +121,7 @@ export default function LoginPage() {
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          {/* <CardFooter className="flex flex-col space-y-4">
             <div className="relative flex items-center justify-center w-full">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t"></div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 GitHub
               </Button>
             </div>
-          </CardFooter>
+          </CardFooter> */}
         </Card>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">

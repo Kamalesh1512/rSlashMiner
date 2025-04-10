@@ -11,26 +11,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
+import { Agent } from "@/lib/constants/constants"
+import { useAgentStore } from "@/store/agentstore"
 
-interface Agent {
-  id: string
-  name: string
-  description: string
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  lastRunAt: string | null
-  runCount: number
-  configuration: Record<string, any>
-  keywords: { keyword: string }[]
-  subreddits: { subredditName: string }[]
-}
 
 export default function AgentsPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
-  const [agents, setAgents] = useState<Agent[]>([])
+  const {agents, setAgents} = useAgentStore()
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -159,7 +148,7 @@ export default function AgentsPage() {
                 </CardContent>
                 <CardFooter className="pt-3 flex justify-between">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/agents/${agent.id}/results`}>View Results</Link>
+                    <Link href={`/agents/${agent.id}`}>View Agent</Link>
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/agents/${agent.id}/settings`}>

@@ -22,7 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Agent, agents } from "@/lib/constants/constants"
+import { Agent } from "@/lib/constants/constants"
+import { useAgentStore } from "@/store/agentstore"
+import { toast } from "sonner"
 
 
 
@@ -31,21 +33,22 @@ export default function AgentDetailPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
-  const [agent, setAgent] = useState<Agent | null>(null)
+  const agents = useAgentStore((state)=>state.agents)
+  const [agent,setAgent] = useState<Agent | null>()
   const [isRunning, setIsRunning] = useState(false)
 
   const agentId = params.agentId as string
-
   useEffect(() => {
     // Simulate loading data
     const timer = setTimeout(() => {
       const foundAgent = agents.find((a) => a.id === agentId)
+      console.log("Found agent",foundAgent)
       setAgent(foundAgent || null)
       setIsLoading(false)
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [agentId])
+  }, [agentId,agents])
 
   const toggleAgentStatus = () => {
     if (!agent) return
@@ -56,20 +59,50 @@ export default function AgentDetailPage() {
     })
   }
 
-  const runAgentNow = () => {
+  const runAgentNow = async () => {
     setIsRunning(true)
 
-    // Simulate agent running
+    const agentId = agent?.id
+
+    try {
+      const response = await fetch("/api/agents/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ agentId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to run agent")
+      }
+
+      toast.success("Agent run completed",{
+        description: `Found ${data.resultsCount} relevant results.`,
+      })
+
+          // Simulate agent running
     setTimeout(() => {
       if (agent) {
         setAgent({
           ...agent,
-          lastRunAt: new Date().toISOString(),
+          lastRunAt: new Date(),
           runCount: agent.runCount + 1,
         })
       }
-      setIsRunning(false)
     }, 3000)
+    } catch (error) {
+
+
+      toast.error( "Agent run failed",{
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+      })
+    } finally {
+      setIsRunning(false)
+    }
+
   }
 
   const deleteAgent = () => {
@@ -100,8 +133,7 @@ export default function AgentDetailPage() {
     )
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -163,7 +195,7 @@ export default function AgentDetailPage() {
             <CardTitle className="text-sm font-medium">Created</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatDate(agent.createdAt)}</div>
+            <div className="text-2xl font-bold">{formatDate(new Date(agent.createdAt))}</div>
           </CardContent>
         </Card>
         <Card>
@@ -171,7 +203,7 @@ export default function AgentDetailPage() {
             <CardTitle className="text-sm font-medium">Last Updated</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatDate(agent.updatedAt)}</div>
+            <div className="text-2xl font-bold">{formatDate(new Date(agent.createdAt))}</div>
           </CardContent>
         </Card>
         <Card>
@@ -179,7 +211,7 @@ export default function AgentDetailPage() {
             <CardTitle className="text-sm font-medium">Last Run</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agent.lastRunAt ? formatDate(agent.lastRunAt) : "Never"}</div>
+            <div className="text-2xl font-bold">{agent.lastRunAt ? formatDate(new Date(agent.createdAt)) : "Never"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -256,24 +288,25 @@ export default function AgentDetailPage() {
                     <div>Matches Found</div>
                     <div>3</div>
                     <div>12</div>
-                    <div>{agent.results.length}</div>
+                    {agent.results && <div>{agent.results.length}</div>}
                   </div>
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
                     <div>High Relevance Matches</div>
                     <div>1</div>
                     <div>5</div>
-                    <div>{agent.results.filter((r) => r.relevanceScore >= 90).length}</div>
+                    {agent.results && <div>{agent.results.filter((r) => r.relevanceScore >= 90).length}</div>}
                   </div>
                   <div className="grid grid-cols-4 gap-4 p-4 items-center">
                     <div>Average Relevance</div>
                     <div>87%</div>
                     <div>82%</div>
+                    {agent.results && 
                     <div>
                       {Math.round(
                         agent.results.reduce((acc, r) => acc + r.relevanceScore, 0) / (agent.results.length || 1),
                       )}
                       %
-                    </div>
+                    </div>}
                   </div>
                 </div>
               </CardContent>
@@ -288,7 +321,7 @@ export default function AgentDetailPage() {
               <CardDescription>The most recent matches found by this agent</CardDescription>
             </CardHeader>
             <CardContent>
-              {agent.results.length === 0 ? (
+              {agent.results && agent.results.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10">
                   <BarChart3 className="h-10 w-10 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">No results yet</h3>
@@ -298,7 +331,7 @@ export default function AgentDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {agent.results.map((result) => (
+                  {agent.results && agent.results.map((result) => (
                     <div key={result.id} className="rounded-lg border p-4">
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="flex-1">

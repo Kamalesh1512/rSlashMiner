@@ -121,7 +121,7 @@ export const agents = pgTable("agents", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-  configuration: json("configuration").notNull(), // Stores agent configuration as JSON
+  configuration: text("configuration").notNull(), // Stores agent configuration as JSON
   lastRunAt: timestamp("last_run_at", { mode: "date" }),
   runCount: integer("run_count").default(0).notNull(),
 })
@@ -194,7 +194,7 @@ export const monitoringResults = pgTable("monitoring_results", {
   url: text("url"),
   score: integer("score"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  matchedKeywords: json("matched_keywords"), // Array of matched keywords
+  matchedKeywords: text("matched_keywords"), // Array of matched keywords
   relevanceScore: integer("relevance_score"), // AI-determined relevance score
   processed: boolean("processed").default(false).notNull(),
   sentimentScore: integer("sentiment_score"), // Sentiment analysis score

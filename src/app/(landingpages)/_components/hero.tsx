@@ -40,11 +40,11 @@ export default function Hero() {
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground">
             Discover untapped business ideas, track market trends, and identify your target audience by harnessing the
-            power of Reddit data.
+            power of Reddit&apos;s 52 million daily active users and 100,000+ active communities.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button size="lg" asChild className="w-full sm:w-auto">
-              <Link href="/signup">
+              <Link href="#signup">
                 Start For Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -53,22 +53,31 @@ export default function Hero() {
               <Link href="#demo">Watch Demo</Link>
             </Button>
           </div>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background"></div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">Join 2,000+ businesses already using rSlashMiner</p>
+          </div>
         </motion.div>
-        {/* <motion.div variants={fadeIn} className="relative lg:ml-auto mt-8 lg:mt-0">
-          <div className="relative mx-auto w-full max-w-fit">
+        <motion.div variants={fadeIn} className="relative lg:ml-auto mt-8 lg:mt-0">
+          <div className="relative mx-auto w-full max-w-[600px]">
             <Image
-              src="/placeholder.svg?height=600&width=500"
+              src="/placeholder.svg?height=600&width=600"
               alt="rSlashMiner Dashboard"
-              width={500}
+              width={600}
               height={600}
               className="rounded-lg border shadow-xl w-full h-auto"
             />
             <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-500/20 blur-xl"></div>
             <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-orange-500/20 blur-xl"></div>
           </div>
-        </motion.div> */}
+        </motion.div>
       </motion.div>
     </section>
   )
 }
 
+ 

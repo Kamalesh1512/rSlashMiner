@@ -94,9 +94,9 @@ export function fallbackKeywords(industry:string):string[] {
     name: string
     description: string
     isActive: boolean
-    createdAt: string
-    updatedAt: string
-    lastRunAt: string | null
+    createdAt: Date
+    updatedAt: Date
+    lastRunAt: Date | null
     runCount: number
     configuration: {
       industry: string
@@ -118,7 +118,7 @@ export function fallbackKeywords(industry:string):string[] {
     }
     keywords: { id: string; keyword: string }[]
     subreddits: { id: string; subredditName: string }[]
-    results: {
+    results?: {
       id: string
       title: string
       subreddit: string
@@ -136,9 +136,9 @@ export function fallbackKeywords(industry:string):string[] {
       name: "SaaS Product Monitor",
       description: "Monitoring for potential customers interested in SaaS analytics and customer feedback tools",
       isActive: true,
-      createdAt: "2023-10-15T10:30:00Z",
-      updatedAt: "2023-11-01T14:45:00Z",
-      lastRunAt: "2023-11-05T08:15:00Z",
+      createdAt: new Date("2023-10-15T10:30:00Z"),
+      updatedAt: new Date("2023-11-01T14:45:00Z"),
+      lastRunAt: new Date("2023-11-05T08:15:00Z"),
       runCount: 42,
       configuration: {
         industry: "technology",
@@ -193,9 +193,9 @@ export function fallbackKeywords(industry:string):string[] {
       name: "Competitor Tracker",
       description: "Monitoring mentions of competitors and related products",
       isActive: true,
-      createdAt: "2023-09-20T15:45:00Z",
-      updatedAt: "2023-10-25T11:30:00Z",
-      lastRunAt: "2023-11-04T09:30:00Z",
+      createdAt: new Date("2023-09-20T15:45:00Z"),
+      updatedAt: new Date("2023-10-25T11:30:00Z"),
+      lastRunAt: new Date("2023-11-04T09:30:00Z"),
       runCount: 38,
       configuration: {
         industry: "technology",
@@ -250,9 +250,9 @@ export function fallbackKeywords(industry:string):string[] {
       name: "Product Hunt Monitor",
       description: "Tracking discussions about Product Hunt launches and feedback",
       isActive: false,
-      createdAt: "2023-10-05T08:15:00Z",
-      updatedAt: "2023-11-02T16:20:00Z",
-      lastRunAt: "2023-11-02T16:20:00Z",
+      createdAt: new Date("2023-10-05T08:15:00Z"),
+      updatedAt: new Date("2023-11-02T16:20:00Z"),
+      lastRunAt: new Date("2023-11-02T16:20:00Z"),
       runCount: 25,
       configuration: {
         industry: "technology",

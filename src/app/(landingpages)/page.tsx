@@ -9,6 +9,7 @@ import Hero from "./_components/hero";
 import HowItWorks from "./_components/how-it-works";
 import LogoCloud from "./_components/logo-cloud";
 import Pricing from "./_components/pricing";
+import ProductShowcase from "./_components/product-showcase";
 import Testimonials from "./_components/testimonals";
 
 export default function LandingPage() {
@@ -20,6 +21,7 @@ export default function LandingPage() {
         {/* <LogoCloud /> */}
         <Features />
         <HowItWorks />
+        <ProductShowcase/>
         <Pricing />
         <Testimonials />
         <Faq />
