@@ -1,29 +1,40 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Hash, Slash } from "lucide-react"
-import { cn } from "@/lib/utils"
-import ReactMarkdown from "react-markdown"
-
-type Message = {
-  id: string
-  content: string
-  role: "user" | "assistant"
-  timestamp: Date
-}
+"use client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Hash, Slash } from "lucide-react";
+import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import { Message } from "@/lib/constants/types";
+import { useSession } from "next-auth/react";
 
 interface ChatMessageProps {
-  message: Message
+  message: Message;
 }
 
 export default function ChatMessage({ message }: ChatMessageProps) {
-  const isUser = message.role === "user"
+  const isUser = message.role === "user";
 
+  const session = useSession();
+  const user = session.data?.user;
   return (
-    <div className={cn("flex items-start gap-4 rounded-lg p-4", isUser ? "bg-muted/50" : "bg-background")}>
-      <Avatar className={cn("h-8 w-8", isUser ? "bg-primary" : "bg-orange-500")}>
+    <div
+      className={cn(
+        "flex items-start gap-4 rounded-lg p-4",
+        isUser ? "bg-muted/50" : "bg-background"
+      )}
+    >
+      <Avatar
+        className={cn("h-8 w-8", isUser ? "bg-primary" : "bg-orange-500")}
+      >
         {isUser ? (
           <>
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-            <AvatarFallback>U</AvatarFallback>
+              {user?.image ? (
+                <AvatarImage src={user.image} alt={user?.name || "User"} />
+              ) : (
+                <AvatarFallback>
+                  {user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}
+                </AvatarFallback>
+              )}
+
           </>
         ) : (
           <>
@@ -34,12 +45,15 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         )}
       </Avatar>
 
-      <div className="flex-1 space-y-2">
+      <div
+        className={`flex-1 space-y-2 items-start gap-3 max-w-full ${
+          isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+        } rounded-md p-3`}
+      >
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold">{isUser ? "You" : "rSlashMiner AI"}</h4>
-          <span className="text-xs text-muted-foreground">
-            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </span>
+          <h4 className="text-sm font-semibold">
+            {isUser ? "You" : "rSlashMiner AI"}
+          </h4>
         </div>
 
         <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -47,6 +61,5 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

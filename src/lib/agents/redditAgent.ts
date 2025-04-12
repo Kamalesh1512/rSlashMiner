@@ -43,7 +43,6 @@ async function searchPosts(state: typeof StateAnnotation.State) {
 async function fetchComments(state: typeof StateAnnotation.State) {
   const comments = await getComments.invoke({
     postId: state.selectedPost.id,
-    subreddit: state.subreddit,
   });
 
   return { comments: JSON.parse(comments) };
@@ -61,8 +60,13 @@ async function analyze(state: typeof StateAnnotation.State) {
     businessDescription: state.businessDescription,
   });
 
-  const analysis = JSON.parse(analysisRaw);
-  return { analysis };
+  const matchedJson = analysisRaw.match(/{[^]*?}/);
+  if (matchedJson) {
+    const analysis = JSON.parse(matchedJson[0]);
+    console.log("AI Repsonse:",analysis)
+    return { analysis };
+  }
+
 }
 
 // Gate: determine if content is relevant enough to store

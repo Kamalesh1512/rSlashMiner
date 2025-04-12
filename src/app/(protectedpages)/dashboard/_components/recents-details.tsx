@@ -10,7 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { agents, recentResults } from "@/lib/constants/constants";
+import { agents, recentResults } from "@/lib/constants/types";
 import { BarChart3, Bot, Loader2, TrendingUp, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 

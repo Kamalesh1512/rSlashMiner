@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Search, Download, ExternalLink } from "lucide-react"
 import Link from "next/link"
-import { Result, results } from "@/lib/constants/constants"
+import { Result, results } from "@/lib/constants/types"
 
 export default function ResultsPage() {
   const { data: session, status } = useSession()

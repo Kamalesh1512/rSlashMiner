@@ -4,116 +4,13 @@ import { createId } from "@paralleldrive/cuid2";
 import { openai } from "./genai";
 import { db } from "@/lib/db";
 import { monitoringResults } from "@/lib/db/schema";
-
-// Define the Reddit API service
-class RedditService {
-  async searchPosts(subreddit: string, query: string, timeframe = "day") {
-    try {
-      const response = await fetch(
-        `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(
-          query
-        )}&sort=new&t=${timeframe}&limit=25`,
-        {
-          headers: {
-            "User-Agent": "rSlashMiner/1.0.0",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Reddit API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.data.children.map((child: any) => ({
-        id: child.data.id,
-        title: child.data.title,
-        selftext: child.data.selftext,
-        author: child.data.author,
-        subreddit: child.data.subreddit,
-        url: `https://www.reddit.com${child.data.permalink}`,
-        score: child.data.score,
-        created_utc: child.data.created_utc,
-      }));
-    } catch (error) {
-      console.error("Error searching Reddit posts:", error);
-      return [];
-    }
-  }
-
-  async getSubredditPosts(subreddit: string, sort = "new", limit = 25) {
-    try {
-      const response = await fetch(
-        `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}`,
-        {
-          headers: {
-            "User-Agent": "rSlashMiner/1.0.0",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Reddit API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.data.children.map((child: any) => ({
-        id: child.data.id,
-        title: child.data.title,
-        selftext: child.data.selftext,
-        author: child.data.author,
-        subreddit: child.data.subreddit,
-        url: `https://www.reddit.com${child.data.permalink}`,
-        score: child.data.score,
-        created_utc: child.data.created_utc,
-      }));
-    } catch (error) {
-      console.error("Error getting subreddit posts:", error);
-      return [];
-    }
-  }
-
-  async getComments(postId: string, subreddit: string) {
-    try {
-      const response = await fetch(
-        `https://www.reddit.com/r/${subreddit}/comments/${postId}.json`,
-        {
-          headers: {
-            "User-Agent": "rSlashMiner/1.0.0",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Reddit API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const comments = data[1].data.children
-        .filter((child: any) => child.kind === "t1")
-        .map((child: any) => ({
-          id: child.data.id,
-          body: child.data.body,
-          author: child.data.author,
-          score: child.data.score,
-          created_utc: child.data.created_utc,
-        }));
-
-      return comments;
-    } catch (error) {
-      console.error("Error getting comments:", error);
-      return [];
-    }
-  }
-}
-
-// Create Reddit service instance
-const redditService = new RedditService();
+import redditService from "@/lib/services/redditservice";
 
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
     const { subreddit, query, timeframe = "day" } = input;
+    console.log("The subreddit", { subreddit, query, timeframe });
     const posts = await redditService.searchPosts(subreddit, query, timeframe);
     return JSON.stringify(posts);
   },
@@ -132,8 +29,9 @@ export const searchReddit = tool(
 );
 
 export const getComments = tool(
-  async ({ postId, subreddit }) => {
-    const comments = await redditService.getComments(postId, subreddit);
+  async ({ postId }) => {
+    console.log("Fetching comments for:", { postId });
+    const comments = await redditService.getComments(postId);
     return JSON.stringify(comments);
   },
   {
@@ -141,44 +39,47 @@ export const getComments = tool(
     description: "Get comments for a specific post.",
     schema: z.object({
       postId: z.string().describe("The ID of the post to get comments from."),
-      subreddit: z.string().describe("The subreddit the post is in."),
     }),
   }
 );
 
 export const analyzeContent = tool(
   async ({ content, businessInterests, businessDescription }) => {
+    const prompt = `Analyze the following Reddit content and determine if it indicates a potential customer or business opportunity related to the described business.
+                      Content: ${content}
+                      Business Description: ${businessDescription}
+                      Business Keywords: ${businessInterests.join(", ")}
+
+                      Provide your analysis in JSON format with the following fields:
+                      - relevanceScore: A number from 0-100 indicating how relevant this content is to the business
+                      - matchedKeywords: An array of keywords from the business interests that match the content
+                      - reasoning: A brief explanation (1-2 sentences) of why this content is or isn't relevant
+                      - sentimentScore: A number from -100 to 100 indicating the sentiment (-100 very negative, 0 neutral, 100 very positive)
+                      - potentialAction: A suggested action to take (e.g., "reach out", "monitor", "ignore")` 
     try {
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content:
-              "You are an AI assistant that generates keyword suggestions in JSON format.",
+            content: `You are an AI assistant that analyzes Reddit posts to determine their business relevance.
+                You MUST respond strictly in valid JSON with the following structure:
+                {
+                "relevanceScore": number (0-100),
+                "matchedKeywords": string[],
+                "reasoning": string,
+                "sentimentScore": number (-100 to 100),
+                "potentialAction": string ("reach out", "monitor", "ignore")
+                }.`
+                
           },
           {
             role: "user",
-            content: `Analyze the following Reddit content and determine if it indicates a potential customer or business opportunity related to the described business.
-  
-  Content: ${content}
-  
-  Business Description: ${businessDescription}
-  
-  Business Keywords: ${businessInterests.join(", ")}
-  
-  Provide your analysis in JSON format with the following fields:
-  - relevanceScore: A number from 0-100 indicating how relevant this content is to the business
-  - matchedKeywords: An array of keywords from the business interests that match the content
-  - reasoning: A brief explanation of why this content is or isn't relevant
-  - sentimentScore: A number from -100 to 100 indicating the sentiment (-100 very negative, 0 neutral, 100 very positive)
-  - potentialAction: A suggested action to take (e.g., "reach out", "monitor", "ignore")
-  `,
+            content: prompt
           },
         ],
         temperature: 0.7,
       });
-
       return response.choices[0].message.content;
     } catch (error) {
       console.error("Error analyzing content with OpenAI:", error);
@@ -234,7 +135,7 @@ export const storeResult = tool(
         url,
         score: score ?? 0,
         createdAt: new Date(),
-        matchedKeywords:JSON.stringify(matchedKeywords),
+        matchedKeywords: JSON.stringify(matchedKeywords),
         relevanceScore,
         processed: false,
         sentimentScore: sentimentScore ?? 0,

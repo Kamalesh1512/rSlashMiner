@@ -2,7 +2,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { navItems } from "@/lib/constants/constants"
+import { navItems } from "@/lib/constants/types"
 
 
 const NavMain = () => {

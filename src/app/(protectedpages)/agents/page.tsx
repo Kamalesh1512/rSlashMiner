@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
-import { Agent } from "@/lib/constants/constants"
+import { Agent } from "@/lib/constants/types"
 import { useAgentStore } from "@/store/agentstore"
 
 
@@ -149,11 +149,6 @@ export default function AgentsPage() {
                 <CardFooter className="pt-3 flex justify-between">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/agents/${agent.id}`}>View Agent</Link>
-                  </Button>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/agents/${agent.id}/settings`}>
-                      <Settings className="h-4 w-4" />
-                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

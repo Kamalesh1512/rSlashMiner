@@ -22,9 +22,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Agent } from "@/lib/constants/constants"
+import { Agent } from "@/lib/constants/types"
 import { useAgentStore } from "@/store/agentstore"
 import { toast } from "sonner"
+import { timeAgo } from "@/lib/utils"
 
 
 
@@ -42,7 +43,7 @@ export default function AgentDetailPage() {
     // Simulate loading data
     const timer = setTimeout(() => {
       const foundAgent = agents.find((a) => a.id === agentId)
-      console.log("Found agent",foundAgent)
+      // console.log("Found agent",foundAgent)
       setAgent(foundAgent || null)
       setIsLoading(false)
     }, 1000)
@@ -154,12 +155,6 @@ export default function AgentDetailPage() {
           <p className="text-muted-foreground">{agent.description}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/agents/${agent.id}/settings`}>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
-          </Button>
           <Button variant="outline" size="sm" onClick={runAgentNow} disabled={isRunning || !agent.isActive}>
             {isRunning ? (
               <>
@@ -203,7 +198,7 @@ export default function AgentDetailPage() {
             <CardTitle className="text-sm font-medium">Last Updated</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatDate(new Date(agent.createdAt))}</div>
+            <div className="text-2xl font-bold">{timeAgo(agent.updatedAt)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -211,7 +206,7 @@ export default function AgentDetailPage() {
             <CardTitle className="text-sm font-medium">Last Run</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agent.lastRunAt ? formatDate(new Date(agent.createdAt)) : "Never"}</div>
+            <div className="text-2xl font-bold">{agent.lastRunAt ? timeAgo(agent.lastRunAt) : "Never"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -228,7 +223,7 @@ export default function AgentDetailPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="results">Recent Results</TabsTrigger>
-          <TabsTrigger value="settings">Configuration</TabsTrigger>
+          <TabsTrigger value="settings">Configuration/Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">

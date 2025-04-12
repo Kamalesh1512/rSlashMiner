@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import {persist} from "zustand/middleware"
-import { Agent } from "@/lib/constants/constants"
+import { Agent } from "@/lib/constants/types"
 
 type AgentStore = {
   agents: Agent[]

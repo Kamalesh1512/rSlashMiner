@@ -2,10 +2,19 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Plus, X, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Send,
+  Bot,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,24 +38,21 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { generateKeywords, suggestSubreddits } from "@/actions/text-generator";
+import ChatMessage from "../chat/chat-messages";
+import { Message } from "@/lib/constants/types";
+import { generateKeywords, suggestSubreddits, validateBusinessInput } from "@/actions/text-generator";
 
 interface AgentCreationFormProps {
   userId: string;
 }
 
-type FormStep =
-  | "business"
-  | "subreddits"
-  | "keywords"
-  | "notifications"
-  | "review";
+type FormStep = "describe" | "refine" | "configure" | "review";
 
 interface FormData {
   name: string;
   description: string;
-  industry: string;
   subreddits: string[];
   suggestedSubreddits: string[];
   keywords: string[];
@@ -68,18 +74,27 @@ interface FormData {
   scheduleTime: string;
 }
 
+
 export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<FormStep>("business");
+  const [currentStep, setCurrentStep] = useState<FormStep>("describe");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        'Describe what you want to monitor on Reddit in a single sentence. For example: "I want to track discussions about my SaaS analytics tool for customer feedback."',
+    },
+  ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
-    industry: "",
     subreddits: [],
     suggestedSubreddits: [],
     keywords: [],
@@ -100,6 +115,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     },
     scheduleTime: "09:00",
   });
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -158,7 +178,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const removeSubreddit = (subreddit: string) => {
     setFormData((prev) => ({
       ...prev,
-      subreddits: prev.subreddits.filter((s: string) => s !== subreddit),
+      subreddits: prev.subreddits.filter((s) => s !== subreddit),
     }));
   };
 
@@ -174,7 +194,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       ...prev,
       subreddits: [...prev.subreddits, subreddit],
       suggestedSubreddits: prev.suggestedSubreddits.filter(
-        (s: string) => s !== subreddit
+        (s) => s !== subreddit
       ),
     }));
   };
@@ -183,7 +203,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     if (!newKeyword.trim()) return;
 
     if (formData.keywords.includes(newKeyword.trim())) {
-      toast("Duplicate keyword", {
+      toast.error("Duplicate keyword", {
         description: "This keyword is already in your list.",
       });
       return;
@@ -199,13 +219,13 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const removeKeyword = (keyword: string) => {
     setFormData((prev) => ({
       ...prev,
-      keywords: prev.keywords.filter((k: string) => k !== keyword),
+      keywords: prev.keywords.filter((k) => k !== keyword),
     }));
   };
 
   const addSuggestedKeyword = (keyword: string) => {
     if (formData.keywords.includes(keyword)) {
-      toast("Duplicate keyword", {
+      toast.error("Duplicate keyword", {
         description: "This keyword is already in your list.",
       });
       return;
@@ -214,89 +234,137 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     setFormData((prev) => ({
       ...prev,
       keywords: [...prev.keywords, keyword],
-      suggestedKeywords: prev.suggestedKeywords.filter(
-        (k: string) => k !== keyword
-      ),
+      suggestedKeywords: prev.suggestedKeywords.filter((k) => k !== keyword),
     }));
   };
 
-  const generateSuggestions = async () => {
-    if (!formData.description || !formData.industry) {
-      toast.error("Missing information", {
-        description:
-          "Please provide a business description and industry to generate suggestions.",
-      });
-      return;
-    }
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    if (!chatInput.trim()) return;
+
+    // Add user message to chat
+    setChatMessages((prev) => [...prev, { role: "user", content: chatInput }]);
+
+    // Clear input
+    setChatInput("");
+
+    // Set loading state
     setIsGenerating(true);
 
+    // Add thinking message
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "Analyzing your request..." },
+    ]);
+
     try {
-      // Generate keywords
-      const keywordsResult = await generateKeywords(
-        formData.description,
-        formData.industry
-      );
 
-      // Generate subreddits
-      const subredditsResult = await suggestSubreddits(
-        formData.description,
-        formData.industry
-      );
-
-      if (keywordsResult.status <= 201 && subredditsResult.status <= 201) {
-        const keywords = keywordsResult.data as string[];
-        const subreddits = subredditsResult.data as string[];
-        setFormData((prev) => ({
-          ...prev,
-          suggestedKeywords: keywords.filter(
-            (k: string) => !prev.keywords.includes(k)
-          ),
-          suggestedSubreddits: subreddits.filter(
-            (s: string) => !prev.subreddits.includes(s)
-          ),
-        }));
-
-        toast.success("Suggestions generated", {
-          description:
-            "We've generated keyword and subreddit suggestions based on your business details.",
-        });
+      //check the chat input is business related
+      const response = await validateBusinessInput(chatInput)
+      
+      if (!response.isValid) {
+        setChatMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            role: "assistant",
+            content:
+              "🤔 Hmm, it looks like your input doesn't seem like a business idea or problem. Try describing what you're building, the problem you're solving, or a business idea you're exploring.",
+          },
+        ]);
+        return;
       }
-    } catch (error) {
-      toast.error("Generation failed", {
-        description: "Failed to generate suggestions. Please try again.",
+
+      const keywordsResponse = await generateKeywords(chatInput)
+
+      const subredditsResponse = await suggestSubreddits(chatInput)
+
+      if (keywordsResponse.status!==200 || !keywordsResponse.data || !subredditsResponse.data || subredditsResponse.status!==200) {
+        setChatMessages((prev) => [
+          ...prev.slice(0, -1), // remove "thinking..." message
+          {
+            role: "assistant",
+            content:
+              "⚠️ Oops! Something went wrong while analyzing your input. Please try again later.",
+          },
+        ]);
+        return;
+      }
+
+
+      const subredditList = subredditsResponse.data?.subreddits 
+      const suggestedSubredditsList = subredditsResponse.data?.suggestedSubreddits 
+
+      const keywordsList = keywordsResponse.data.keywords
+      const suggestedKeywordList = keywordsResponse.data?.suggestedKeywords
+
+      // Update form data with generated values
+      setFormData((prev) => ({
+        ...prev,
+        description: chatInput,
+        keywords:keywordsList,
+        suggestedKeywords:suggestedKeywordList,
+        subreddits:subredditList,
+        suggestedSubreddits:suggestedSubredditsList,
+      }));
+
+      // Update chat with response
+      setChatMessages((prev) => {
+        // Remove the "thinking" message
+        const newMessages = prev.slice(0, -1);
+
+        // Add the response
+        return [
+          ...newMessages,
+          {
+            role: "assistant",
+            content: `Great! I've analyzed your request and created an agent to monitor discussions about ${chatInput}. Here's what I've set up:
+            1. **Subreddits**: ${subredditList
+                          .slice(0, 5)
+                          .map((s: string) => `r/${s}`)
+                          .join(", ")}
+            2. **Keywords**: ${keywordsList.slice(0, 5).join(", ")}${
+                          keywordsList.length > 5 ? "..." : ""
+                        }
+            You can refine these suggestions in the next step. Click Next!!`,
+          },
+        ];
       });
+
+      // Move to next step after a short delay
+      setTimeout(() => {
+        setCurrentStep("refine");
+      }, 1000);
+    } catch (error) {
+      toast.error("Error", {
+        description: "Failed to process your request. Please try again.",
+      });
+
+      // Remove the "thinking" message
+      setChatMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsGenerating(false);
     }
   };
 
   const nextStep = () => {
-    if (currentStep === "business") {
-      if (!formData.name || !formData.description || !formData.industry) {
-        toast.error("Missing information", {
-          description: "Please fill in all required fields.",
-        });
-        return;
-      }
-      setCurrentStep("subreddits");
-    } else if (currentStep === "subreddits") {
+    if (currentStep === "describe") {
+      setCurrentStep("refine");
+    } else if (currentStep === "refine") {
       if (formData.subreddits.length === 0) {
         toast.error("No subreddits added", {
           description: "Please add at least one subreddit to monitor.",
         });
         return;
       }
-      setCurrentStep("keywords");
-    } else if (currentStep === "keywords") {
       if (formData.keywords.length === 0) {
         toast.error("No keywords added", {
           description: "Please add at least one keyword to track.",
         });
         return;
       }
-      setCurrentStep("notifications");
-    } else if (currentStep === "notifications") {
+      setCurrentStep("configure");
+    } else if (currentStep === "configure") {
       if (
         formData.notificationMethod === "whatsapp" ||
         formData.notificationMethod === "both"
@@ -313,7 +381,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         formData.scheduleType === "specific" &&
         !Object.values(formData.scheduleDays).some(Boolean)
       ) {
-        toast("Schedule days required", {
+        toast.error("Schedule days required", {
           description: "Please select at least one day for the agent to run.",
         });
         return;
@@ -324,10 +392,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   };
 
   const prevStep = () => {
-    if (currentStep === "subreddits") setCurrentStep("business");
-    else if (currentStep === "keywords") setCurrentStep("subreddits");
-    else if (currentStep === "notifications") setCurrentStep("keywords");
-    else if (currentStep === "review") setCurrentStep("notifications");
+    if (currentStep === "refine") setCurrentStep("describe");
+    else if (currentStep === "configure") setCurrentStep("refine");
+    else if (currentStep === "review") setCurrentStep("configure");
   };
 
   const handleSubmit = async () => {
@@ -344,7 +411,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           name: formData.name,
           description: formData.description,
           configuration: {
-            industry: formData.industry,
             notificationMethod: formData.notificationMethod,
             notificationFrequency: formData.notificationFrequency,
             relevanceThreshold: formData.relevanceThreshold,
@@ -380,6 +446,15 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     }
   };
 
+  const steps = [
+    { id: "describe", label: "Describe", number: 1 },
+    { id: "refine", label: "Refine", number: 2 },
+    { id: "configure", label: "Configure", number: 3 },
+    { id: "review", label: "Review", number: 4 },
+  ];
+
+  const current = steps.find((step) => step.id === currentStep);
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -391,419 +466,320 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       </CardHeader>
       <CardContent>
         <div className="mb-8">
-          <div className="flex justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "business" ||
-                  currentStep === "subreddits" ||
-                  currentStep === "keywords" ||
-                  currentStep === "notifications" ||
-                  currentStep === "review"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                1
+          {current && (
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
+                {current.number}
               </div>
-              <span
-                className={
-                  currentStep === "business"
-                    ? "font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Business
-              </span>
+              <span className="font-medium">{current.label}</span>
             </div>
-            <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "subreddits" ||
-                  currentStep === "keywords" ||
-                  currentStep === "notifications" ||
-                  currentStep === "review"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                2
-              </div>
-              <span
-                className={
-                  currentStep === "subreddits"
-                    ? "font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Subreddits
-              </span>
-            </div>
-            <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "keywords" ||
-                  currentStep === "notifications" ||
-                  currentStep === "review"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                3
-              </div>
-              <span
-                className={
-                  currentStep === "keywords"
-                    ? "font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Keywords
-              </span>
-            </div>
-            <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "notifications" || currentStep === "review"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                4
-              </div>
-              <span
-                className={
-                  currentStep === "notifications"
-                    ? "font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Notifications
-              </span>
-            </div>
-            <div className="h-[2px] flex-1 bg-border self-center mx-2"></div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  currentStep === "review"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                5
-              </div>
-              <span
-                className={
-                  currentStep === "review"
-                    ? "font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Review
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
-          {currentStep === "business" && (
+          {currentStep === "describe" && (
             <motion.div
-              key="business"
+              key="describe"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              <div className="space-y-2">
-                <Label htmlFor="name">Agent Name</Label>
+              <div className="border rounded-lg p-4 max-h-[400px] overflow-y-auto">
+                <div className="space-y-4">
+                  {chatMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      {/* <div
+                        className={`flex items-start gap-3 max-w-[80%] ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        } rounded-lg p-3`}
+                      >
+                        {message.role === "assistant" && (
+                          <Avatar className="h-8 w-8 bg-orange-500 items-center justify-center">
+                            <Bot>
+                              <AvatarFallback>AI</AvatarFallback>
+                            </Bot>
+                          </Avatar>
+                        )}
+                        <div className="space-y-1">
+                          <p className="text-sm whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        </div>
+                      </div> */}
+                      <ChatMessage message={message}/>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              <form onSubmit={handleChatSubmit} className="flex gap-2">
                 <Input
-                  id="name"
-                  name="name"
-                  placeholder="E.g., My SaaS Product Monitor"
-                  value={formData.name}
-                  onChange={handleInputChange}
+                  placeholder="Describe what you want to monitor on Reddit..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={isGenerating}
+                  className="flex-1"
                 />
-                <p className="text-sm text-muted-foreground">
-                  Give your agent a descriptive name to help you identify it
-                  later.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="industry">Business Industry</Label>
-                <Select
-                  value={formData.industry}
-                  onValueChange={(value) =>
-                    handleSelectChange("industry", value)
-                  }
+                <Button
+                  type="submit"
+                  disabled={isGenerating || !chatInput.trim()}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="technology">
-                      Technology & SaaS
-                    </SelectItem>
-                    <SelectItem value="ecommerce">
-                      E-commerce & Retail
-                    </SelectItem>
-                    <SelectItem value="finance">Finance & Fintech</SelectItem>
-                    <SelectItem value="health">Health & Wellness</SelectItem>
-                    <SelectItem value="education">
-                      Education & E-learning
-                    </SelectItem>
-                    <SelectItem value="marketing">
-                      Marketing & Advertising
-                    </SelectItem>
-                    <SelectItem value="food">Food & Beverage</SelectItem>
-                    <SelectItem value="travel">Travel & Hospitality</SelectItem>
-                    <SelectItem value="entertainment">
-                      Entertainment & Media
-                    </SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Business Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  placeholder="Describe your business, product, or service in detail..."
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={5}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Provide a detailed description of your business, including
-                  what problems it solves, target audience, and unique selling
-                  points. This helps our AI generate better keyword and
-                  subreddit suggestions.
-                </p>
-              </div>
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
             </motion.div>
           )}
 
-          {currentStep === "subreddits" && (
+          {currentStep === "refine" && (
             <motion.div
-              key="subreddits"
+              key="refine"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Subreddits to Monitor</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={generateSuggestions}
-                  disabled={
-                    isGenerating || !formData.description || !formData.industry
-                  }
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>Generate Suggestions</>
-                  )}
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex gap-2">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Agent Name</Label>
                   <Input
-                    placeholder="Enter subreddit name (without r/)"
-                    value={newSubreddit}
-                    onChange={(e) => setNewSubreddit(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addSubreddit();
-                      }
-                    }}
+                    id="name"
+                    name="name"
+                    placeholder="E.g., My SaaS Product Monitor"
+                    value={formData.name}
+                    onChange={handleInputChange}
                   />
-                  <Button
-                    type="button"
-                    onClick={addSubreddit}
-                    disabled={!newSubreddit.trim()}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
                 </div>
+
+              {/* Industry */}
+                {/* <div className="space-y-2">
+                  <Label htmlFor="industry">Business Industry</Label>
+                  <Select
+                    value={formData.industry}
+                    onValueChange={(value) =>
+                      handleSelectChange("industry", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="technology">
+                        Technology & SaaS
+                      </SelectItem>
+                      <SelectItem value="ecommerce">
+                        E-commerce & Retail
+                      </SelectItem>
+                      <SelectItem value="finance">Finance & Fintech</SelectItem>
+                      <SelectItem value="health">Health & Wellness</SelectItem>
+                      <SelectItem value="education">
+                        Education & E-learning
+                      </SelectItem>
+                      <SelectItem value="marketing">
+                        Marketing & Advertising
+                      </SelectItem>
+                      <SelectItem value="food">Food & Beverage</SelectItem>
+                      <SelectItem value="travel">
+                        Travel & Hospitality
+                      </SelectItem>
+                      <SelectItem value="entertainment">
+                        Entertainment & Media
+                      </SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div> */}
 
                 <div className="space-y-2">
-                  <Label>Your Selected Subreddits</Label>
-                  {formData.subreddits.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.subreddits.map((subreddit) => (
-                        <Badge
-                          key={subreddit}
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          r/{subreddit}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0 ml-1"
-                            onClick={() => removeSubreddit(subreddit)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No subreddits added yet.
-                    </p>
-                  )}
+                  <Label htmlFor="description">Business Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Describe your business, product, or service in detail..."
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows={3}
+                  />
                 </div>
 
-                {formData.suggestedSubreddits.length > 0 && (
-                  <div className="space-y-2 mt-6">
-                    <Label>Suggested Subreddits</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Click on a subreddit to add it to your monitoring list.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.suggestedSubreddits.map((subreddit) => (
-                        <Badge
-                          key={subreddit}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-secondary"
-                          onClick={() => addSuggestedSubreddit(subreddit)}
-                        >
-                          r/{subreddit}
-                        </Badge>
-                      ))}
+                <Tabs defaultValue="subreddits" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="subreddits">Subreddits</TabsTrigger>
+                    <TabsTrigger value="keywords">Keywords</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="subreddits" className="space-y-4 mt-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter subreddit name (without r/)"
+                        value={newSubreddit}
+                        onChange={(e) => setNewSubreddit(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addSubreddit();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addSubreddit}
+                        disabled={!newSubreddit.trim()}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add
+                      </Button>
                     </div>
-                  </div>
-                )}
+
+                    <div className="space-y-2">
+                      <Label>Your Selected Subreddits</Label>
+                      {formData.subreddits.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.subreddits.map((subreddit) => (
+                            <Badge
+                              key={subreddit}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              r/{subreddit}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 p-0 ml-1"
+                                onClick={() => removeSubreddit(subreddit)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No subreddits added yet.
+                        </p>
+                      )}
+                    </div>
+
+                    {formData.suggestedSubreddits.length > 0 && (
+                      <div className="space-y-2 mt-6">
+                        <Label>Suggested Subreddits</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Click on a subreddit to add it to your monitoring
+                          list.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.suggestedSubreddits.map((subreddit) => (
+                            <Badge
+                              key={subreddit}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-secondary"
+                              onClick={() => addSuggestedSubreddit(subreddit)}
+                            >
+                              r/{subreddit}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="keywords" className="space-y-4 mt-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter keyword or phrase"
+                        value={newKeyword}
+                        onChange={(e) => setNewKeyword(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addKeyword();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addKeyword}
+                        disabled={!newKeyword.trim()}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Your Selected Keywords</Label>
+                      {formData.keywords.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.keywords.map((keyword) => (
+                            <Badge
+                              key={keyword}
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {keyword}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 p-0 ml-1"
+                                onClick={() => removeKeyword(keyword)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No keywords added yet.
+                        </p>
+                      )}
+                    </div>
+
+                    {formData.suggestedKeywords.length > 0 && (
+                      <div className="space-y-2 mt-6">
+                        <Label>Suggested Keywords</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Click on a keyword to add it to your tracking list.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.suggestedKeywords.map((keyword) => (
+                            <Badge
+                              key={keyword}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-secondary"
+                              onClick={() => addSuggestedKeyword(keyword)}
+                            >
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             </motion.div>
           )}
 
-          {currentStep === "keywords" && (
+          {currentStep === "configure" && (
             <motion.div
-              key="keywords"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Keywords to Track</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={generateSuggestions}
-                  disabled={
-                    isGenerating || !formData.description || !formData.industry
-                  }
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>Generate Suggestions</>
-                  )}
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter keyword or phrase"
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addKeyword();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={addKeyword}
-                    disabled={!newKeyword.trim()}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Your Selected Keywords</Label>
-                  {formData.keywords.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.keywords.map((keyword) => (
-                        <Badge
-                          key={keyword}
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          {keyword}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0 ml-1"
-                            onClick={() => removeKeyword(keyword)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No keywords added yet.
-                    </p>
-                  )}
-                </div>
-
-                {formData.suggestedKeywords.length > 0 && (
-                  <div className="space-y-2 mt-6">
-                    <Label>Suggested Keywords</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Click on a keyword to add it to your tracking list.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.suggestedKeywords.map((keyword) => (
-                        <Badge
-                          key={keyword}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-secondary"
-                          onClick={() => addSuggestedKeyword(keyword)}
-                        >
-                          {keyword}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "notifications" && (
-            <motion.div
-              key="notifications"
+              key="configure"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -913,7 +889,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Schedule Type</Label>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                         <div className="flex items-center space-x-2">
                           <input
                             type="radio"
@@ -1031,10 +1007,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           <span className="text-sm font-medium">Name:</span>{" "}
                           <span className="text-sm">{formData.name}</span>
                         </div>
-                        <div>
+                        {/* <div>
                           <span className="text-sm font-medium">Industry:</span>{" "}
                           <span className="text-sm">{formData.industry}</span>
-                        </div>
+                        </div> */}
                         <div>
                           <span className="text-sm font-medium">
                             Description:
@@ -1164,7 +1140,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         </AnimatePresence>
       </CardContent>
       <CardFooter className="flex justify-between">
-        {currentStep !== "business" ? (
+        {currentStep !== "describe" ? (
           <Button type="button" variant="outline" onClick={prevStep}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back

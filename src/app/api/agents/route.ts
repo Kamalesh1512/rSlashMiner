@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { createId } from "@paralleldrive/cuid2"
 import { checkAgentCreationLimit, incrementAgentCreationCount } from "@/lib/check-subscriptions/subscriptions"
 import { desc, eq, inArray } from "drizzle-orm"
-import { Agent } from "@/lib/constants/constants"
+import { Agent } from "@/lib/constants/types"
 
 export async function POST(request: Request) {
   try {
