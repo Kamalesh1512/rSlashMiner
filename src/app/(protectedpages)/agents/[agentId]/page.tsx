@@ -25,14 +25,15 @@ import {
 import { Agent } from "@/lib/constants/types"
 import { useAgentStore } from "@/store/agentstore"
 import { toast } from "sonner"
-import { timeAgo } from "@/lib/utils"
+import { getRunsInLastNDays, timeAgo } from "@/lib/utils"
+import { AgentConfigTab } from "./_components/agent-config-tab"
 
 
 
 export default function AgentDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { data:session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const agents = useAgentStore((state)=>state.agents)
   const [agent,setAgent] = useState<Agent | null>()
@@ -144,18 +145,22 @@ export default function AgentDetailPage() {
     })
   }
 
+  const last24Days = getRunsInLastNDays(agent.lastRunAt,agent.runCount,1)
+  const last7Days = getRunsInLastNDays(agent.lastRunAt,agent.runCount,7)
+  const last30Days = getRunsInLastNDays(agent.lastRunAt,agent.runCount,30)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">{agent.name}</h1>
-            <Badge variant={agent.isActive ? "default" : "secondary"}>{agent.isActive ? "Active" : "Paused"}</Badge>
+            <Badge variant={agent.isActive ? "premium" : "outline"} className="text-primary">{agent.isActive ? "Active" : "Paused"}</Badge>
           </div>
           <p className="text-muted-foreground">{agent.description}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={runAgentNow} disabled={isRunning || !agent.isActive}>
+          <Button variant="default" size="sm" onClick={runAgentNow} disabled={isRunning || !agent.isActive}>
             {isRunning ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -165,19 +170,6 @@ export default function AgentDetailPage() {
               <>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Run Now
-              </>
-            )}
-          </Button>
-          <Button variant={agent.isActive ? "destructive" : "default"} size="sm" onClick={toggleAgentStatus}>
-            {agent.isActive ? (
-              <>
-                <Pause className="mr-2 h-4 w-4" />
-                Pause
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Resume
               </>
             )}
           </Button>
@@ -275,9 +267,9 @@ export default function AgentDetailPage() {
                   </div>
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
                     <div>Runs Completed</div>
-                    <div>2</div>
-                    <div>14</div>
-                    <div>{agent.runCount}</div>
+                    <div>{last24Days}</div>
+                    <div>{last7Days}</div>
+                    <div>{last30Days}</div>
                   </div>
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
                     <div>Matches Found</div>
@@ -373,136 +365,10 @@ export default function AgentDetailPage() {
           </Card>
         </TabsContent>
 
+
         <TabsContent value="settings">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Configuration</CardTitle>
-                <CardDescription>General settings for this agent</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Industry</h3>
-                  <p>{agent.configuration.industry}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Relevance Threshold</h3>
-                  <p>{agent.configuration.relevanceThreshold}%</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">Agent Status</h3>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="agent-status">{agent.isActive ? "Active" : "Paused"}</Label>
-                    <Switch id="agent-status" checked={agent.isActive} onCheckedChange={toggleAgentStatus} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>How you'll be notified about new matches</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Notification Method</h3>
-                  <p>
-                    {agent.configuration.notificationMethod === "email" && "Email Only"}
-                    {agent.configuration.notificationMethod === "whatsapp" && "WhatsApp Only"}
-                    {agent.configuration.notificationMethod === "both" && "Email and WhatsApp"}
-                  </p>
-                  {(agent.configuration.notificationMethod === "whatsapp" ||
-                    agent.configuration.notificationMethod === "both") &&
-                    agent.configuration.whatsappNumber && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        WhatsApp Number: {agent.configuration.whatsappNumber}
-                      </p>
-                    )}
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Notification Frequency</h3>
-                  <p>
-                    {agent.configuration.notificationFrequency === "realtime" && "Real-time (As Found)"}
-                    {agent.configuration.notificationFrequency === "hourly" && "Hourly Digest"}
-                    {agent.configuration.notificationFrequency === "daily" && "Daily Digest"}
-                    {agent.configuration.notificationFrequency === "weekly" && "Weekly Digest"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Schedule Settings</CardTitle>
-                <CardDescription>When this agent runs to check for new content</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Schedule Type</h3>
-                  <p>
-                    {agent.configuration.scheduleType === "always"
-                      ? "Run continuously (as allowed by your subscription)"
-                      : "Run on specific days/times"}
-                  </p>
-                </div>
-
-                {agent.configuration.scheduleType === "specific" && (
-                  <>
-                    <div>
-                      <h3 className="text-sm font-medium mb-1">Days</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {agent.configuration.scheduleDays &&
-                          Object.entries(agent.configuration.scheduleDays)
-                            .filter(([_, isEnabled]) => isEnabled)
-                            .map(([day]) => (
-                              <Badge key={day} variant="outline">
-                                {day.charAt(0).toUpperCase() + day.slice(1)}
-                              </Badge>
-                            ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium mb-1">Time</h3>
-                      <p>{agent.configuration.scheduleTime}</p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Danger Zone</CardTitle>
-                <CardDescription>Destructive actions for this agent</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Agent
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the agent "{agent.name}" and all of
-                        its monitoring history.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={deleteAgent} className="bg-destructive text-destructive-foreground">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
+          <div className="">
+            <AgentConfigTab agent={agent} subscription={session?.user.subscriptionTier as string}/>
           </div>
         </TabsContent>
       </Tabs>

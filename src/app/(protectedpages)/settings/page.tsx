@@ -10,8 +10,8 @@ import ProfileForm from "@/components/settings/profile-form";
 import ThemeSelector from "@/components/settings/theme-selector";
 import SecuritySettings from "@/components/settings/security-settings";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { SubscriptionstatusProps } from "@/lib/types";
 import SubscriptionStatus from "@/components/global/subscription-status";
+import { SubscriptionstatusProps } from "@/lib/constants/types";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },

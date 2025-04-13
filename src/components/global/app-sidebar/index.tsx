@@ -30,7 +30,8 @@ interface User {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  subscriptionTier?: string;
+  subscriptionTier?: string | null;
+  subscriptionExpiresAt?: Date | null;
 }
 
 interface AppSidebarProps {
@@ -46,22 +47,20 @@ const AppSidebar = ({
   return (
     <Sidebar
       collapsible="icon"
-      className="max-w-[275px] bg-background border-r"
+      className="max-w-[275px] min-w-[60px] bg-background border-r"
       {...props}
     >
       <SidebarHeader className="pt-6 px-2 pb-0">
         <SidebarMenuButton
-          size="lg"
+          size={"lg"}
           className="data-[state=open]:text-sidebar-accent-foreground gap-5"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black">
-            <Slash className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black shrink-0">
+            <Slash />
           </div>
           <span className="truncate text-xl font-semibold">
             rSlashMiner
-            <span className="text-xs block text-muted-foreground">
-              
-            </span>
+            <span className="text-xs block text-muted-foreground"></span>
           </span>
         </SidebarMenuButton>
       </SidebarHeader>

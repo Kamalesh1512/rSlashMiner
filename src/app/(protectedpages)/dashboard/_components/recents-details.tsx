@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useEffect, useState } from "react";
 import {
   Card,
@@ -10,31 +10,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { agents, recentResults } from "@/lib/constants/types";
 import { BarChart3, Bot, Loader2, TrendingUp, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
-
-// Define interfaces for our data types
-export interface RecentResult {
-  id: string;
-  title: string;
-  subreddit: string;
-  timestamp: string;
-  content: string;
-  relevanceScore: number;
-  agentId: string;
-}
-
-interface Agent {
-  id: string;
-  name: string;
-  subredditCount: number;
-  status: "active" | "paused";
-}
+import { useAgentStore } from "@/store/agentstore";
 
 const RecentDetails = () => {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
+  const { agents } = useAgentStore();
   const [stats, setStats] = useState({
     activeAgents: 0,
     totalResults: 0,
@@ -42,14 +25,25 @@ const RecentDetails = () => {
     monitoredSubreddits: 0,
   });
 
+  // console.log(agents)
+  // console.log(stats)
   useEffect(() => {
     // Simulate loading data
     const timer = setTimeout(() => {
       setStats({
         activeAgents: agents.filter((a) => a.isActive === true).length,
-        totalResults: recentResults.length,
-        potentialLeads: recentResults.filter((r) => r.relevanceScore >= 80)
-          .length,
+        totalResults: agents.reduce((count, agent) => {
+          return count + (agent.results?.length ?? 0);
+        }, 0),
+        potentialLeads: agents.reduce((count, agent) => {
+          const relevantCount = (agent.results ?? []).reduce(
+            (resCount, result) => {
+              return resCount + (result.relevanceScore >= 80 ? 1 : 0);
+            },
+            0
+          );
+          return count + relevantCount;
+        }, 0),
         monitoredSubreddits: agents.reduce(
           (acc, agent) => acc + agent.subreddits.length,
           0
@@ -59,7 +53,7 @@ const RecentDetails = () => {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [agents]);
 
   if (status === "loading" || isLoading) {
     return (
@@ -140,39 +134,44 @@ const RecentDetails = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Iterate through recent results */}
-              {recentResults.slice(0, 3).map((result) => (
-                <div key={result.id} className="rounded-lg border p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{result.title}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          r/{result.subreddit}
-                        </span>
-                        <span className="text-sm text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">
-                          {result.timestamp}
-                        </span>
+              {/* Iterate through agents and their results */}
+              {agents.flatMap((agent) =>
+                (agent.results ?? []).map((result) => (
+                  <div key={result.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium">{result.title}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            r/{result.subreddit}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            •
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {result.timestamp}
+                          </span>
+                        </div>
+                        {/* Optional content field */}
+                        <p className="mt-2 text-sm">"{result.content}"</p>
                       </div>
-                      <p className="mt-2 text-sm">"{result.content}"</p>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div
-                        className={`rounded-full px-2 py-1 text-xs font-medium ${
-                          result.relevanceScore >= 90
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.relevanceScore >= 70
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {result.relevanceScore}% Relevant
+                      <div className="flex flex-col items-end">
+                        <div
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                            result.relevanceScore >= 90
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                              : result.relevanceScore >= 70
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                          }`}
+                        >
+                          {result.relevanceScore}% Relevant
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
 
               <div className="flex justify-center">
                 <Button asChild variant="outline">

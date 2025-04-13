@@ -8,15 +8,20 @@ import type {
 } from "next-auth/adapters";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
+import { checkAgentCreationLimit } from "../check-subscriptions/subscriptions";
 
-interface CustomAdapterUser extends AdapterUser {
+export interface CustomAdapterUser extends AdapterUser {
   subscriptionTier: string | null;
   subscriptionExpiresAt : Date
 }
 
+
+
 export function DrizzleAdapter(): Adapter {
+
   return {
     async createUser(userData) {
+
       const id = createId();
       await db.insert(users).values({
         id,
@@ -24,6 +29,8 @@ export function DrizzleAdapter(): Adapter {
         email: userData.email,
         emailVerified: userData.emailVerified,
         image: userData.image,
+        subscriptionTier:userData.subscriptionTier as string,
+        subscriptionExpiresAt:userData.subscriptionExpiresAt
       });
 
       const newUser = await db
@@ -154,6 +161,8 @@ export function DrizzleAdapter(): Adapter {
             email: users.email,
             emailVerified: users.emailVerified,
             image: users.image,
+            subscriptionTier: users.subscriptionTier,
+            subscriptionExpiresAt: users.subscriptionExpiresAt,
           },
         })
         .from(sessions)

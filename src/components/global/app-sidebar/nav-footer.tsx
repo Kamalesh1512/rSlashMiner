@@ -20,7 +20,8 @@ interface UserProps {
   name?: string | null
   email?: string | null
   image?: string | null
-  subscriptionTier?: string
+  subscriptionTier?: string | null;
+  subscriptionExpiresAt?:Date | null
 }
 
 interface NavFooterProps {
@@ -40,11 +41,11 @@ const NavFooter = ({ user }: NavFooterProps) => {
 
     switch (user.subscriptionTier) {
       case "premium":
-        return <Badge className="ml-2 bg-amber-500">Premium</Badge>
+        return <Badge className="ml-2 bg-amber-500" variant={'premium'}>Premium</Badge>
       case "pro":
-        return <Badge className="ml-2">Pro</Badge>
+        return <Badge className="ml-2" variant={'default'}>Pro</Badge>
       default:
-        return <Badge className="ml-2 bg-muted text-muted-foreground">Free</Badge>
+        return <Badge className="ml-2 bg-muted text-muted-foreground" variant={'outline'}>Free</Badge>
     }
   }
 
@@ -65,7 +66,7 @@ const NavFooter = ({ user }: NavFooterProps) => {
                 </Avatar>
                 <div className="flex flex-col items-start">
                   <span className="font-medium">{user?.name || "User"}</span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">{user?.email}</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[100px]">{user?.email}</span>
                 </div>
                 {getSubscriptionBadge()}
               </SidebarMenuButton>

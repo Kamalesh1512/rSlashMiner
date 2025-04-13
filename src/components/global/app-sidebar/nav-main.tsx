@@ -21,7 +21,7 @@ const NavMain = () => {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
                 <Link href={item.href}>
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-4 w-4 flex-shrink-0"/>
                   <span>{item.name}</span>
                 </Link>
               </SidebarMenuButton>

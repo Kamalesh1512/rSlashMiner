@@ -95,9 +95,7 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
                   To create more agents, you can:
                 </p>
                 <ul className="list-disc list-inside text-left mx-auto max-w-md text-sm sm:text-base">
-                  <li>Wait for your limit to reset</li>
                   <li>Upgrade your subscription plan</li>
-                  <li>Delete an existing agent to free up a slot</li>
                 </ul>
                 <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
                   <Button

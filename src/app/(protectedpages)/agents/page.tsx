@@ -40,7 +40,6 @@ export default function AgentsPage() {
         throw new Error(data.message || "Failed to fetch agents")
       }
 
-      setAgents(data.agents)
     } catch (error) {
       toast.error("Error",{
         description: error instanceof Error ? error.message : "Failed to fetch agents",
@@ -95,7 +94,7 @@ export default function AgentsPage() {
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <CardTitle className="truncate">{agent.name}</CardTitle>
-                    <Badge variant={agent.isActive ? "default" : "secondary"}>
+                    <Badge variant={agent.isActive ? "premium" : "secondary"} className="text-primary">
                       {agent.isActive ? "Active" : "Paused"}
                     </Badge>
                   </div>

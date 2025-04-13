@@ -6,7 +6,7 @@ import { compare } from "bcrypt";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { users } from "@/lib/db/schema";
-import { DrizzleAdapter } from "@/lib/auth/drizzle-adapter";
+import { CustomAdapterUser, DrizzleAdapter } from "@/lib/auth/drizzle-adapter";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(), // Pass database instance
@@ -59,12 +59,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.subscriptionTier = user.subscriptionTier || null;
+        token.subscriptionExpiresAt = user.subscriptionExpiresAt || null;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.subscriptionTier = token.subscriptionTier as string | null;
+        session.user.subscriptionExpiresAt = token.subscriptionExpiresAt as Date | null;
       }
       return session;
     },
