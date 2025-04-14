@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { agents, keywords, subreddits, monitoringResults } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { eq } from "drizzle-orm"
-import { graph } from "@/lib/agents/redditAgent"
+import { graph, runAgent } from "@/lib/agents/redditAgent"
 
 export async function POST(request: Request) {
   try {
@@ -68,17 +68,16 @@ export async function POST(request: Request) {
       const query = keywordList[0]
 
       try {
-        const result = await graph.invoke({
+        const result = await runAgent({
+          agentId,
           subreddit,
           query,
           businessInterests: keywordList,
           businessDescription: agent[0].description as string,
-          agentId: agent[0].id,
-          // posts: [],
-          // selectedPost: null,
-          // comments: [],
-          // analysis: null,
-          // storedResult: null,
+          onProgress: (message) => {
+            // In the non-streaming version, we just log progress
+            console.log(`Progress for ${subreddit}: ${message}`)
+          },
         })
 
         if (result.storedResult && result.storedResult.success) {
