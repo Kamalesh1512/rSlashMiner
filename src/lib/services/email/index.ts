@@ -82,3 +82,30 @@ export async function sendPasswordResetEmail({ to, token, username }: SendPasswo
   })
 }
 
+
+interface EmailOptions {
+  to: string
+  subject: string
+  text: string
+  html?: string
+}
+
+export async function sendEmail(options: EmailOptions): Promise<void> {
+  try {
+    const { to, subject, text, html } = options
+
+    // Send the email
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || '"rSlashMiner" <noreply@rslashminer.com>',
+      to,
+      subject,
+      text,
+      html: html || text.replace(/\n/g, "<br>"),
+    })
+
+    console.log(`Email sent to ${to}`)
+  } catch (error) {
+    console.error(`Error sending email: ${error}`)
+    throw error
+  }
+}

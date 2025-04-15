@@ -1,5 +1,6 @@
+import { SubredditProps } from "@/lib/constants/types";
 import dotenv from "dotenv";
-import { SubredditProps } from "../constants/types";
+
 dotenv.config();
 
 export type RedditPost = {
@@ -105,7 +106,7 @@ class RedditService {
     });
   }
 
-  async searchPosts(subreddit: string, query: string, time: Timeframe = "day", limit = 5): Promise<RedditPost[]> {
+  async searchPosts(subreddit: string, query: string, time: Timeframe = "month", limit = 25): Promise<RedditPost[]> {
     const data = await this.fetchFromReddit(`/r/${subreddit}/search`, {
       q: query,
       limit,

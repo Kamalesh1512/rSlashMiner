@@ -212,13 +212,11 @@ async function processAgentRun(
               "Could not parse analysis results",
               "Content is not relevant enough",
             ]
-            const isSkipped =
-              message.includes("Content is not relevant enough") ||
-              message.includes("No relevant posts found");
+            const isSkipped = skipMessages.some(skipPhrase => message.includes(skipPhrase))
             sendEvent({
               type: "step",
               id: `${stepId}-progress`,
-              status: isSkipped ? "completed" : "running", // ✅ Mark as completed if skipped
+              status: isSkipped ? "skipped" : "running", // ✅ Mark as completed if skipped
               message: `Processing r/${subreddit}`,
               details: message,
               progress: progressBase + (progressEnd - progressBase) * 0.5,
@@ -240,7 +238,7 @@ async function processAgentRun(
             id: stepId,
             status: "completed",
             message: `Completed processing r/${subreddit}`,
-            details: `Found relevant content with ${
+            details: `🙂Found relevant content with ${
               result.analysis?.relevanceScore || 0
             }% relevance`,
             progress: progressEnd,
@@ -251,7 +249,7 @@ async function processAgentRun(
             id: stepId,
             status: "completed",
             message: `Completed processing r/${subreddit}`,
-            details: "No relevant content found",
+            details: "☹️No relevant content found",
             progress: progressEnd,
           });
         }

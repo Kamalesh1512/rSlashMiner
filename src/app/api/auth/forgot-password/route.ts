@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { db } from "@/lib/db"
 import { users, verificationTokens } from "@/lib/db/schema"
-import { sendPasswordResetEmail } from "@/lib/email"
+import { sendPasswordResetEmail } from "@/lib/services/email"
 
 
 export async function POST(request: Request) {

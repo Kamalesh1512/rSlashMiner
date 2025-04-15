@@ -4,7 +4,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { openai } from "./genai";
 import { db } from "@/lib/db";
 import { monitoringResults } from "@/lib/db/schema";
-import redditService from "@/lib/services/redditservice";
+import redditService from "@/lib/services/reddit";
 
 // Define the tools
 export const searchReddit = tool(
