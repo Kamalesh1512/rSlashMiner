@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { agents, keywords, subreddits } from "@/lib/db/schema"
+import { agents, keywords, monitoringResults, subreddits } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { createId } from "@paralleldrive/cuid2"
 import { checkAgentCreationLimit, incrementAgentCreationCount } from "@/lib/check-subscriptions/subscriptions"
@@ -113,6 +113,7 @@ export async function GET(request: Request) {
       .from(subreddits)
       .where(inArray(subreddits.agentId, agentIds))
 
+    const recentResults = await db.select().from(monitoringResults).where(inArray(monitoringResults.agentId,agentIds))
     // 4. Merge into Agent[] structure
    const agentsWithNested: Agent[] = agentRows.map((agent) => ({
     id: agent.id,

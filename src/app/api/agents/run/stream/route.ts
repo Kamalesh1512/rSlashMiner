@@ -197,11 +197,14 @@ async function processAgentRun(
         // We'll use the first keyword as the main query, but include all keywords for analysis
         const query = keywordList[0];
 
+        const relevanceThreshold = JSON.parse(agent[0].configuration).relevanceThreshold
+
         // Run the agent with progress reporting
         const result = await runAgent({
           agentId,
           subreddit,
           query,
+          relevanceThreshold,
           businessInterests: keywordList,
           businessDescription: agent[0].description as string,
           onProgress: (message: string) => {
@@ -216,7 +219,7 @@ async function processAgentRun(
             sendEvent({
               type: "step",
               id: `${stepId}-progress`,
-              status: isSkipped ? "skipped" : "running", // ✅ Mark as completed if skipped
+              status: isSkipped ? "skipped" : "complete", // ✅ Mark as completed if skipped
               message: `Processing r/${subreddit}`,
               details: message,
               progress: progressBase + (progressEnd - progressBase) * 0.5,
@@ -304,19 +307,20 @@ async function processAgentRun(
 
     // Generate a summary of the results
     let summary = "";
+    let recentResults:any = []
     if (storedResultIds.length > 0) {
       // Get the stored results from the database
-      const storedResults = await db
+      recentResults = await db
         .select()
         .from(monitoringResults)
         .where(eq(monitoringResults.agentId, agentId))
         .orderBy(monitoringResults.createdAt)
-        .limit(10);
+        .limit(10)
 
       summary = `Found ${storedResultIds.length} relevant results across ${subredditList.length} subreddits.`;
 
-      if (storedResults.length > 0) {
-        summary += ` Most recent results include content from r/${storedResults[0].subreddit} with ${storedResults[0].relevanceScore}% relevance.`;
+      if (recentResults.length > 0) {
+        summary += ` Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
       }
     } else {
       summary = `No relevant results found across ${subredditList.length} subreddits.`;
@@ -330,6 +334,7 @@ async function processAgentRun(
       resultsCount: storedResultIds.length,
       processedSubreddits: subredditList.length,
       progress: 100,
+      recentResults:recentResults
     });
 
     // Close the stream

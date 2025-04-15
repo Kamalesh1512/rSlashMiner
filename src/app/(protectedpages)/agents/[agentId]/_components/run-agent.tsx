@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useAgentStore } from "@/store/agentstore";
 
 type StepStatus = "running" | "completed" | "error" | "waiting" | "skipped";
 
@@ -66,6 +67,7 @@ export default function RunAgentPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
+  const {updateAgentById} = useAgentStore()
   const [runResult, setRunResult] = useState<{
     success: boolean;
     summary: string;
@@ -282,8 +284,13 @@ export default function RunAgentPage() {
             summary: data.summary,
             resultsCount: data.resultsCount,
           });
+          updateAgentById(agentId,{
+            results:data.recentResults
+          })
+          
           setProgress(100);
           setIsRunning(false);
+
 
           // Update run history
           setRunHistory((prevHistory) => {

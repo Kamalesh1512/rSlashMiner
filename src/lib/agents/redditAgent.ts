@@ -6,6 +6,7 @@ const StateAnnotation = Annotation.Root({
   agentId: Annotation<string>(),
   subreddit: Annotation<string>(),
   query: Annotation<string>(),
+  relevanceThreshold:Annotation<string>(),
   businessInterests: Annotation<string[]>(),
   businessDescription: Annotation<string>(),
   posts: Annotation<any[]>(),
@@ -95,16 +96,15 @@ ${state.comments?.[0]?.body ?? ""}`
 
 // Gate: determine if content is relevant enough to store
 function checkRelevance(state: typeof StateAnnotation.State) {
-  const relevanceThreshold = 60
-  const isRelevant = state.analysis?.relevanceScore >= relevanceThreshold
+  const isRelevant = state.analysis?.relevanceScore >= state.relevanceThreshold
 
   if (isRelevant) {
     state.onProgress?.(
-      `Content is relevant (${state.analysis?.relevanceScore}% > ${relevanceThreshold}%) - storing result`,
+      `Content is relevant (${state.analysis?.relevanceScore}% > ${state.relevanceThreshold}%) - storing result`,
     )
   } else {
     state.onProgress?.(
-      `Content is not relevant enough (${state.analysis?.relevanceScore}% < ${relevanceThreshold}%) - skipping`,
+      `Content is not relevant enough (${state.analysis?.relevanceScore}% < ${state.relevanceThreshold}%) - skipping`,
     )
   }
 
@@ -155,18 +155,20 @@ export async function runAgent(params: {
   agentId: string
   subreddit: string
   query: string
+  relevanceThreshold:string
   businessInterests: string[]
   businessDescription: string
   onProgress?: (message: string) => void
 }) {
   try {
-    const { agentId, subreddit, query, businessInterests, businessDescription, onProgress } = params
+    const { agentId, subreddit, query,relevanceThreshold, businessInterests, businessDescription, onProgress } = params
 
     // Initialize with all required parameters
     const result = await graph.invoke({
       agentId,
       subreddit,
       query,
+      relevanceThreshold,
       businessInterests,
       businessDescription,
       onProgress,

@@ -262,12 +262,19 @@ export interface Agent {
   subreddits: { id: string; subredditName: string }[];
   results?: {
     id: string;
-    title: string;
+    agentId: string;
+    author:string,
+    content:string,
+    createdAt:Date,
+    processed:boolean,
+    redditCommentId:string,
+    redditPostId:string,
     subreddit: string;
     timestamp: string;
     relevanceScore: number;
-    type: "post" | "comment";
-    content:string,
+    score:number,
+    sentimentScore:number,
+    url:string,
   }[];
 }
 

@@ -385,20 +385,9 @@ export default function AgentDetailPage() {
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                               <span>r/{result.subreddit}</span>
                               <span>•</span>
-                              <span>{result.timestamp}</span>
+                              <span>{formatDate(new Date(result.createdAt))}</span>
                               <span>•</span>
-                              <span>
-                                {result.type === "post" ? "Post" : "Comment"}
-                              </span>
-                            </div>
-
-                            <h3 className="text-lg font-medium mb-2">
-                              {result.title}
-                            </h3>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-4">
-                            <div
+                              <div
                               className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                                 result.relevanceScore >= 90
                                   ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
@@ -409,12 +398,29 @@ export default function AgentDetailPage() {
                             >
                               {result.relevanceScore}% Relevant
                             </div>
+                            </div>
 
+                            <h3 className="text-lg font-medium mb-2">
+                              {`${result.content.slice(0,75)}...`}
+                            </h3>
+                            <p>Author: {result.author}</p>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-4">
+
+                            <div className="space-x-3">
                             <Button variant="outline" size="sm" asChild>
                               <Link href={`/results?id=${result.id}`}>
                                 View Details
                               </Link>
                             </Button>
+                            <Button variant="premium" size="sm" 
+                             className="text-primary" asChild>
+                              <Link href={`${result.url}`}>
+                                Reddit
+                              </Link>
+                            </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
