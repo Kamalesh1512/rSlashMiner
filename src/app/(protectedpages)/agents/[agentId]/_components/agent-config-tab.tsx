@@ -69,6 +69,7 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
         body: JSON.stringify({
           configuration: form,
           isActive,
+          agentId:agent.id
         }),
       });
   
