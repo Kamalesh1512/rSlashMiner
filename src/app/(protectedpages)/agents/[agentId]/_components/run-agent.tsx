@@ -169,6 +169,7 @@ export default function RunAgentPage() {
     const eventSource = new EventSource(
       `/api/agents/run/stream?agentId=${agentId}`
     );
+
     eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {

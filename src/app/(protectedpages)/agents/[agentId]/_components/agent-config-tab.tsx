@@ -38,6 +38,7 @@ import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAgentStore } from "@/store/agentstore";
+import { updateAgentConfig } from "@/actions/agent";
 
 interface AgentConfigTabProps{
   agent:Agent,
@@ -63,17 +64,9 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/agents/${agent.id}/update-config`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          configuration: form,
-          isActive,
-          agentId:agent.id
-        }),
-      });
+      const response = await updateAgentConfig({configuration:JSON.stringify(form),isActive:isActive,agentId:agent.id})
   
-      if (response.ok) {
+      if (response.success) {
         setIsEditing(false);
         toast.success("Settings saved successfully");
         
@@ -91,8 +84,8 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
 
       setAgents(updatedAgents);
       } else {
-        const error = await response.json();
-        toast.error(error.message || "Failed to save settings");
+        const error = response.message;
+        toast.error(error || "Failed to save settings");
       }
     } catch (err) {
       toast.error("Something went wrong while saving settings");
