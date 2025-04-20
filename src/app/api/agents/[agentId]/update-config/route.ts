@@ -21,6 +21,12 @@ export async function POST(req: NextRequest,{params}:configProps) {
     const { configuration, isActive } = await req.json();
 
     const {agentId} = await params
+
+    if (!agentId) {
+      return NextResponse.json(
+        { success: false, message: "AgentId is missing" },
+        { status: 401 });
+    }
     
 
     await db
