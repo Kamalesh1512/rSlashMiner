@@ -1,6 +1,3 @@
-export const dynamic = "force-dynamic";
-
-
 
 import { NextResponse } from "next/server";
 import { checkAgentCreationLimit } from "@/lib/check-subscriptions/subscriptions";

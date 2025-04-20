@@ -39,7 +39,9 @@ export default function AgentsPage() {
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch agents")
       }
+      console.log("server response",data)
       setAgents(data.agents)
+      console.log("Client-side",agents)
     } catch (error) {
       toast.error("Error",{
         description: error instanceof Error ? error.message : "Failed to fetch agents",
