@@ -14,13 +14,17 @@ export async function POST(req: NextRequest) {
 
     const { configuration, isActive,agentId } = await req.json();
 
+    console.log(configuration)
+    console.log(isActive)
+    console.log(agentId)
+
+
     if (!agentId || !configuration || !isActive) {
       return NextResponse.json(
         { success: false, message: "Missing Fields Required" },
         { status: 401 });
     }
     
-
     await db
       .update(agents)
       .set({

@@ -39,7 +39,7 @@ export default function AgentsPage() {
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch agents")
       }
-
+      setAgents(data.agents)
     } catch (error) {
       toast.error("Error",{
         description: error instanceof Error ? error.message : "Failed to fetch agents",
