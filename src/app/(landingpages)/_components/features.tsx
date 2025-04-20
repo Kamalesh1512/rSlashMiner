@@ -1,101 +1,125 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
+import { useRef } from "react"
+import { motion, useInView } from "framer-motion"
+import { Bot, Search, Bell, BarChart3, Clock, Zap, Shield, Layers } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const features = [
   {
-    title: "Business Idea Generation",
+    icon: Bot,
+    title: "AI-Powered Agents",
     description:
-      "Scrape relevant subreddits for posts expressing problems, needs, or 'wish I had X' statements. Use NLP to filter and categorize potential business opportunities.",
-    icon: "💡",
+      "Custom AI agents that continuously scan Reddit for relevant information based on your specific criteria.",
   },
   {
-    title: "Keyword Tracking & Notifications",
+    icon: Search,
+    title: "Intelligent Filtering",
     description:
-      "Monitor selected subreddits for specific keywords or phrases at set intervals. Receive instant notifications via email, Slack, or your dashboard.",
-    icon: "🔍",
+      "Advanced algorithms that filter out noise and deliver only the most relevant content to your dashboard.",
   },
   {
-    title: "Subreddit Identification",
-    description:
-      "Provide keywords or topics, and our tool suggests the most relevant subreddits for your research, saving you hours of manual searching.",
-    icon: "🎯",
+    icon: Bell,
+    title: "Real-time Notifications",
+    description: "Get instant alerts when important information matching your criteria is discovered.",
   },
   {
-    title: "Sentiment Analysis",
-    description:
-      "Understand how Reddit users feel about your brand, products, or industry with our advanced sentiment analysis tools.",
-    icon: "📊",
+    icon: BarChart3,
+    title: "Comprehensive Analytics",
+    description: "Detailed insights and trends analysis from the data collected across multiple sources.",
   },
   {
-    title: "Competitor Monitoring",
-    description:
-      "Track mentions of your competitors and analyze user sentiment to identify opportunities and threats in your market.",
-    icon: "👀",
+    icon: Clock,
+    title: "Scheduled Monitoring",
+    description: "Set up custom schedules for your agents to run at specific times and days that work for you.",
   },
   {
-    title: "Trend Detection",
-    description:
-      "Identify emerging trends in your industry before they hit the mainstream, giving you a competitive edge.",
-    icon: "📈",
+    icon: Zap,
+    title: "Fast Processing",
+    description: "Our optimized infrastructure ensures quick data extraction and analysis, saving you valuable time.",
+  },
+  {
+    icon: Shield,
+    title: "Privacy Focused",
+    description: "Your data and search criteria are kept secure and private with enterprise-grade security.",
+  },
+  {
+    icon: Layers,
+    title: "Multi-source Integration",
+    description: "Starting with Reddit, with plans to expand to other platforms for comprehensive data collection.",
   },
 ]
 
-export default function Features() {
+export default function FeaturesSection() {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  }
+
   return (
-    <section id="features" className="container px-4 md:px-6 py-12 md:py-24 lg:py-32">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-        className="flex flex-col items-center gap-6"
-      >
-        <motion.div variants={fadeIn} className="text-center space-y-4 max-w-[800px]">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Powerful Features to Supercharge Your Business
-          </h2>
-          <p className="text-lg sm:text-xl text-muted-foreground">
-            Extract valuable insights from Reddit&apos;s vast community to inform your business decisions.
-          </p>
-        </motion.div>
+      <div className="container px-4 md:px-6 mx-auto mt-16">
+        <div className="text-center mb-12 flex flex-col items-center justify-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+          >
+            Powerful Features
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          >
+            Everything you need to extract valuable insights from the internet
+          </motion.p>
+        </div>
 
         <motion.div
-          variants={staggerContainer}
-          className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 pt-8 w-full"
+          ref={ref}
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
         >
           {features.map((feature, i) => (
-            <motion.div key={i} variants={fadeIn}>
-              <Card className="h-full transition-all hover:shadow-md">
+            <motion.div key={i} variants={itemVariants}>
+              <Card className="h-full border-none shadow-md hover:shadow-lg transition-shadow bg-muted/15">
                 <CardHeader>
-                  <div className="text-4xl mb-2">{feature.icon}</div>
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
                   <CardTitle>{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <CardDescription className="text-base">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </motion.div>
-      </motion.div>
-    </section>
+      </div>
+
   )
 }
-

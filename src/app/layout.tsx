@@ -5,11 +5,12 @@ import { Outfit } from "next/font/google";
 import { ThemeProvider } from "@/provider/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
+import FeedbackTrigger from "@/components/feedback/feedback-trigger";
 
 
 export const metadata: Metadata = {
-  title: "rSlashMiner",
-  description: "Business Idea Generator",
+  title: "Skroub",
+  description: "Extract valuable insights from Reddit to inform your business decisions",
   icons: "/logo.png",
 };
 const outfit = Outfit({ subsets: ["latin"] });
@@ -31,6 +32,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <FeedbackTrigger/>
           <Toaster />
           {children}
           

@@ -1,83 +1,136 @@
 "use client"
-
-import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Search, Bot, Database } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import BackgroundGradient from "./bg-gradient"
+import Link from "next/link"
+import Slideshow from "./slide-show"
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-export default function Hero() {
+export default function HeroSection() {
   return (
-    <section className="container px-4 md:px-6 py-12 md:py-24 lg:py-32">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-        className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center"
-      >
-        <motion.div variants={fadeIn} className="flex flex-col gap-4">
-          <span className="inline-block rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-            Unlock Reddit&apos;s Business Potential
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-            Turn Reddit Insights Into Business Opportunities
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground">
-            Discover untapped business ideas, track market trends, and identify your target audience by harnessing the
-            power of Reddit&apos;s 52 million daily active users and 100,000+ active communities.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button size="lg" asChild className="w-full sm:w-auto">
-              <Link href="#signup">
-                Start For Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+      <div className="container px-4 md:px-6 mx-auto mt-16">
+         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-4"
+          >
+            <Badge variant="outline" className="px-4 py-1 border-primary/30 bg-primary/5 text-primary">
+              Introducing Skroub AI
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400"
+          >
+            Turn Searches into Business Leads, <span className="bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">Intelligently</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl"
+          >
+            Skroub uses AI to find, analyze, and deliver the most relevant information from Reddit and beyond, tailored
+            to your specific needs.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 mb-12"
+          >
+            <Button size="lg" className="text-base px-8 h-12">
+              Start For Free
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
-              <Link href="#demo">Watch Demo</Link>
+            <Button size="lg" variant="outline" className="text-base px-8 h-12">
+              Watch Demo
             </Button>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background"></div>
-              ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="relative w-full max-w-5xl mx-auto rounded-xl overflow-hidden shadow-2xl border aspect-[16/9]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-orange-500/10 pointer-events-none z-10" />
+
+            {/* Dashboard slideshow */}
+            <Slideshow />
+
+            {/* Floating elements */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="absolute top-8 right-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
+            >
+              <div className="flex items-center gap-3">
+                <Search className="h-5 w-5 text-primary" />
+                <span className="font-medium">Intelligent Data Extraction</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+              className="absolute bottom-8 left-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
+            >
+              <div className="flex items-center gap-3">
+                <Bot className="h-5 w-5 text-primary" />
+                <span className="font-medium">AI-Powered Analysis</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+              className="absolute bottom-8 right-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
+            >
+              <div className="flex items-center gap-3">
+                <Database className="h-5 w-5 text-primary" />
+                <span className="font-medium">Customized Results</span>
+              </div>
+            </motion.div> */}
+          </motion.div>
+
+          {/* Stats or social proof */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
+            className="flex flex-wrap justify-center gap-8 mt-12 text-muted-foreground"
+          >
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold text-foreground">2,500+</span>
+              <span>Active Users</span>
             </div>
-            <p className="text-sm text-muted-foreground">Join 2,000+ businesses already using rSlashMiner</p>
-          </div>
-        </motion.div>
-        <motion.div variants={fadeIn} className="relative lg:ml-auto mt-8 lg:mt-0">
-          <div className="relative mx-auto w-full max-w-[600px]">
-            <Image
-              src="/placeholder.svg?height=600&width=600"
-              alt="rSlashMiner Dashboard"
-              width={600}
-              height={600}
-              className="rounded-lg border shadow-xl w-full h-auto"
-            />
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-500/20 blur-xl"></div>
-            <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-orange-500/20 blur-xl"></div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </section>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold text-foreground">1M+</span>
+              <span>Data Points Analyzed</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold text-foreground">98%</span>
+              <span>Accuracy Rate</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-bold text-foreground">24/7</span>
+              <span>Monitoring</span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
   )
 }
-
- 

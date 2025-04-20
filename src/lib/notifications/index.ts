@@ -14,9 +14,9 @@ interface NotificationOptions {
   error?: string
 }
 
-export async function sendRunNotification(options: NotificationOptions): Promise<void> {
+export async function sendRunNotification({agentId,message,success,error,processedSubreddits,resultsCount}: NotificationOptions): Promise<void> {
   try {
-    const { agentId, success, message, resultsCount, processedSubreddits, error } = options
+
 
     // Get agent details
     const agent = await db.select().from(agents).where(eq(agents.id, agentId))

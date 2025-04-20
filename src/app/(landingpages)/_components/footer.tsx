@@ -1,23 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Hash, Facebook, Instagram, Linkedin, Twitter, Slash } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Github, Slash } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t bg-muted/40">
-      <div className="container px-4 md:px-6 py-12">
+    <footer className="container px-4 md:px-6 mt-16">
+      <div className="">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-primary-foreground">
-                <Slash className="h-6 w-5 text-primary">
-                </Slash>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500">
+                <Slash className="h-5 w-5 text-black" />
               </div>
-              <span className="text-xl font-bold">rSlashMiner</span>
-            </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+                Skroub
+              </span>
+            </Link>
             <p className="text-muted-foreground">
-              Turn Reddit data into actionable business insights.
+              Extract relevant data from the internet, intelligently.
             </p>
             <div className="flex gap-4">
               <Link
@@ -25,24 +26,35 @@ export default function Footer() {
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Twitter className="h-5 w-5" />
+                <span className="sr-only">Twitter</span>
               </Link>
               <Link
                 href="#"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Facebook className="h-5 w-5" />
+                <span className="sr-only">Facebook</span>
               </Link>
               <Link
                 href="#"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Instagram className="h-5 w-5" />
+                <span className="sr-only">Instagram</span>
               </Link>
               <Link
                 href="#"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Linkedin className="h-5 w-5" />
+                <span className="sr-only">LinkedIn</span>
+              </Link>
+              <Link
+                href="#"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Github className="h-5 w-5" />
+                <span className="sr-only">GitHub</span>
               </Link>
             </div>
           </div>
@@ -51,7 +63,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="#"
+                  href="#features"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Features
@@ -59,7 +71,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="#pricing"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Pricing
@@ -165,7 +177,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/privacy-policy"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Privacy Policy
@@ -173,7 +185,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="terms-services"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Terms of Service
@@ -183,7 +195,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} rSlashMiner. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Skroub. All rights reserved.</p>
         </div>
       </div>
     </footer>

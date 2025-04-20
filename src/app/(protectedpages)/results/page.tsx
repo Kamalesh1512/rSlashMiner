@@ -9,37 +9,67 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Search, Download, ExternalLink } from "lucide-react"
 import Link from "next/link"
-import { Result, results } from "@/lib/constants/types"
+import { Agent } from "@/lib/constants/types"
+import { useAgentStore } from "@/store/agentstore"
+
+type Result = {
+  
+    id: string;
+    agentId: string;
+    author: string;
+    content: string;
+    createdAt: Date;
+    processed: boolean;
+    redditCommentId: string;
+    redditPostId: string;
+    subreddit: string;
+    timestamp: string;
+    relevanceScore: number;
+    score: number;
+    sentimentScore: number;
+    url: string;
+    matchedKeywords:string[],
+    type?:'post' | 'comment'
+}
+
 
 export default function ResultsPage() {
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [filteredResults, setFilteredResults] = useState<Result[]>([])
+  const [allResults, setAllResults] = useState<Result[]>([]);
   const [searchQuery, setSearchQuery] = useState("")
   const [relevanceFilter, setRelevanceFilter] = useState("all")
   const [agentFilter, setAgentFilter] = useState("all")
   const [timeFilter, setTimeFilter] = useState("all")
+  const {agents} = useAgentStore()
 
   useEffect(() => {
-    // Simulate loading data
     const timer = setTimeout(() => {
-      setFilteredResults(results)
-      setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [])
+      const resultsFromAgents = agents.flatMap(agent =>
+        (agent.results ??[]).map(result => ({
+          ...result,
+          agentId: agent.id,
+          agentName: agent.name,
+        }))
+      );
+      setAllResults(resultsFromAgents);
+      setFilteredResults(resultsFromAgents);
+      setIsLoading(false);
+    }, 1000);
+  
+    return () => clearTimeout(timer);
+  }, [agents]);
 
   useEffect(() => {
     // Filter results based on search query and filters
-    let filtered = [...results]
+    let filtered = [...allResults]
 
     // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
         (result) =>
-          result.title.toLowerCase().includes(query) ||
           result.content.toLowerCase().includes(query) ||
           result.matchedKeywords.some((keyword) => keyword.toLowerCase().includes(query)),
       )
@@ -81,11 +111,11 @@ export default function ResultsPage() {
   }
 
   // Get unique agent IDs and names for the filter
-  const agents = Array.from(new Set(results.map((result) => result.agentId))).map((agentId) => {
-    const agent = results.find((result) => result.agentId === agentId)
+  const agentList = Array.from(new Set(allResults.map((result) => result.agentId))).map((agentId) => {
+    const agent = agents.find((result) => result.id === agentId)
     return {
       id: agentId,
-      name: agent?.agentName || "Unknown Agent",
+      name: agent?.name as string || "Unknown Agent",
     }
   })
 
@@ -211,7 +241,7 @@ export default function ResultsPage() {
                         <span>{result.type === "post" ? "Post" : "Comment"}</span>
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.title}</h3>
+                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
                       <p className="text-sm mb-4">"{result.content}"</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -225,7 +255,7 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Found by:</span>
                         <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
-                          {result.agentName}
+                          {}
                         </Link>
                       </div>
                     </div>
@@ -286,7 +316,7 @@ export default function ResultsPage() {
                           <span>{result.type === "post" ? "Post" : "Comment"}</span>
                         </div>
 
-                        <h3 className="text-lg font-medium mb-2">{result.title}</h3>
+                        <h3 className="text-lg font-medium mb-2">{result.author}</h3>
                         <p className="text-sm mb-4">"{result.content}"</p>
 
                         <div className="flex flex-wrap gap-2 mb-4">
@@ -300,7 +330,7 @@ export default function ResultsPage() {
                         <div className="flex items-center gap-2 text-sm">
                           <span className="text-muted-foreground">Found by:</span>
                           <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
-                            {result.agentName}
+                            {/* {result.agentName} */}
                           </Link>
                         </div>
                       </div>
@@ -340,7 +370,7 @@ export default function ResultsPage() {
                         <span>u/{result.author}</span>
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.title}</h3>
+                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
                       <p className="text-sm mb-4">"{result.content}"</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -354,7 +384,7 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Found by:</span>
                         <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
-                          {result.agentName}
+                          {/* {result.agentName} */}
                         </Link>
                       </div>
                     </div>
@@ -403,7 +433,7 @@ export default function ResultsPage() {
                         <span>Comment</span>
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.title}</h3>
+                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
                       <p className="text-sm mb-4">"{result.content}"</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -417,7 +447,7 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Found by:</span>
                         <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
-                          {result.agentName}
+                          {/* {result.agentName} */}
                         </Link>
                       </div>
                     </div>

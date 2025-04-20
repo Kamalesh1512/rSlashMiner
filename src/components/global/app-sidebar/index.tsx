@@ -58,8 +58,8 @@ const AppSidebar = ({
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black shrink-0">
             <Slash />
           </div>
-          <span className="truncate text-xl font-semibold">
-            rSlashMiner
+          <span className="truncate text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+            Skroub
             <span className="text-xs block text-muted-foreground"></span>
           </span>
         </SidebarMenuButton>

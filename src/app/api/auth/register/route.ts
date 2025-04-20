@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcrypt"
 import { db } from "@/lib/db"
-import { users } from "@/lib/db/schema"
+import { users, verificationTokens } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
+import { sendVerificationEmail } from "@/lib/services/email"
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +17,6 @@ export async function POST(request: Request) {
 
     // Check if user already exists
     const existingUser = await db.select().from(users).where(eq(users.email, email))
-    console.log(existingUser)
     if (existingUser.length >0) {
       return NextResponse.json({ message: "User with this email already exists" }, { status: 409 })
     }
@@ -39,6 +39,23 @@ export async function POST(request: Request) {
     if (!newUser) {
       throw new Error("Failed to create user")
     }
+        // Generate verification token
+        const token = createId()
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+    
+        // Store the token
+        await db.insert(verificationTokens).values({
+          identifier: email,
+          token,
+          expires,
+        })
+    
+        // Send verification email
+        await sendVerificationEmail({
+          to: email,
+          token,
+          username: name,
+        })
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = newUser[0]

@@ -64,8 +64,8 @@ export default function ForgotPasswordPage() {
         className="w-full max-w-md"
       >
         <div className="mb-8 flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black">
-            <Slash className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500">
+            <Slash className="h-5 w-5 text-black" />
           </div>
           <h1 className="text-3xl font-bold">Reset your password</h1>
           <p className="text-muted-foreground">
@@ -110,7 +110,11 @@ export default function ForgotPasswordPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full bg-orange-500" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-primary to-orange-600 text-black"
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

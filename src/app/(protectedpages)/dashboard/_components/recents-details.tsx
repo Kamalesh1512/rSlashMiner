@@ -13,17 +13,29 @@ import Link from "next/link";
 import { BarChart3, Bot, Loader2, TrendingUp, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useAgentStore } from "@/store/agentstore";
+import { Agent } from "@/lib/constants/types";
 
 const RecentDetails = () => {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const { agents } = useAgentStore();
+  const [agent, setAgent] = useState<Agent | null>();
   const [stats, setStats] = useState({
     activeAgents: 0,
     totalResults: 0,
     potentialLeads: 0,
     monitoredSubreddits: 0,
   });
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // console.log(agents)
   // console.log(stats)
@@ -137,39 +149,51 @@ const RecentDetails = () => {
               {/* Iterate through agents and their results */}
               {agents.flatMap((agent) =>
                 (agent.results ?? []).map((result) => (
-                  <div key={result.id} className="rounded-lg border p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium">{result.title}</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            r/{result.subreddit}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            •
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {result.timestamp}
-                          </span>
+                      <div key={result.id} className="rounded-lg border p-4">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                              <span>r/{result.subreddit}</span>
+                              <span>•</span>
+                              <span>{formatDate(new Date(result.createdAt))}</span>
+                              <span>•</span>
+                              <div
+                              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                                result.relevanceScore >= 90
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                  : result.relevanceScore >= 70
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                              }`}
+                            >
+                              {result.relevanceScore}% Relevant
+                            </div>
+                            </div>
+
+                            <h3 className="text-lg font-medium mb-2">
+                              {`${result.content.slice(0,75)}...`}
+                            </h3>
+                            <p>Author: {result.author}</p>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-4">
+
+                            <div className="space-x-3">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/results?id=${result.id}`}>
+                                View Details
+                              </Link>
+                            </Button>
+                            <Button variant="premium" size="sm" 
+                             className="text-primary" asChild>
+                              <Link href={`${result.url}`}>
+                                Reddit
+                              </Link>
+                            </Button>
+                            </div>
+                          </div>
                         </div>
-                        {/* Optional content field */}
-                        <p className="mt-2 text-sm">"{result.content}"</p>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <div
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${
-                            result.relevanceScore >= 90
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                              : result.relevanceScore >= 70
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          }`}
-                        >
-                          {result.relevanceScore}% Relevant
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 ))
               )}
 

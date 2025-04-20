@@ -1,41 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Menu,
-  X,
-  Hash,
-  Forward,
-  Slash,
-  Layers2,
-  EyeOff,
-  Eye,
-  Tally3,
-  Tally1,
-  KanbanIcon,
-} from "lucide-react";
+import { Menu, Slash, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // Add scroll effect for header
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className={cn(
+        "fixed top-0 z-50 w-full transition-all duration-300",
+        scrolled
+          ? "bg-background/95 backdrop-blur-md border-b"
+          : "bg-transparent"
+      )}
+    >
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href={"/"}>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-primary-foreground">
-              <Slash className="h-6 w-5 text-primary">
-              </Slash>
+        <Link href="/" className="flex items-center gap-2">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative flex items-center gap-3"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500">
+              <Slash className="h-5 w-5 text-black" />
             </div>
-            <span className="text-xl font-bold">rSlashMiner</span>
-          </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+              Skroub
+            </span>
+          </motion.div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+        <nav className="hidden md:flex items-center gap-6">
           <Link
             href="#features"
             className="text-sm font-medium hover:text-primary transition-colors"
@@ -43,10 +57,10 @@ export default function Header() {
             Features
           </Link>
           <Link
-            href="#how-it-works"
+            href="#demo"
             className="text-sm font-medium hover:text-primary transition-colors"
           >
-            How It Works
+            Demo
           </Link>
           <Link
             href="#pricing"
@@ -84,49 +98,52 @@ export default function Header() {
       </div>
 
       {/* Mobile Navigation */}
-      {mobileMenuOpen && (
+      {isMobile && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="md:hidden border-t"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{
+            height: mobileMenuOpen ? "auto" : 0,
+            opacity: mobileMenuOpen ? 1 : 0,
+          }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden overflow-hidden bg-background border-b"
         >
           <div className="container py-4 flex flex-col gap-4 px-4">
             <Link
               href="#features"
-              className="text-sm font-medium hover:text-primary"
+              className="text-sm font-medium hover:text-primary py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Features
             </Link>
             <Link
-              href="#how-it-works"
-              className="text-sm font-medium hover:text-primary"
+              href="#demo"
+              className="text-sm font-medium hover:text-primary py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              How It Works
+              Demo
             </Link>
             <Link
               href="#pricing"
-              className="text-sm font-medium hover:text-primary"
+              className="text-sm font-medium hover:text-primary py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
             </Link>
             <Link
               href="#faq"
-              className="text-sm font-medium hover:text-primary"
+              className="text-sm font-medium hover:text-primary py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
               FAQ
             </Link>
             <div className="flex flex-col gap-2 pt-2">
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="w-full">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                   Login
                 </Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="w-full">
                 <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
                   Sign Up Free
                 </Link>

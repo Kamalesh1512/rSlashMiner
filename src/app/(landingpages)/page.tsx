@@ -1,36 +1,45 @@
 "use client";
 
-import Cta from "./_components/cta";
-import Faq from "./_components/faq";
-import Features from "./_components/features";
-import Footer from "./_components/footer";
+import { useEffect } from "react";
+import { useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import HeroSection from "./_components/hero";
 import Header from "./_components/header";
-import Hero from "./_components/hero";
-import HowItWorks from "./_components/how-it-works";
-import LogoCloud from "./_components/logo-cloud";
-import Pricing from "./_components/pricing";
-import ProductShowcase from "./_components/product-showcase";
-import Testimonials from "./_components/testimonals";
+import FeaturesSection from "./_components/features";
+import DemoSection from "./_components/demo-section";
+import TestimonialsSection from "./_components/testimonals";
+import PricingSection from "./_components/pricing";
+import FaqSection from "./_components/faq";
+import Footer from "./_components/footer";
+import BackgroundGradient from "./_components/bg-gradient";
 
 export default function LandingPage() {
+  const controls = useAnimation();
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start("visible");
+    }
+  }, [controls, inView]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <Header />
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Hero />
-        {/* <LogoCloud /> */}
-        <Features />
-        <HowItWorks />
-        <ProductShowcase/>
-        <Pricing />
-        <Testimonials />
-        <Faq />
-        {/* <Cta /> */}
+    <BackgroundGradient className="min-h-screen bg-background">
+      <div>
+        <Header />
+        <main>
+          <HeroSection />
+          <FeaturesSection />
+          <DemoSection />
+          <TestimonialsSection />
+          <PricingSection />
+          <FaqSection />
+        </main>
         <Footer />
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        
-      </footer>
-    </div>
+      </div>
+    </BackgroundGradient>
   );
 }

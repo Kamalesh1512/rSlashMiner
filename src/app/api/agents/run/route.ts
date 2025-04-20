@@ -62,6 +62,11 @@ export async function POST(request: Request) {
     const results = []
     const storedResultIds = []
 
+    const relevanceThreshold = JSON.parse(
+      agent[0].configuration
+    ).relevanceThreshold;
+
+
     // For each subreddit, run the agent with each keyword
     for (const subreddit of subredditList) {
       // We'll use the first keyword as the main query, but include all keywords for analysis
@@ -72,6 +77,7 @@ export async function POST(request: Request) {
           agentId,
           subreddit,
           query,
+          relevanceThreshold,
           businessInterests: keywordList,
           businessDescription: agent[0].description as string,
           onProgress: (message) => {

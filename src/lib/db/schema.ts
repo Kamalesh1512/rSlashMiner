@@ -28,6 +28,10 @@ export const users = pgTable("users", {
   image: text("image"),
   subscriptionTier: text("subscription_tier").default("free").notNull(), // free, pro, premium
   subscriptionExpiresAt: timestamp("subscription_expires_at", { mode: "date" }),
+  dodoCustomerId:text('dodo_customer_id'),
+  dodoSubscriptionId:text('dodo_subscription_id'),
+  cancelAtPeriodEnd:boolean('cancel_at_period_end').default(false)
+
 });
 
 // User relations
@@ -288,3 +292,92 @@ export const usageLimitsRelations = relations(usageLimits, ({ one }) => ({
   }),
 }))
 
+
+// Scheduled runs table
+export const scheduledRuns = pgTable("scheduled_runs", {
+  id: varchar("id", { length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  agentId: varchar("agent_id", { length: 128 })
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  scheduledFor: timestamp("scheduled_for", { mode: "date" }).notNull(),
+  status: text("status").notNull(), // pending, processing, completed, failed
+  startedAt: timestamp("started_at", { mode: "date" }),
+  completedAt: timestamp("completed_at", { mode: "date" }),
+  result: text("result"), // JSON result of the run
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+})
+
+// Scheduled runs relations
+export const scheduledRunsRelations = relations(scheduledRuns, ({ one }) => ({
+  agent: one(agents, {
+    fields: [scheduledRuns.agentId],
+    references: [agents.id],
+  }),
+}))
+
+// Run history table
+export const runHistory = pgTable("run_history", {
+  id: varchar("id", { length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  agentId: varchar("agent_id", { length: 128 })
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 128 })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at", { mode: "date" }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { mode: "date" }),
+  success: boolean("success"),
+  resultsCount: integer("results_count").default(0),
+  processedSubreddits: integer("processed_subreddits").default(0),
+  summary: text("summary"),
+  error: text("error"),
+  isScheduled: boolean("is_scheduled").default(false),
+  steps: text("steps"), // JSON array of steps
+})
+
+// Run history relations
+export const runHistoryRelations = relations(runHistory, ({ one }) => ({
+  agent: one(agents, {
+    fields: [runHistory.agentId],
+    references: [agents.id],
+  }),
+  user: one(users, {
+    fields: [runHistory.userId],
+    references: [users.id],
+  }),
+}))
+
+
+
+// Feedback table - combined with testimonial functionality
+export const feedback = pgTable("feedback", {
+  id: varchar("id", { length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: varchar("user_id", { length: 128 }).references(() => users.id, { onDelete: "set null" }),
+  rating: integer("rating").notNull(),
+  feedbackText: text("feedback_text"),
+  email: text("email"),
+  name: text("name"),
+  company: text("company"),
+  role: text("role"),
+  allowTestimonial: boolean("allow_testimonial").default(false).notNull(),
+  isApproved: boolean("is_approved").default(false).notNull(),
+  isFeatured: boolean("is_featured").default(false).notNull(),
+  featuredOrder: integer("featured_order"),
+  eventType: text("event_type"),
+  entityId: text("entity_id"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+})
+
+// Feedback relations
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  user: one(users, {
+    fields: [feedback.userId],
+    references: [users.id],
+  }),
+}))

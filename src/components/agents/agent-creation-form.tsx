@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import ChatMessage from "../chat/chat-messages";
 import { Message } from "@/lib/constants/types";
 import { generateKeywords, suggestSubreddits, validateBusinessInput } from "@/actions/text-generator";
+import { useFeedback } from "@/hooks/use-feedback";
 
 interface AgentCreationFormProps {
   userId: string;
@@ -83,6 +84,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
   const [chatInput, setChatInput] = useState("");
+  const {triggerAgentCreatedFeedback} = useFeedback()
   const [chatMessages, setChatMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -436,6 +438,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       });
 
       router.push("/agents");
+
+      triggerAgentCreatedFeedback(data.id)
     } catch (error) {
       toast.error("Error", {
         description:

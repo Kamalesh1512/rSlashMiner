@@ -1,47 +1,42 @@
 "use client"
-
-import Link from "next/link"
 import { motion } from "framer-motion"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-}
-
-export default function Cta() {
+export default function CtaSection() {
   return (
-    <section className="bg-primary text-primary-foreground">
-      <div className="container px-4 md:px-6 py-12 md:py-24 lg:py-32">
+    <section className="py-20 bg-primary text-primary-foreground">
+      <div className="container px-4 md:px-6">
         <motion.div
-          initial="hidden"
-          whileInView="visible"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          variants={fadeIn}
-          className="flex flex-col items-center text-center gap-8 max-w-[800px] mx-auto"
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center text-center gap-8 max-w-3xl mx-auto"
         >
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Ready to Unlock Reddit&apos;s Business Potential?
-          </h2>
-          <p className="text-lg sm:text-xl text-primary-foreground/80">
-            Join thousands of businesses already leveraging Reddit insights to drive growth and innovation.
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Ready to Extract Valuable Data from Reddit?</h2>
+          <p className="text-xl text-primary-foreground/80">
+            Join thousands of professionals already using Skroub to discover insights, track trends, and make
+            data-driven decisions.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Button size="lg" variant="secondary" asChild className="w-full sm:w-auto">
-              <Link href="#signup">Start Your Free Trial</Link>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button size="lg" variant="secondary" className="text-base px-8 h-12">
+              Start For Free
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10 w-full sm:w-auto"
-              asChild
+              className="text-base px-8 h-12 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10"
             >
-              <Link href="#demo">Schedule a Demo</Link>
+              Schedule a Demo
             </Button>
           </div>
+          <p className="text-sm text-primary-foreground/70">
+            No credit card required. Free plan available with basic features.
+          </p>
         </motion.div>
       </div>
     </section>
   )
 }
-

@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAgentStore } from "@/store/agentstore";
+import { useFeedback } from "@/hooks/use-feedback";
 
 type StepStatus = "running" | "completed" | "error" | "waiting" | "skipped";
 
@@ -68,6 +69,7 @@ export default function RunAgentPage() {
   const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const {updateAgentById} = useAgentStore()
+  const {triggerAgentRunFeedback} = useFeedback()
   const [runResult, setRunResult] = useState<{
     success: boolean;
     summary: string;
@@ -319,6 +321,7 @@ export default function RunAgentPage() {
           // Close the connection
           eventSource.close();
           eventSourceRef.current = null;
+          triggerAgentRunFeedback(agentId,true)
         } else if (data.type === "error") {
           // Handle error
           setRunResult({

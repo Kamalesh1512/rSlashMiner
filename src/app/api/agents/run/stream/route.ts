@@ -9,6 +9,7 @@ import {
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { runAgent } from "@/lib/agents/redditAgent";
+import { sendRunNotification } from "@/lib/notifications";
 
 // Helper function to create a readable stream
 function createStream() {
@@ -197,7 +198,9 @@ async function processAgentRun(
         // We'll use the first keyword as the main query, but include all keywords for analysis
         const query = keywordList[0];
 
-        const relevanceThreshold = JSON.parse(agent[0].configuration).relevanceThreshold
+        const relevanceThreshold = JSON.parse(
+          agent[0].configuration
+        ).relevanceThreshold;
 
         // Run the agent with progress reporting
         const result = await runAgent({
@@ -214,8 +217,10 @@ async function processAgentRun(
               "No content available for analysis",
               "Could not parse analysis results",
               "Content is not relevant enough",
-            ]
-            const isSkipped = skipMessages.some(skipPhrase => message.includes(skipPhrase))
+            ];
+            const isSkipped = skipMessages.some((skipPhrase) =>
+              message.includes(skipPhrase)
+            );
             sendEvent({
               type: "step",
               id: `${stepId}-progress`,
@@ -307,7 +312,7 @@ async function processAgentRun(
 
     // Generate a summary of the results
     let summary = "";
-    let recentResults:any = []
+    let recentResults: any = [];
     if (storedResultIds.length > 0) {
       // Get the stored results from the database
       recentResults = await db
@@ -315,7 +320,7 @@ async function processAgentRun(
         .from(monitoringResults)
         .where(eq(monitoringResults.agentId, agentId))
         .orderBy(monitoringResults.createdAt)
-        .limit(10)
+        .limit(10);
 
       summary = `Found ${storedResultIds.length} relevant results across ${subredditList.length} subreddits.`;
 
@@ -334,17 +339,35 @@ async function processAgentRun(
       resultsCount: storedResultIds.length,
       processedSubreddits: subredditList.length,
       progress: 100,
-      recentResults:recentResults
+      recentResults: recentResults,
     });
 
     // Close the stream
     close();
+
+    // Send notification
+    await sendRunNotification({
+      agentId,
+      success: true,
+      message: summary,
+      resultsCount: storedResultIds.length,
+      processedSubreddits: subredditList.length,
+    });
   } catch (error) {
     console.error("Error in agent run:", error);
 
     // Send error event
     sendEvent({
       type: "error",
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    });
+
+    // Send notification about failure
+    await sendRunNotification({
+      agentId,
+      success: false,
+      message: "Agent run failed",
       error:
         error instanceof Error ? error.message : "An unexpected error occurred",
     });

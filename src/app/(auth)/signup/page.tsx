@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
-import { Hash, ArrowRight, Loader2, Slash } from "lucide-react";
+import { Hash, ArrowRight, Loader2, Slash, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 export default function SignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -68,7 +69,7 @@ export default function SignupPage() {
       }
 
       toast.success("Account created!", {
-        description: "You can now sign in with your credentials.",
+        description: "Please check your email to verify your account.",
       });
 
       // Sign in the user automatically
@@ -78,7 +79,7 @@ export default function SignupPage() {
         password: formData.password,
       });
 
-      router.push("/dashboard");
+      setIsSubmitted(true);
     } catch (error) {
       toast.error("Registration failed", {
         description:
@@ -88,6 +89,7 @@ export default function SignupPage() {
       });
     } finally {
       setIsLoading(false);
+      setIsSubmitted(false);
     }
   };
 
@@ -100,12 +102,12 @@ export default function SignupPage() {
         className="w-full max-w-md"
       >
         <div className="mb-8 flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-black">
-            <Slash className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500">
+            <Slash className="h-5 w-5 text-black" />
           </div>
           <h1 className="text-3xl font-bold">Create an account</h1>
           <p className="text-muted-foreground">
-            Sign up for rSlashMiner to get started
+            Sign up for Skroub to get started
           </p>
         </div>
 
@@ -117,70 +119,87 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
+            {isSubmitted ? (
+              <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                <div className="rounded-full bg-green-100 p-3 dark:bg-green-900/20">
+                  <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-xl font-semibold">Check your email</h3>
+                <p className="text-center text-muted-foreground">
+                  We've sent a password reset link to{" "}
+                  <span className="font-medium">{formData.email}</span>
+                </p>
+                <p className="text-center text-sm text-muted-foreground">
+                  If you don't see it, check your spam folder or try again with
+                  a different email
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-orange-500"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  <>Create account</>
-                )}
-              </Button>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-primary to-orange-600 text-black"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    <>Create account</>
+                  )}
+                </Button>
+              </form>
+            )}
           </CardContent>
           {/* <CardFooter className="flex flex-col space-y-4">
             <div className="relative flex items-center justify-center w-full">

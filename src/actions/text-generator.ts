@@ -5,7 +5,8 @@ import {
   fallbackSubreddits,
   SubredditProps,
 } from "@/lib/constants/types";
-import redditService from "@/lib/services/redditservice";
+import redditService from "@/lib/services/reddit";
+
 import OpenAI from "openai";
 
 const openai = new OpenAI({

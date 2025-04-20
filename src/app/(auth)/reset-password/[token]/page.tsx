@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -28,11 +28,9 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
-export default function ResetPasswordPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default function ResetPasswordPage() {
+
+  const {token} = useParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -74,7 +72,7 @@ export default function ResetPasswordPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          token: params.token,
+          token: token as string,
           password: formData.password,
         }),
       });

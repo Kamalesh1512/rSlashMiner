@@ -1,81 +1,97 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { ChevronDown } from "lucide-react"
-
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
+import { useRef } from "react"
+import { motion, useInView } from "framer-motion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 const faqs = [
   {
-    question: "Is rSlashMiner compliant with Reddit's terms of service?",
+    question: "What is Skroub?",
     answer:
-      "Yes, rSlashMiner operates within Reddit's API guidelines and terms of service. We respect rate limits and follow all required policies to ensure ethical data collection.",
+      "Skroub is an AI-powered platform that extracts relevant data from the internet based on your specific needs. Currently, it focuses on scraping and analyzing Reddit data to provide valuable insights for businesses and individuals.",
   },
   {
-    question: "How accurate is the sentiment analysis?",
+    question: "How does Skroub work?",
     answer:
-      "Our sentiment analysis uses advanced NLP models with an accuracy rate of over 85%. We continuously train and improve our models to better understand Reddit's unique language patterns and context.",
+      "Skroub uses AI agents to monitor Reddit for specific keywords, topics, or trends you're interested in. These agents analyze the content for relevance to your business and deliver the most valuable insights directly to your dashboard.",
+  },
+  {
+    question: "Is Skroub compliant with Reddit's terms of service?",
+    answer:
+      "Yes, Skroub operates within Reddit's API guidelines and terms of service. We respect rate limits and follow all required policies to ensure ethical data collection.",
+  },
+  {
+    question: "Can I customize what data Skroub collects?",
+    answer:
+      "You can create custom agents with specific keywords, subreddits to monitor, and relevance thresholds. This ensures you only receive information that's truly valuable to you.",
+  },
+  {
+    question: "How accurate is Skroub's data analysis?",
+    answer:
+      "Skroub uses advanced AI models with an accuracy rate of over 95%. We continuously train and improve our models to better understand Reddit's unique language patterns and context.",
   },
   {
     question: "Can I export the data for use in other tools?",
     answer:
-      "Yes, Pro and Premium plans include data export functionality in CSV, JSON, and Excel formats, making it easy to integrate with your existing workflows and tools.",
+      "Yes, Pro and Business plans include data export functionality in CSV, JSON, and Excel formats, making it easy to integrate with your existing workflows and tools.",
   },
   {
-    question: "How far back does the historical data go?",
+    question: "Will Skroub expand to other platforms beyond Reddit?",
     answer:
-      "Free plans provide data from the past 30 days. Pro plans extend to 6 months, and Premium plans offer up to 2 years of historical data, subject to Reddit's API limitations.",
+      "Yes, while we currently focus on Reddit, we have plans to expand to other social media platforms, forums, and news sites in the near future to provide even more comprehensive data collection.",
   },
   {
-    question: "Do you offer custom solutions for enterprise needs?",
+    question: "How do I get started with Skroub?",
     answer:
-      "Absolutely. Our enterprise solutions can be tailored to your specific business requirements. Contact our sales team to discuss your needs and how we can help.",
+      "Getting started is easy! Simply sign up for a free account, create your first agent by defining what you want to monitor, and Skroub will start collecting and analyzing data for you immediately.",
   },
 ]
 
-export default function Faq() {
-  return (
-    <section id="faq" className="container px-4 md:px-6 py-12 md:py-24 lg:py-32">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-        className="flex flex-col items-center gap-12 max-w-[800px] mx-auto"
-      >
-        <motion.div variants={fadeIn} className="text-center space-y-4">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Frequently Asked Questions</h2>
-          <p className="text-lg sm:text-xl text-muted-foreground">Everything you need to know about rSlashMiner.</p>
-        </motion.div>
+export default function FaqSection() {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
 
-        <motion.div variants={staggerContainer} className="w-full">
-          {faqs.map((faq, i) => (
-            <motion.div key={i} variants={fadeIn} className="border-b py-6">
-              <details className="group">
-                <summary className="flex cursor-pointer items-center justify-between">
-                  <h3 className="text-lg font-medium">{faq.question}</h3>
-                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-                </summary>
-                <p className="mt-4 text-muted-foreground">{faq.answer}</p>
-              </details>
-            </motion.div>
-          ))}
+  return (
+    <section id="faq" className="container px-4 md:px-6 mx-auto mt-16">
+      <div className="container px-4 md:px-6">
+        <div className="text-center mb-12">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+          >
+            Frequently Asked Questions
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          >
+            Everything you need to know about Skroub
+          </motion.p>
+        </div>
+
+        <motion.div
+          ref={ref}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-3xl mx-auto"
+        >
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((faq, i) => (
+              <AccordionItem key={i} value={`item-${i}`}>
+                <AccordionTrigger className="text-left text-lg font-medium py-4">{faq.question}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   )
 }
-

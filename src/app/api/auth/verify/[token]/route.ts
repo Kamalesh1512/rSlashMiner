@@ -3,9 +3,15 @@ import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { users, verificationTokens } from "@/lib/db/schema"
 
-export async function GET(request: Request, { params }: { params: { token: string } }) {
+interface VerifyProps{
+  params:Promise<{
+  token:string,
+  }>
+}
+
+export async function GET(request: Request, { params} :VerifyProps ) {
   try {
-    const token = params.token
+    const {token} = await params
 
     if (!token) {
       return NextResponse.redirect(new URL("/login?error=InvalidToken", request.url))

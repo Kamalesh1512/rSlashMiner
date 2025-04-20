@@ -1,232 +1,177 @@
 "use client"
 
-import Link from "next/link"
-import { motion } from "framer-motion"
+import { useState, useRef } from "react"
+import { motion, useInView } from "framer-motion"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-}
+const plans = [
+  {
+    name: "Free",
+    description: "For individuals just getting started",
+    monthlyPrice: "$0",
+    annualPrice: "$0",
+    features: ["1 AI agent", "5 subreddit monitors", "Daily data updates", "Basic analytics", "Email notifications"],
+    cta: "Get Started",
+    popular: false,
+  },
+  {
+    name: "Pro",
+    description: "For professionals and small teams",
+    monthlyPrice: "$29",
+    annualPrice: "$24",
+    features: [
+      "3 AI agents",
+      "15 subreddit monitors",
+      "Hourly data updates",
+      "Advanced analytics",
+      "Email & WhatsApp notifications",
+      "Scheduled monitoring",
+      "Data export",
+    ],
+    cta: "Start 14-Day Trial",
+    popular: true,
+  },
+  {
+    name: "Business",
+    description: "For businesses with advanced needs",
+    monthlyPrice: "$99",
+    annualPrice: "$84",
+    features: [
+      "Unlimited AI agents",
+      "Unlimited subreddit monitors",
+      "Real-time data updates",
+      "Enterprise analytics",
+      "Priority support",
+      "API access",
+      "Custom integrations",
+      "Team collaboration",
+    ],
+    cta: "Contact Sales",
+    popular: false,
+  },
+]
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
+export default function PricingSection() {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly")
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
     },
-  },
-}
+  }
 
-const monthlyPlans = [
-  {
-    name: "Free",
-    description: "Perfect for individuals just getting started.",
-    price: "$0",
-    features: [
-      "5 keyword alerts",
-      "3 subreddit monitors",
-      "Daily data updates",
-      "Basic sentiment analysis",
-      "Email notifications",
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    description: "Ideal for small businesses and startups.",
-    price: "$29",
-    features: [
-      "25 keyword alerts",
-      "15 subreddit monitors",
-      "Hourly data updates",
-      "Advanced sentiment analysis",
-      "Slack & email notifications",
-      "Competitor tracking",
-      "Trend detection",
-      "Data export",
-    ],
-    cta: "Start 14-Day Trial",
-    popular: true,
-  },
-  {
-    name: "Premium",
-    description: "For businesses that need comprehensive insights.",
-    price: "$99",
-    features: [
-      "Unlimited keyword alerts",
-      "Unlimited subreddit monitors",
-      "Real-time data updates",
-      "Enterprise-grade sentiment analysis",
-      "Custom integrations",
-      "API access",
-      "Dedicated support",
-      "Advanced analytics dashboard",
-    ],
-    cta: "Contact Sales",
-    popular: false,
-  },
-]
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  }
 
-const annualPlans = [
-  {
-    name: "Free",
-    description: "Perfect for individuals just getting started.",
-    price: "$0",
-    features: [
-      "5 keyword alerts",
-      "3 subreddit monitors",
-      "Daily data updates",
-      "Basic sentiment analysis",
-      "Email notifications",
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    description: "Ideal for small businesses and startups.",
-    price: "$23",
-    features: [
-      "25 keyword alerts",
-      "15 subreddit monitors",
-      "Hourly data updates",
-      "Advanced sentiment analysis",
-      "Slack & email notifications",
-      "Competitor tracking",
-      "Trend detection",
-      "Data export",
-    ],
-    cta: "Start 14-Day Trial",
-    popular: true,
-  },
-  {
-    name: "Premium",
-    description: "For businesses that need comprehensive insights.",
-    price: "$79",
-    features: [
-      "Unlimited keyword alerts",
-      "Unlimited subreddit monitors",
-      "Real-time data updates",
-      "Enterprise-grade sentiment analysis",
-      "Custom integrations",
-      "API access",
-      "Dedicated support",
-      "Advanced analytics dashboard",
-    ],
-    cta: "Contact Sales",
-    popular: false,
-  },
-]
-
-export default function Pricing() {
   return (
-    <section id="pricing" className="container px-4 md:px-6 py-12 md:py-24 lg:py-32">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={staggerContainer}
-        className="flex flex-col items-center gap-8"
-      >
-        <motion.div variants={fadeIn} className="text-center space-y-4 max-w-[800px]">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Simple, Transparent Pricing</h2>
-          <p className="text-lg sm:text-xl text-muted-foreground">
-            Choose the plan that fits your needs. Start free and scale as you grow.
-          </p>
+    <section id="pricing" className="container px-4 md:px-6 mx-auto mt-16">
+      <div className="container px-4 md:px-6">
+        <div className="text-center mb-12">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+          >
+            Simple, Transparent Pricing
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          >
+            Choose the plan that fits your needs
+          </motion.p>
+        </div>
+
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center space-x-2 bg-muted/15 p-1 rounded-lg">
+            <Label
+              htmlFor="billing-toggle"
+              className={`px-3 py-1 rounded-md cursor-pointer ${billingCycle === "monthly" ? "bg-background shadow-sm" : ""}`}
+              onClick={() => setBillingCycle("monthly")}
+            >
+              Monthly
+            </Label>
+            <Switch
+              id="billing-toggle"
+              checked={billingCycle === "annual"}
+              onCheckedChange={(checked) => setBillingCycle(checked ? "annual" : "monthly")}
+            />
+            <Label
+              htmlFor="billing-toggle"
+              className={`px-3 py-1 rounded-md cursor-pointer ${billingCycle === "annual" ? "bg-background shadow-sm" : ""}`}
+              onClick={() => setBillingCycle("annual")}
+            >
+              Annual <span className="text-xs text-primary">Save 15%</span>
+            </Label>
+          </div>
+        </div>
+
+        <motion.div
+          ref={ref}
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {plans.map((plan, i) => (
+            <motion.div key={i} variants={itemVariants}>
+              <Card className={`h-full ${plan.popular ? "border-primary shadow-lg relative" : ""}`}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-0 right-0 mx-auto w-fit px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                    Most Popular
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">
+                      {billingCycle === "monthly" ? plan.monthlyPrice : plan.annualPrice}
+                    </span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {plan.features.map((feature, j) => (
+                      <li key={j} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                    {plan.cta}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          ))}
         </motion.div>
-
-        <motion.div variants={fadeIn} className="w-full max-w-[1000px]">
-          <Tabs defaultValue="monthly" className="w-full">
-            <div className="flex justify-center mb-8">
-              <TabsList>
-                <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                <TabsTrigger value="annual">Annual (Save 20%)</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="monthly" className="w-full">
-              <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {monthlyPlans.map((plan, i) => (
-                  <Card key={i} className={`flex flex-col ${plan.popular ? "border-primary shadow-lg relative" : ""}`}>
-                    {plan.popular && (
-                      <div className="absolute -top-4 left-0 right-0 mx-auto w-fit px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                        Most Popular
-                      </div>
-                    )}
-                    <CardHeader>
-                      <CardTitle>{plan.name}</CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                      <div className="mt-4">
-                        <span className="text-4xl font-bold">{plan.price}</span>
-                        {plan.price !== "$0" && <span className="text-muted-foreground">/month</span>}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                      <ul className="space-y-2">
-                        {plan.features.map((feature, j) => (
-                          <li key={j} className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter>
-                      <Button className="w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                        <Link href="#signup">{plan.cta}</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="annual" className="w-full">
-              <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {annualPlans.map((plan, i) => (
-                  <Card key={i} className={`flex flex-col ${plan.popular ? "border-primary shadow-lg relative" : ""}`}>
-                    {plan.popular && (
-                      <div className="absolute -top-4 left-0 right-0 mx-auto w-fit px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                        Most Popular
-                      </div>
-                    )}
-                    <CardHeader>
-                      <CardTitle>{plan.name}</CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                      <div className="mt-4">
-                        <span className="text-4xl font-bold">{plan.price}</span>
-                        {plan.price !== "$0" && <span className="text-muted-foreground">/month</span>}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                      <ul className="space-y-2">
-                        {plan.features.map((feature, j) => (
-                          <li key={j} className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter>
-                      <Button className="w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                        <Link href="#signup">{plan.cta}</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </motion.div>
+      </div>
     </section>
   )
 }
-
