@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+
+
 import { NextResponse } from "next/server"
 import { subscriptionService } from "@/lib/payments/subscription-service"
 import { auth } from "@/lib/auth"

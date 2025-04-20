@@ -1,3 +1,7 @@
+export const dynamic = "force-dynamic";
+
+
+
 import { NextResponse } from "next/server"
 import { hash, compare } from "bcrypt"
 import { eq } from "drizzle-orm"

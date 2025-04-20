@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+
+
 import { NextResponse } from "next/server"
 import { dodoPaymentsClient } from "@/lib/payments/dodo-client"
 import { subscriptionService } from "@/lib/payments/subscription-service"
