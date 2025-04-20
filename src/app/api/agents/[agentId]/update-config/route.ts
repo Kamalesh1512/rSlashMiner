@@ -4,8 +4,14 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { agents } from "@/lib/db/schema";
 
+interface configProps{
+  params:Promise<{
+    agentId:string,
+    }>
+}
 
-export async function POST(req: NextRequest) {
+
+export async function POST(req: NextRequest,{params}:configProps) {
   try {
     const session = await auth();
     if (!session || !session.user?.id) {
@@ -14,10 +20,8 @@ export async function POST(req: NextRequest) {
 
     const { configuration, isActive } = await req.json();
 
-    // Extract the agentId from the URL
-    const url = new URL(req.url);
-    const segments = url.pathname.split("/");
-    const agentId = segments[segments.length - 2]; // assumes route is .../agents/[agentId]/update-config
+    const {agentId} = await params
+    
 
     await db
       .update(agents)
