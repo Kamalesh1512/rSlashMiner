@@ -29,7 +29,7 @@ export interface SubscriptionPlan {
       id: "pro_monthly",
       name: "Pro",
       description: "For professionals and small teams",
-      price: 29,
+      price: 14.99,
       currency: "USD",
       interval: "month",
       features: [
@@ -41,14 +41,14 @@ export interface SubscriptionPlan {
         "Scheduled monitoring",
         "Data export",
       ],
-      dodoPlanId: "pro_monthly",
+      dodoPlanId: "pdt_MkIuemAtMWBYos90TI5cC",
       popular: true,
     },
     pro_yearly: {
       id: "pro_yearly",
       name: "Pro (Annual)",
       description: "For professionals and small teams",
-      price: 24,
+      price: 152.90,
       currency: "USD",
       interval: "year",
       features: [
@@ -60,14 +60,14 @@ export interface SubscriptionPlan {
         "Scheduled monitoring",
         "Data export",
       ],
-      dodoPlanId: "pro_yearly",
+      dodoPlanId: "pdt_uiKYUROaE9rWrjfdVvGq8",
       popular: true,
     },
     business_monthly: {
       id: "business_monthly",
       name: "Business",
       description: "For businesses with advanced needs",
-      price: 99,
+      price: 49.99,
       currency: "USD",
       interval: "month",
       features: [
@@ -80,13 +80,13 @@ export interface SubscriptionPlan {
         "Custom integrations",
         "Team collaboration",
       ],
-      dodoPlanId: "business_monthly",
+      dodoPlanId: "pdt_jxlCjttTwJEriDOtt9nU2",
     },
     business_yearly: {
       id: "business_yearly",
       name: "Business (Annual)",
       description: "For businesses with advanced needs",
-      price: 84,
+      price: 509.90,
       currency: "USD",
       interval: "year",
       features: [
@@ -99,12 +99,16 @@ export interface SubscriptionPlan {
         "Custom integrations",
         "Team collaboration",
       ],
-      dodoPlanId: "business_yearly",
+      dodoPlanId: "pdt_zKpK2gmevdKm85rrs5kz9",
     },
   }
   
   export function getPlanById(planId: string): SubscriptionPlan | undefined {
     return SUBSCRIPTION_PLANS[planId]
+  }
+
+  export function getPlanByDodoId(dodoPlanId: string): SubscriptionPlan | undefined {
+    return Object.values(SUBSCRIPTION_PLANS).find(plan => plan.dodoPlanId === dodoPlanId);
   }
   
   export function getMonthlyPlans(): SubscriptionPlan[] {

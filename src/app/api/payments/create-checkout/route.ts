@@ -18,18 +18,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Plan ID is required" }, { status: 400 })
     }
 
-    // Get the base URL for success and cancel URLs
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
-
     // Create checkout session
-    const checkoutSession = await subscriptionService.createCheckoutSession({
+    const checkoutUrl = await subscriptionService.createCheckoutSession({
       planId,
       userId: session.user.id,
-      successUrl: `${baseUrl}/settings/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${baseUrl}/settings/subscription?canceled=true`,
     })
 
-    return NextResponse.json({ checkoutUrl: checkoutSession.checkoutUrl })
+    return NextResponse.json({ checkoutUrl: checkoutUrl })
   } catch (error) {
     console.error("Error creating checkout session:", error)
     return NextResponse.json({ message: "An error occurred while creating the checkout session" }, { status: 500 })

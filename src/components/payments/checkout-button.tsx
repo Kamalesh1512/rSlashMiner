@@ -15,6 +15,8 @@ interface CheckoutButtonProps extends ButtonProps {
 export function CheckoutButton({ planId, onSuccess, onCheckoutError, children, ...props }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
 
+  
+
 
   const handleCheckout = async () => {
     setIsLoading(true)

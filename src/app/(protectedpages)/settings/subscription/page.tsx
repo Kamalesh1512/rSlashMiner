@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
-import { useSession } from "next-auth/react"
+import { getSession, signIn, useSession } from "next-auth/react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { SubscriptionCard } from "@/components/payments/subscription-card"
@@ -25,8 +25,14 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     // Check for success or canceled params
-    const success = searchParams.get("success")
+    const success = searchParams.get("active")
     const canceled = searchParams.get("canceled")
+
+    const refreshSession = async () => {
+      // Force re-authentication to refresh session (optional: redirect=false)
+      await signIn("credentials", { redirect: false })
+      await getSession() // optional: fetch updated session data
+    }
 
     if (success === "true") {
       setShowSuccess(true)
@@ -39,6 +45,9 @@ export default function SubscriptionPage() {
 
     if (canceled === "true") {
       setShowCanceled(true)
+
+        // Refresh session to reflect new subscription tier
+        refreshSession()
 
       // Clear the URL params after a delay
       setTimeout(() => {

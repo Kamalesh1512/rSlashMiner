@@ -15,7 +15,7 @@ export function SubscriptionCard({ plan, isCurrentPlan = false, showYearlySaving
   const yearlyEquivalent = plan.interval === "month" && plan.price > 0 ? plan.price * 12 : null
 
   const yearlySavings = yearlyEquivalent
-    ? Math.round(((yearlyEquivalent - plan.price * 0.8 * 12) / yearlyEquivalent) * 100)
+    ? Math.round(((yearlyEquivalent - plan.price * 0.85 * 12) / yearlyEquivalent) * 100)
     : null
 
   return (

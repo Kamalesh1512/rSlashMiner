@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const plans = [
   {
@@ -21,8 +23,8 @@ const plans = [
   {
     name: "Pro",
     description: "For professionals and small teams",
-    monthlyPrice: "$29",
-    annualPrice: "$24",
+    monthlyPrice: "$14.99",
+    annualPrice: "$12.74",
     features: [
       "3 AI agents",
       "15 subreddit monitors",
@@ -32,14 +34,14 @@ const plans = [
       "Scheduled monitoring",
       "Data export",
     ],
-    cta: "Start 14-Day Trial",
+    cta: "Go Pro",
     popular: true,
   },
   {
     name: "Business",
     description: "For businesses with advanced needs",
-    monthlyPrice: "$99",
-    annualPrice: "$84",
+    monthlyPrice: "$49.99",
+    annualPrice: "$42.49",
     features: [
       "Unlimited AI agents",
       "Unlimited subreddit monitors",
@@ -50,7 +52,7 @@ const plans = [
       "Custom integrations",
       "Team collaboration",
     ],
-    cta: "Contact Sales",
+    cta: "Subscribe",
     popular: false,
   },
 ]
@@ -58,6 +60,7 @@ const plans = [
 export default function PricingSection() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly")
   const ref = useRef(null)
+  const router = useRouter()
   const isInView = useInView(ref, { once: true, amount: 0.2 })
 
   const containerVariants = {
@@ -163,7 +166,7 @@ export default function PricingSection() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                  <Button className="w-full" variant={plan.popular ? "default" : "outline"} onClick={() => router.push('/login')}>
                     {plan.cta}
                   </Button>
                 </CardFooter>

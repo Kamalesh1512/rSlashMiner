@@ -8,6 +8,8 @@ import {
   BarChart3,
 } from "lucide-react";
 
+import { Payment as BasePayment } from "dodopayments/resources/payments.mjs";
+import { Subscription as BaseSubscription } from "dodopayments/resources/subscriptions.mjs";
 /**
  * Fallback keywords if the AI generation fails
  */
@@ -401,3 +403,25 @@ export const weekDays: Day[] = [
   "saturday",
   "sunday",
 ];
+
+
+
+export type Payment = BasePayment & { payload_type: string , product_id:string };
+export type Subscription = BaseSubscription & { payload_type: string,product_id:string};
+
+export type OneTimeProduct = {
+  product_id: string;
+  quantity: number;
+};
+
+export type SubscriptionDetails = {
+  activated_at: string;
+  subscription_id: string;
+  payment_frequency_interval: 'Day' | 'Week' | 'Month' | 'Year';
+  product_id: string;
+};
+
+export type WebhookPayload = {
+  type: string;
+  data: Payment | Subscription
+};
