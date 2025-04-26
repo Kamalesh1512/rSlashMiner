@@ -6,6 +6,7 @@ import {
   Settings,
   HelpCircle,
   BarChart3,
+  Clock,
 } from "lucide-react";
 
 import { Payment as BasePayment } from "dodopayments/resources/payments.mjs";
@@ -213,7 +214,7 @@ export const navItems = [
   {
     name: "Monitoring",
     href: "/monitoring",
-    icon: Search,
+    icon: Clock,
   },
   {
     name: "Notifications",
@@ -265,19 +266,18 @@ export interface Agent {
   results?: {
     id: string;
     agentId: string;
-    author:string,
+    author:string | null,
     content:string,
     createdAt:Date,
     processed:boolean,
     redditCommentId:string,
     redditPostId:string,
     subreddit: string;
-    timestamp: string;
     relevanceScore: number;
     score:number,
     sentimentScore:number,
     url:string,
-    matchedKeywords:string[],
+    matchedKeywords:string,
     type?:'post' | 'comment'
   }[];
 }
@@ -425,3 +425,84 @@ export type WebhookPayload = {
   type: string;
   data: Payment | Subscription
 };
+
+
+export interface FaqItem {
+  id: string
+  question: string
+  answer: string
+  category: "general" | "agents" | "billing" | "technical"
+}
+
+export const faqs: FaqItem[] = [
+  {
+    id: "1",
+    question: "What is Skroub?",
+    answer:
+      "Skroub is a Reddit monitoring tool that helps businesses identify potential customers, track market trends, and gather insights from Reddit communities. It uses AI to analyze Reddit content and notify you when relevant discussions are happening.",
+    category: "general",
+  },
+  {
+    id: "2",
+    question: "How do agents work?",
+    answer:
+      "Agents are automated monitors that track specific subreddits for keywords and phrases you define. Each agent can monitor multiple subreddits and track multiple keywords. When a match is found, the agent analyzes the content for relevance to your business and notifies you based on your notification settings.",
+    category: "agents",
+  },
+  {
+    id: "3",
+    question: "Is Skroub compliant with Reddit's terms of service?",
+    answer:
+      "Yes, Skroub operates within Reddit's API guidelines and terms of service. We respect rate limits and follow all required policies to ensure ethical data collection.",
+    category: "general",
+  },
+  {
+    id: "4",
+    question: "How accurate is the sentiment analysis?",
+    answer:
+      "Our sentiment analysis uses advanced NLP models with an accuracy rate of over 85%. We continuously train and improve our models to better understand Reddit's unique language patterns and context.",
+    category: "technical",
+  },
+  {
+    id: "5",
+    question: "Can I export the data for use in other tools?",
+    answer:
+      "Yes, Pro and Premium plans include data export functionality in CSV, JSON, and Excel formats, making it easy to integrate with your existing workflows and tools.",
+    category: "technical",
+  },
+  {
+    id: "6",
+    question: "How far back does the historical data go?",
+    answer:
+      "Free plans provide data from the past 30 days. Pro plans extend to 6 months, and Premium plans offer up to 2 years of historical data, subject to Reddit's API limitations.",
+    category: "technical",
+  },
+  {
+    id: "7",
+    question: "How do I upgrade my subscription?",
+    answer:
+      "You can upgrade your subscription by going to Settings > Subscription and selecting the plan that best fits your needs. You can pay via credit card",
+    category: "billing",
+  },
+  {
+    id: "8",
+    question: "What's the difference between the subscription tiers?",
+    answer:
+      "Free tier includes basic monitoring with 1 agent and 3 monitoring requests per day. Pro tier ($14.99/month) includes 3 agents, 10 requests per day, and additional features like data export and advanced analytics. Premium tier ($49.99/month) includes unlimited agents, unlimited requests, and all premium features.",
+    category: "billing",
+  },
+  {
+    id: "9",
+    question: "How do I create a new agent?",
+    answer:
+      "To create a new agent, go to the Agents page and click 'Create Agent'. Follow the step-by-step process to define your business details, select subreddits to monitor, add keywords, and set up notification preferences.",
+    category: "agents",
+  },
+  {
+    id: "10",
+    question: "Can I pause an agent temporarily?",
+    answer:
+      "Yes, you can pause and resume agents at any time. When paused, the agent will stop monitoring and won't use your daily monitoring requests.",
+    category: "agents",
+  },
+]

@@ -50,7 +50,7 @@ const UpperInfoBar = ({ user }: UpperInfoBarProps) => {
     if (pathname === "/settings/subscription") return "Subscription Settings";
     if (pathname === "/settings/security") return "Security Settings";
     if (pathname === "/help") return "Help & Support";
-    return "rSlashMiner";
+    return "Skroub";
   };
 
   return (

@@ -197,7 +197,7 @@ async function processAgentRun(
 
       try {
         // We'll use the first keyword as the main query, but include all keywords for analysis
-        const query = keywordList[0];
+        const query = keywordList;
 
         const relevanceThreshold = JSON.parse(
           agent[0].configuration

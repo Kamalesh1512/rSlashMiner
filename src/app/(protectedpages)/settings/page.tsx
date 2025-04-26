@@ -10,8 +10,8 @@ import ProfileForm from "@/components/settings/profile-form";
 import ThemeSelector from "@/components/settings/theme-selector";
 import SecuritySettings from "@/components/settings/security-settings";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import SubscriptionStatus from "@/components/global/subscription-status";
 import { SubscriptionstatusProps } from "@/lib/constants/types";
+import SubscriptionPage from "@/components/payments/subscriptions-details";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -64,7 +64,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+    <div className="flex-col items-center justify-between">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,9 +88,9 @@ export default function SettingsPage() {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="space-y-6"
+          className=""
         >
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 space-x-2">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -115,9 +115,7 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
           <TabsContent value="subscription" className="space-y-6">
-            <Card>
-              <SubscriptionStatus creationLimit={subscriptionDetails}/>
-            </Card>
+              <SubscriptionPage/>
           </TabsContent>
         </Tabs>
       </motion.div>

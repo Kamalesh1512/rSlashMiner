@@ -1,14 +1,17 @@
 import nodemailer from "nodemailer"
 
 // Configure email transporter
+
+const isProduction = process.env.NODE_ENV === "production"
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST,
-  port: Number(process.env.EMAIL_SERVER_PORT),
+  port: isProduction? 465 : 587,
   auth: {
     user: process.env.EMAIL_SERVER_USER,
     pass: process.env.EMAIL_SERVER_PASSWORD,
   },
-  secure: process.env.NODE_ENV === "production",
+  secure: isProduction
 })
 
 interface SendVerificationEmailParams {

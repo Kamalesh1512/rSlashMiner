@@ -65,12 +65,12 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
   }
 
   return (
-    <div className="flex flex-col items-center p-4 sm:p-5">
+    <div className="flex flex-col items-center sm:p-5">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-2xl"
+        className="w-full"
       >
         <div className="mb-6 sm:mb-8 px-2 sm:px-0">
           <p className="text-sm sm:text-base text-center text-muted-foreground">
@@ -80,7 +80,7 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
         </div>
 
         {!canCreateAgent ? (
-          <Card className="p-4 sm:p-6">
+          <Card className="sm:p-6">
             <div className="text-center space-y-4">
               <h2 className="text-lg sm:text-xl font-semibold">
                 Agent Creation Limit Reached

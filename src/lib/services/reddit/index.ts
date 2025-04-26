@@ -52,21 +52,27 @@ class RedditService {
     });
 
     const data = await response.json();
+    // console.log("Token",data)
     if (!data.access_token) {
       throw new Error("Failed to authenticate with Reddit API");
     }
 
     this.accessToken = data.access_token;
     this.tokenExpiry = Date.now() + data.expires_in * 1000; // cache token
-    console.log("Access Token generated")
+    console.log("Access Token generated");
     return this.accessToken as string;
   }
 
-  private async fetchFromReddit(endpoint: string, params: Record<string, string | number | boolean>) {
+  private async fetchFromReddit(
+    endpoint: string,
+    params: Record<string, string | number | boolean>
+  ) {
     const token = await this.authenticate();
 
     const url = new URL(`https://oauth.reddit.com${endpoint}`);
-    Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, String(value)));
+    Object.entries(params).forEach(([key, value]) =>
+      url.searchParams.append(key, String(value))
+    );
 
     const res = await fetch(url.toString(), {
       headers: {
@@ -81,18 +87,17 @@ class RedditService {
     }
 
     const json = await res.json();
-    console.log("Connected to Reddit Client")
     return json;
   }
 
   async searchSubreddits(query: string, limit = 10): Promise<SubredditProps[]> {
     const data = await this.fetchFromReddit(`/subreddits/search`, {
-      q: query,  
+      q: query,
       limit,
       sort: "relevance",
     });
-  
-    console.log('Searched subreddits based on query...');
+
+    console.log("Searched subreddits based on query...");
     return (data.data?.children || []).map((child: any) => {
       const sub = child.data;
       return {
@@ -106,16 +111,19 @@ class RedditService {
     });
   }
 
-  async searchPosts(subreddit: string, query: string, time: Timeframe = "month", limit = 25): Promise<RedditPost[]> {
+  async searchPosts(
+    subreddit: string,
+    query: string,
+    time: Timeframe,
+    limit = 1
+  ): Promise<RedditPost[]> {
     const data = await this.fetchFromReddit(`/r/${subreddit}/search`, {
       q: query,
       limit,
-      sort: "new",
+      sort: "relevance", 
       t: time,
       restrict_sr: true,
     });
-
-    console.log('Searched Reddit posts..')
     return (data.data?.children).map((child: any) => {
       const post = child.data;
       return {
@@ -131,8 +139,34 @@ class RedditService {
     });
   }
 
-  async getSubredditPosts(subreddit: string, sort: "hot" | "new" | "top" = "new", limit = 5): Promise<RedditPost[]> {
-    const data = await this.fetchFromReddit(`/r/${subreddit}/${sort}`, { limit });
+  async searchMultipleRedditPosts(
+    subreddit: string,
+    queries: string[],
+    time: Timeframe,
+    limit = 1
+  ): Promise<RedditPost[]> {
+    function sleep(ms: number) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+    const allPosts: RedditPost[] = [];
+
+    for (const query of queries) {
+      const posts = await this.searchPosts(subreddit, query, time, limit);
+      allPosts.push(...posts);
+      await sleep(1000); // wait 1 second between requests
+    }
+
+    return allPosts;
+  }
+
+  async getSubredditPosts(
+    subreddit: string,
+    sort: "hot" | "new" | "top" = "new",
+    limit = 5
+  ): Promise<RedditPost[]> {
+    const data = await this.fetchFromReddit(`/r/${subreddit}/${sort}`, {
+      limit,
+    });
 
     return (data.data?.children || []).map((child: any) => {
       const post = child.data;
@@ -152,12 +186,15 @@ class RedditService {
   async getComments(postId: string): Promise<RedditComment[]> {
     const token = await this.authenticate();
 
-    const res = await fetch(`https://oauth.reddit.com/comments/${postId}?depth=1&limit=10`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "User-Agent": process.env.REDDIT_USER_AGENT || "",
-      },
-    });
+    const res = await fetch(
+      `https://oauth.reddit.com/comments/${postId}?depth=1&limit=10`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "User-Agent": process.env.REDDIT_USER_AGENT || "",
+        },
+      }
+    );
 
     if (!res.ok) {
       const errorText = await res.text();

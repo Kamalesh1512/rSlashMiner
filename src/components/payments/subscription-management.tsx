@@ -1,9 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Loader2, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, AlertCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,55 +21,62 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { formatDistanceToNow } from "date-fns"
-import { toast } from "sonner"
+} from "@/components/ui/alert-dialog";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface SubscriptionStatus {
-  active: boolean
-  plan: string | null
-  currentPeriodEnd: string | null
-  cancelAtPeriodEnd: boolean
+  active: boolean;
+  plan: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
 }
 
 export function SubscriptionManagement() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [isCanceling, setIsCanceling] = useState(false)
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
+    null
+  );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSubscription()
-  }, [])
+    fetchSubscription();
+  }, []);
 
   const fetchSubscription = async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch("/api/payments/subscription")
+      const response = await fetch("/api/payments/subscription");
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to fetch subscription")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch subscription");
       }
 
-      const data = await response.json()
-      setSubscription(data)
+      const data = await response.json();
+      setSubscription(data);
     } catch (error) {
-      console.error("Error fetching subscription:", error)
-      setError(error instanceof Error ? error.message : "Failed to fetch subscription")
+      console.error("Error fetching subscription:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch subscription"
+      );
 
-      toast.error("Error",{
-        description: error instanceof Error ? error.message : "Failed to fetch subscription",
-      })
+      toast.error("Error", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch subscription",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCancelSubscription = async () => {
-    setIsCanceling(true)
+    setIsCanceling(true);
 
     try {
       const response = await fetch("/api/payments/subscription", {
@@ -71,35 +85,38 @@ export function SubscriptionManagement() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ cancelAtPeriodEnd: true }),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to cancel subscription")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to cancel subscription");
       }
 
-      await fetchSubscription()
+      await fetchSubscription();
 
-      toast.success("Subscription canceled",{
+      toast.success("Subscription canceled", {
         description: "Your subscription will end at the current billing period",
-      })
+      });
     } catch (error) {
-      console.error("Error canceling subscription:", error)
+      console.error("Error canceling subscription:", error);
 
-      toast("Error",{
-        description: error instanceof Error ? error.message : "Failed to cancel subscription",
-      })
+      toast("Error", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to cancel subscription",
+      });
     } finally {
-      setIsCanceling(false)
+      setIsCanceling(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -112,14 +129,19 @@ export function SubscriptionManagement() {
           Try Again
         </Button>
       </div>
-    )
+    );
   }
 
   if (!subscription) {
-    return null
+    return null;
   }
 
-  const planName = subscription.plan === "pro" ? "Pro" : subscription.plan === "premium" ? "Business" : "Free"
+  const planName =
+    subscription.plan === "pro"
+      ? "Pro"
+      : subscription.plan === "premium"
+      ? "Business"
+      : "Free";
 
   return (
     <Card>
@@ -142,10 +164,19 @@ export function SubscriptionManagement() {
 
               {subscription.currentPeriodEnd && (
                 <div className="flex items-center justify-between border-t pt-4 mt-4">
-                  <span className="text-sm font-medium">Next billing date:</span>
+                  <span className="text-sm font-medium">
+                    Next billing date:
+                  </span>
                   <span className="text-sm">
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}(
-                    {formatDistanceToNow(new Date(subscription.currentPeriodEnd), { addSuffix: true })})
+                    {new Date(
+                      subscription.currentPeriodEnd
+                    ).toLocaleDateString()}
+                    (
+                    {formatDistanceToNow(
+                      new Date(subscription.currentPeriodEnd),
+                      { addSuffix: true }
+                    )}
+                    )
                   </span>
                 </div>
               )}
@@ -160,7 +191,9 @@ export function SubscriptionManagement() {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        {subscription.active && subscription.plan !== "free" && !subscription.cancelAtPeriodEnd ? (
+        {subscription.active &&
+        subscription.plan !== "free" &&
+        !subscription.cancelAtPeriodEnd ? (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" disabled={isCanceling}>
@@ -176,15 +209,20 @@ export function SubscriptionManagement() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Are you sure you want to cancel?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your subscription will remain active until the end of the current billing period. After that, your
-                  account will be downgraded to the free plan.
+                  Your subscription will remain active until the end of the
+                  current billing period. After that, your account will be
+                  downgraded to the free plan.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCancelSubscription}>Cancel Subscription</AlertDialogAction>
+                <AlertDialogAction onClick={handleCancelSubscription}>
+                  Cancel Subscription
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -193,9 +231,7 @@ export function SubscriptionManagement() {
             Reactivate Subscription
           </Button>
         ) : (
-          <Button variant="outline" onClick={() => (window.location.href = "/settings/subscription/upgrade")}>
-            Upgrade Plan
-          </Button>
+          <></>
         )}
 
         <Button variant="outline" onClick={fetchSubscription}>
@@ -203,5 +239,5 @@ export function SubscriptionManagement() {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -62,7 +62,7 @@ export class SubscriptionService {
 
     const productId = plan.dodoPlanId;
     const quantity = 1;
-    const checkoutUrl = `${checkoutBaseUrl}/buy/${productId}?quantity=${quantity}&redirect_url=${process.env.NEXTAUTH_URL}/settings/subscription&email=${user[0].email}&disableEmail=true`;
+    const checkoutUrl = `${checkoutBaseUrl}/buy/${productId}?quantity=${quantity}&redirect_url=${process.env.NEXTAUTH_URL}/settings&email=${user[0].email}&disableEmail=true`;
 
     return checkoutUrl;
   }

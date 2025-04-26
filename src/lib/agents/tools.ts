@@ -9,9 +9,11 @@ import redditService from "@/lib/services/reddit";
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
-    const { subreddit, query, timeframe = "day" } = input;
-    console.log("The subreddit", { subreddit, query, timeframe });
-    const posts = await redditService.searchPosts(subreddit, query, timeframe);
+    const { subreddit, queries, timeframe = "all" } = input;
+    // console.log("The subreddit", { subreddit, queries, timeframe });
+    // const posts = await redditService.searchPosts(subreddit, query, timeframe);
+    const posts = await redditService.searchMultipleRedditPosts(subreddit, queries, timeframe);
+
     return JSON.stringify(posts);
   },
   {
@@ -19,7 +21,7 @@ export const searchReddit = tool(
     description: "Search for posts in a specific subreddit with a query.",
     schema: z.object({
       subreddit: z.string().describe("The subreddit to search in."),
-      query: z.string().describe("The search query."),
+      queries: z.array(z.string()).describe("The search query."),
       timeframe: z
         .enum(["hour", "day", "week", "month", "year", "all"])
         .optional()
@@ -30,7 +32,7 @@ export const searchReddit = tool(
 
 export const getComments = tool(
   async ({ postId }) => {
-    console.log("Fetching comments for:", { postId });
+    // console.log("Fetching comments for:", { postId });
     const comments = await redditService.getComments(postId);
     return JSON.stringify(comments);
   },
@@ -122,6 +124,8 @@ export const storeResult = tool(
     sentimentScore,
   }) => {
     try {
+
+
       const resultId = createId();
 
       await db.insert(monitoringResults).values({
@@ -139,7 +143,7 @@ export const storeResult = tool(
         relevanceScore,
         processed: false,
         sentimentScore: sentimentScore ?? 0,
-      });
+      }).onConflictDoNothing();
 
       return JSON.stringify({ success: true, resultId });
     } catch (error) {

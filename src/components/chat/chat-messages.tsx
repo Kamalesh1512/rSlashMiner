@@ -18,8 +18,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex items-start gap-4 rounded-lg p-4",
-        isUser ? "bg-muted/50" : "bg-background"
+        "flex items-start gap-2 rounded-lg",
+        isUser ? "bg-background" : "bg-transparent"
       )}
     >
       <Avatar
@@ -52,7 +52,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       >
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold">
-            {isUser ? "You" : "rSlashMiner AI"}
+            {isUser ? "You" : "Skroub.AI"}
           </h4>
         </div>
 

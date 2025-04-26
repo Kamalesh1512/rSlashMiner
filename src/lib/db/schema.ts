@@ -190,8 +190,8 @@ export const monitoringResults = pgTable("monitoring_results", {
   agentId: varchar("agent_id", { length: 128 })
     .notNull()
     .references(() => agents.id, { onDelete: "cascade" }),
-  redditPostId: text("reddit_post_id"),
-  redditCommentId: text("reddit_comment_id"),
+  redditPostId: text("reddit_post_id").unique(),
+  redditCommentId: text("reddit_comment_id").unique(),
   content: text("content").notNull(),
   author: text("author"),
   subreddit: text("subreddit"),

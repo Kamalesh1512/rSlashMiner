@@ -84,7 +84,7 @@ export default function LoginPage() {
           description: result.error,
         });
       } else {
-        router.push("/dashboard");
+        router.push("/agents");
       }
     } catch (error) {
       toast.error("Login failed", {

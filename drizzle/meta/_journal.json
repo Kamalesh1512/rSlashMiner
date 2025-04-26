@@ -15,6 +15,13 @@
       "when": 1743833346783,
       "tag": "0001_spooky_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1745602831418,
+      "tag": "0002_petite_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

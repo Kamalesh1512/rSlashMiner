@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import BackgroundGradient from "./bg-gradient"
 import Link from "next/link"
 import Slideshow from "./slide-show"
+import { useRouter } from "next/navigation"
 
 export default function HeroSection() {
+
+  const router = useRouter()
   return (
       <div className="container px-4 md:px-6 mx-auto">
          <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
@@ -48,13 +51,15 @@ export default function HeroSection() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 mb-12"
           >
-            <Button size="lg" className="text-base px-8 h-12">
+            <Button size="lg" className="text-base px-8 h-12" onClick={()=>router.push('/signup')}>
               Start For Free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <Link href={'/#demo'}>
             <Button size="lg" variant="outline" className="text-base px-8 h-12">
               Watch Demo
             </Button>
+            </Link>
           </motion.div>
 
           <motion.div

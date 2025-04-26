@@ -66,6 +66,8 @@ export default function AgentDetailPage() {
     return () => clearTimeout(timer);
   }, [agentId, agents]);
 
+  console.log("agents details",agent)
+
   const toggleAgentStatus = () => {
     if (!agent) return;
 
@@ -73,52 +75,6 @@ export default function AgentDetailPage() {
       ...agent,
       isActive: !agent.isActive,
     });
-  };
-
-  const runAgentNow = async () => {
-    setIsRunning(true);
-
-    const agentId = agent?.id;
-
-    try {
-      const response = await fetch("/api/agents/run", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ agentId }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to run agent");
-      }
-
-      toast.success("Agent run completed", {
-        description: `Found ${data.resultsCount} relevant results.`,
-      });
-
-      // Simulate agent running
-      setTimeout(() => {
-        if (agent) {
-          setAgent({
-            ...agent,
-            lastRunAt: new Date(),
-            runCount: agent.runCount + 1,
-          });
-        }
-      }, 3000);
-    } catch (error) {
-      toast.error("Agent run failed", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
-      });
-    } finally {
-      setIsRunning(false);
-    }
   };
 
   const deleteAgent = () => {
@@ -172,7 +128,7 @@ export default function AgentDetailPage() {
             <h1 className="text-2xl font-bold">{agent.name}</h1>
             <Badge
               variant={agent.isActive ? "premium" : "outline"}
-              className="text-primary"
+              className="text-black"
             >
               {agent.isActive ? "Active" : "Paused"}
             </Badge>

@@ -81,7 +81,7 @@ const NavFooter = ({ user }: NavFooterProps) => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/subscription">
+                <Link href="/settings">
                   <CreditCard className="mr-2 h-4 w-4" />
                   <span>Subscription</span>
                 </Link>

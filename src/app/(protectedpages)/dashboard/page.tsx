@@ -3,7 +3,7 @@ import RecentDetails from "./_components/recents-details"
 import { checkAgentCreationLimit } from "@/lib/check-subscriptions/subscriptions"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import SubscriptionStatus from "@/components/global/subscription-status"
+import { SubscriptionManagement } from "@/components/payments/subscription-management"
 
 
 
@@ -21,9 +21,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       <RecentDetails/>
-      {/* Subscription status */}
-      <SubscriptionStatus creationLimit={result}/>
-     
+      <SubscriptionManagement/>
     </div>
   )
 }

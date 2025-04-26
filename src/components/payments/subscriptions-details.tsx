@@ -39,7 +39,7 @@ export default function SubscriptionPage() {
 
       // Clear the URL params after a delay
       setTimeout(() => {
-        router.replace("/settings/subscription")
+        router.replace("/settings")
       }, 5000)
     }
 
@@ -51,7 +51,7 @@ export default function SubscriptionPage() {
 
       // Clear the URL params after a delay
       setTimeout(() => {
-        router.replace("/settings/subscription")
+        router.replace("/settings")
       }, 5000)
     }
 
@@ -110,6 +110,7 @@ export default function SubscriptionPage() {
         <div className="space-y-8">
           <SubscriptionManagement />
 
+          {/* Subscription plans details */}
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Upgrade Your Plan</h2>
 
