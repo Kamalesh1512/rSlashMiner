@@ -1,53 +1,62 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Download, ExternalLink } from "lucide-react"
-import Link from "next/link"
-import { Agent } from "@/lib/constants/types"
-import { useAgentStore } from "@/store/agentstore"
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Search, Download, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Agent } from "@/lib/constants/types";
+import { useAgentStore } from "@/store/agentstore";
 
 type Result = {
-  
-    id: string;
-    agentId: string;
-    author: string;
-    content: string;
-    createdAt: Date;
-    processed: boolean;
-    redditCommentId: string;
-    redditPostId: string;
-    subreddit: string;
-    timestamp: string;
-    relevanceScore: number;
-    score: number;
-    sentimentScore: number;
-    url: string;
-    matchedKeywords:string[],
-    type?:'post' | 'comment'
-}
-
+  id: string;
+  agentId: string;
+  author: string | null;
+  content: string;
+  createdAt: Date;
+  processed: boolean;
+  redditCommentId: string;
+  redditPostId: string;
+  subreddit: string;
+  relevanceScore: number;
+  score: number;
+  sentimentScore: number;
+  url: string;
+  matchedKeywords: string[];
+  type?: "post" | "comment";
+};
 
 export default function ResultsPage() {
-  const { data: session, status } = useSession()
-  const [isLoading, setIsLoading] = useState(true)
-  const [filteredResults, setFilteredResults] = useState<Result[]>([])
+  const { data: session, status } = useSession();
+  const [isLoading, setIsLoading] = useState(true);
+  const [filteredResults, setFilteredResults] = useState<Result[]>([]);
   const [allResults, setAllResults] = useState<Result[]>([]);
-  const [searchQuery, setSearchQuery] = useState("")
-  const [relevanceFilter, setRelevanceFilter] = useState("all")
-  const [agentFilter, setAgentFilter] = useState("all")
-  const [timeFilter, setTimeFilter] = useState("all")
-  const {agents} = useAgentStore()
+  const [searchQuery, setSearchQuery] = useState("");
+  const [relevanceFilter, setRelevanceFilter] = useState("all");
+  const [agentFilter, setAgentFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
+  const { agents } = useAgentStore();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const resultsFromAgents = agents.flatMap(agent =>
-        (agent.results ??[]).map(result => ({
+      const resultsFromAgents = agents.flatMap((agent) =>
+        (agent.results ?? []).map((result) => ({
           ...result,
           agentId: agent.id,
           agentName: agent.name,
@@ -57,74 +66,97 @@ export default function ResultsPage() {
       setFilteredResults(resultsFromAgents);
       setIsLoading(false);
     }, 1000);
-  
+
     return () => clearTimeout(timer);
   }, [agents]);
 
   useEffect(() => {
     // Filter results based on search query and filters
-    let filtered = [...allResults]
+    let filtered = [...allResults];
 
     // Apply search query
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (result) =>
           result.content.toLowerCase().includes(query) ||
-          result.matchedKeywords.some((keyword) => keyword.toLowerCase().includes(query)),
-      )
+          result.matchedKeywords.some((keyword) =>
+            keyword.toLowerCase().includes(query)
+          )
+      );
     }
 
     // Apply relevance filter
     if (relevanceFilter !== "all") {
-      const minRelevance = Number.parseInt(relevanceFilter)
-      filtered = filtered.filter((result) => result.relevanceScore >= minRelevance)
+      const minRelevance = Number.parseInt(relevanceFilter);
+      filtered = filtered.filter(
+        (result) => result.relevanceScore >= minRelevance
+      );
     }
 
     // Apply agent filter
     if (agentFilter !== "all") {
-      filtered = filtered.filter((result) => result.agentId === agentFilter)
+      filtered = filtered.filter((result) => result.agentId === agentFilter);
     }
-
     // Apply time filter
     if (timeFilter !== "all") {
-      // In a real implementation, this would filter based on actual dates
-      // For now, we'll just simulate it with our hardcoded data
+      const now = new Date(); // current date-time
+
       if (timeFilter === "today") {
-        filtered = filtered.filter((result) => result.timestamp.includes("hour") || result.timestamp === "today")
+        filtered = filtered.filter((result) => {
+          const createdAt = new Date(result.createdAt);
+          return createdAt.toDateString() === now.toDateString(); // same day
+        });
       } else if (timeFilter === "week") {
-        filtered = filtered.filter(
-          (result) => !result.timestamp.includes("month") && !result.timestamp.includes("year"),
-        )
+        filtered = filtered.filter((result) => {
+          const createdAt = new Date(result.createdAt);
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(now.getDate() - 7); // 7 days back
+          return createdAt >= oneWeekAgo;
+        });
       }
     }
 
-    setFilteredResults(filtered)
-  }, [searchQuery, relevanceFilter, agentFilter, timeFilter])
+    setFilteredResults(filtered);
+  }, [searchQuery, relevanceFilter, agentFilter, timeFilter]);
 
   if (status === "loading" || isLoading) {
     return (
       <div className="flex h-[calc(100vh-5rem)] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // Get unique agent IDs and names for the filter
-  const agentList = Array.from(new Set(allResults.map((result) => result.agentId))).map((agentId) => {
-    const agent = agents.find((result) => result.id === agentId)
+  const agentList = Array.from(
+    new Set(allResults.map((result) => result.agentId))
+  ).map((agentId) => {
+    const agent = agents.find((result) => result.id === agentId);
     return {
       id: agentId,
-      name: agent?.name as string || "Unknown Agent",
-    }
-  })
+      name: (agent?.name as string) || "Unknown Agent",
+    };
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Monitoring Results</h1>
-          <p className="text-muted-foreground">View and analyze your Reddit monitoring results</p>
+          <p className="text-muted-foreground">
+            View and analyze your Reddit monitoring results
+          </p>
         </div>
         <Button variant="outline" size="sm">
           <Download className="mr-2 h-4 w-4" />
@@ -135,7 +167,9 @@ export default function ResultsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Filter Results</CardTitle>
-          <CardDescription>Narrow down results by relevance, agent, or time period</CardDescription>
+          <CardDescription>
+            Narrow down results by relevance, agent, or time period
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -154,7 +188,10 @@ export default function ResultsPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Relevance</label>
-              <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
+              <Select
+                value={relevanceFilter}
+                onValueChange={setRelevanceFilter}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by relevance" />
                 </SelectTrigger>
@@ -204,13 +241,19 @@ export default function ResultsPage() {
 
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="all">All Results ({filteredResults.length})</TabsTrigger>
-          <TabsTrigger value="high">
-            High Relevance ({filteredResults.filter((r) => r.relevanceScore >= 90).length})
+          <TabsTrigger value="all">
+            All Results ({filteredResults.length})
           </TabsTrigger>
-          <TabsTrigger value="posts">Posts ({filteredResults.filter((r) => r.type === "post").length})</TabsTrigger>
+          <TabsTrigger value="high">
+            High Relevance (
+            {filteredResults.filter((r) => r.relevanceScore >= 90).length})
+          </TabsTrigger>
+          <TabsTrigger value="posts">
+            Posts ({filteredResults.filter((r) => r.type === "post").length})
+          </TabsTrigger>
           <TabsTrigger value="comments">
-            Comments ({filteredResults.filter((r) => r.type === "comment").length})
+            Comments (
+            {filteredResults.filter((r) => r.type === "comment").length})
           </TabsTrigger>
         </TabsList>
 
@@ -221,7 +264,8 @@ export default function ResultsPage() {
                 <Search className="h-10 w-10 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">No results found</h3>
                 <p className="text-muted-foreground text-center mt-2">
-                  Try adjusting your search or filters to find what you're looking for.
+                  Try adjusting your search or filters to find what you're
+                  looking for.
                 </p>
               </CardContent>
             </Card>
@@ -234,47 +278,68 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <span>r/{result.subreddit}</span>
                         <span>•</span>
-                        <span>{result.timestamp}</span>
-                        <span>•</span>
-                        <span>u/{result.author}</span>
-                        <span>•</span>
-                        <span>{result.type === "post" ? "Post" : "Comment"}</span>
+                        {/* <span>u/{result.author}</span> */}
+                        <span>{result.redditPostId ? "Post" : "Comment"}</span>
+
+                        <div
+                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                          result.relevanceScore >= 85
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                            : result.relevanceScore >= 70
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                        }`}
+                      >
+                        {result.relevanceScore}% Relevant
+                      </div>
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
-                      <p className="text-sm mb-4">"{result.content}"</p>
+                      <h3 className="text-lg font-medium mb-2">
+                        {result.author}
+                      </h3>
+                      <p className="text-sm mb-4">
+                        "{`${result.content.slice(0, 75)}...`}"
+                      </p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {result.matchedKeywords.map((keyword, index) => (
-                          <span key={index} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                          <span
+                            key={index}
+                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                          >
                             {keyword}
                           </span>
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">Found by:</span>
-                        <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
-                          {}
+                      <div className="flex flex-col sm:flex-row justify-center gap-2 text-sm">
+                        <Link
+                          href={`/agents/${result.agentId}`}
+                          className="text-primary hover:underline text-xs md:text-lg font-medium"
+                        >
+                          <span className="text-muted-foreground text-sm md:text-lg">
+                            Agent:
+                          </span>
+                          {
+                            agentList.find((res) => res.id === result.agentId)
+                              ?.name
+                          }
                         </Link>
+                        <span className="text-muted-foreground text-xs lg:text-sm">
+                          ({formatDate(new Date(result.createdAt))})
+                        </span>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-4">
-                      <div
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                          result.relevanceScore >= 90
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.relevanceScore >= 70
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {result.relevanceScore}% Relevant
-                      </div>
+
 
                       <Button variant="outline" size="sm" asChild>
-                        <a href={result.url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           View on Reddit
                         </a>
@@ -288,13 +353,17 @@ export default function ResultsPage() {
         </TabsContent>
 
         <TabsContent value="high" className="space-y-4">
-          {filteredResults.filter((r) => r.relevanceScore >= 90).length === 0 ? (
+          {filteredResults.filter((r) => r.relevanceScore >= 90).length ===
+          0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-10">
                 <Search className="h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No high relevance results found</h3>
+                <h3 className="text-lg font-medium">
+                  No high relevance results found
+                </h3>
                 <p className="text-muted-foreground text-center mt-2">
-                  Try adjusting your search or filters to find what you're looking for.
+                  Try adjusting your search or filters to find what you're
+                  looking for.
                 </p>
               </CardContent>
             </Card>
@@ -309,27 +378,41 @@ export default function ResultsPage() {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                           <span>r/{result.subreddit}</span>
                           <span>•</span>
-                          <span>{result.timestamp}</span>
+                          <span>{formatDate(new Date(result.createdAt))}</span>
                           <span>•</span>
                           <span>u/{result.author}</span>
                           <span>•</span>
-                          <span>{result.type === "post" ? "Post" : "Comment"}</span>
+                          <span>
+                            {result.type === "post" ? "Post" : "Comment"}
+                          </span>
                         </div>
 
-                        <h3 className="text-lg font-medium mb-2">{result.author}</h3>
-                        <p className="text-sm mb-4">"{result.content}"</p>
+                        <h3 className="text-lg font-medium mb-2">
+                          {result.author}
+                        </h3>
+                        <p className="text-sm mb-4">
+                          "{`${result.content.slice(0, 75)}...`}"
+                        </p>
 
                         <div className="flex flex-wrap gap-2 mb-4">
                           {result.matchedKeywords.map((keyword, index) => (
-                            <span key={index} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                            <span
+                              key={index}
+                              className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                            >
                               {keyword}
                             </span>
                           ))}
                         </div>
 
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-muted-foreground">Found by:</span>
-                          <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
+                          <span className="text-muted-foreground">
+                            Found by:
+                          </span>
+                          <Link
+                            href={`/agents/${result.agentId}`}
+                            className="text-primary hover:underline"
+                          >
                             {/* {result.agentName} */}
                           </Link>
                         </div>
@@ -341,7 +424,11 @@ export default function ResultsPage() {
                         </div>
 
                         <Button variant="outline" size="sm" asChild>
-                          <a href={result.url} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={result.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <ExternalLink className="mr-2 h-4 w-4" />
                             View on Reddit
                           </a>
@@ -365,17 +452,24 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <span>r/{result.subreddit}</span>
                         <span>•</span>
-                        <span>{result.timestamp}</span>
+                        <span>{formatDate(new Date(result.createdAt))}</span>
                         <span>•</span>
                         <span>u/{result.author}</span>
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
-                      <p className="text-sm mb-4">"{result.content}"</p>
+                      <h3 className="text-lg font-medium mb-2">
+                        {result.author}
+                      </h3>
+                      <p className="text-sm mb-4">
+                        "{`${result.content.slice(0, 75)}...`}"
+                      </p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {result.matchedKeywords.map((keyword, index) => (
-                          <span key={index} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                          <span
+                            key={index}
+                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                          >
                             {keyword}
                           </span>
                         ))}
@@ -383,7 +477,10 @@ export default function ResultsPage() {
 
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Found by:</span>
-                        <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
+                        <Link
+                          href={`/agents/${result.agentId}`}
+                          className="text-primary hover:underline"
+                        >
                           {/* {result.agentName} */}
                         </Link>
                       </div>
@@ -395,15 +492,19 @@ export default function ResultsPage() {
                           result.relevanceScore >= 90
                             ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                             : result.relevanceScore >= 70
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                         }`}
                       >
                         {result.relevanceScore}% Relevant
                       </div>
 
                       <Button variant="outline" size="sm" asChild>
-                        <a href={result.url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           View on Reddit
                         </a>
@@ -426,19 +527,24 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <span>r/{result.subreddit}</span>
                         <span>•</span>
-                        <span>{result.timestamp}</span>
+                        <span>{formatDate(new Date(result.createdAt))}</span>
                         <span>•</span>
                         <span>u/{result.author}</span>
                         <span>•</span>
-                        <span>Comment</span>
+                        {/* <span>Comment</span> */}
                       </div>
 
-                      <h3 className="text-lg font-medium mb-2">{result.author}</h3>
+                      <h3 className="text-lg font-medium mb-2">
+                        {result.author}
+                      </h3>
                       <p className="text-sm mb-4">"{result.content}"</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {result.matchedKeywords.map((keyword, index) => (
-                          <span key={index} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                          <span
+                            key={index}
+                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                          >
                             {keyword}
                           </span>
                         ))}
@@ -446,7 +552,10 @@ export default function ResultsPage() {
 
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Found by:</span>
-                        <Link href={`/agents/${result.agentId}`} className="text-primary hover:underline">
+                        <Link
+                          href={`/agents/${result.agentId}`}
+                          className="text-primary hover:underline"
+                        >
                           {/* {result.agentName} */}
                         </Link>
                       </div>
@@ -458,15 +567,19 @@ export default function ResultsPage() {
                           result.relevanceScore >= 90
                             ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                             : result.relevanceScore >= 70
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                         }`}
                       >
                         {result.relevanceScore}% Relevant
                       </div>
 
                       <Button variant="outline" size="sm" asChild>
-                        <a href={result.url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           View on Reddit
                         </a>
@@ -479,5 +592,5 @@ export default function ResultsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

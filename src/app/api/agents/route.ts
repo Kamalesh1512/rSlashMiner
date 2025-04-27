@@ -160,13 +160,13 @@ export async function GET(request: Request) {
           createdAt: res.createdAt,
           processed: res.processed,
           redditCommentId: res.redditCommentId as string,
-          redditPostId: res.redditCommentId as string,
+          redditPostId: res.redditPostId as string,
           subreddit: res.subreddit as string,
           relevanceScore: res.relevanceScore as number,
           score: res.score as number,
           sentimentScore: res.sentimentScore as number,
           url: res.url as string,
-          matchedKeywords: res.matchedKeywords as string,
+          matchedKeywords: JSON.parse(res.matchedKeywords as string),
         })),
     }));
 

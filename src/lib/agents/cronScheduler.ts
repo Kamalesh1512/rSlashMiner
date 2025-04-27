@@ -93,13 +93,15 @@ export async function shouldAgentRunToday(agentId: string): Promise<boolean> {
           const subredditsResult = await db.select().from(subreddits).where(eq(subreddits.agentId, run.agentId))
   
           const relevanceThreshold = JSON.parse(agent[0].configuration).relevanceThreshold
+
+          const keywordList = keywordsResult.map((key) => key.keyword);
           // Run the agent for each subreddit
           for (const subreddit of subredditsResult) {
             await runAgent({
               agentId: run.agentId,
               subreddit: subreddit.subredditName,
               relevanceThreshold:relevanceThreshold,
-              query: keywordsResult[0]?.keyword || "",
+              query: keywordList || "",
               businessInterests: keywordsResult.map((k) => k.keyword),
               businessDescription: agent[0].description || "",
               onProgress: (message) => {
