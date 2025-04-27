@@ -50,7 +50,7 @@ export default function AgentDetailPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
-  const agents = useAgentStore((state) => state.agents);
+  const {agents,setAgents} = useAgentStore();
   const [agent, setAgent] = useState<Agent | null>();
   const [isRunning, setIsRunning] = useState(false);
 
@@ -59,15 +59,47 @@ export default function AgentDetailPage() {
     // Simulate loading data
     const timer = setTimeout(() => {
       const foundAgent = agents.find((a) => a.id === agentId);
-      // console.log("Found agent",foundAgent)
       setAgent(foundAgent || null);
       setIsLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
   }, [agentId, agents]);
+  console.log("agents details",agents)
+  // console.log("agents details", agent);
 
-  console.log("agents details", agent);
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch("/api/agents")
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch agents")
+      }
+      setAgents(data.agents)
+    } catch (error) {
+      toast.error("Error",{
+        description: error instanceof Error ? error.message : "Failed to fetch agents",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+    useEffect(() => {
+
+      const timer = setTimeout(() => {
+      if (status === "unauthenticated") {
+        router.push("/login")
+      }
+  
+      if (status === "authenticated") {
+        fetchAgents()
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+    }, [status, router])
 
   const toggleAgentStatus = () => {
     if (!agent) return;
@@ -120,6 +152,8 @@ export default function AgentDetailPage() {
   const last24Days = getRunsInLastNDays(agent.lastRunAt, agent.runCount, 1);
   const last7Days = getRunsInLastNDays(agent.lastRunAt, agent.runCount, 7);
   const last30Days = getRunsInLastNDays(agent.lastRunAt, agent.runCount, 30);
+
+  
 
   return (
     <div className="space-y-5">
@@ -346,7 +380,7 @@ export default function AgentDetailPage() {
                                 </p>
 
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                  {result.matchedKeywords.map(
+                                  {result.matchedKeywords && result.matchedKeywords.map(
                                     (keyword, index) => (
                                       <span
                                         key={index}

@@ -381,3 +381,12 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
     references: [users.id],
   }),
 }))
+
+
+export const waitlist = pgTable("waitlist", {
+  id: varchar("id", { length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  email: varchar("email", { length: 128 }).notNull()
+  
+});

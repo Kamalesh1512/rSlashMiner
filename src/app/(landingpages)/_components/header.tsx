@@ -74,12 +74,12 @@ export default function Header() {
           >
             FAQ
           </Link>
-          <Button asChild variant="outline" className="ml-2">
+          {/* <Button asChild variant="outline" className="ml-2">
             <Link href="/login">Login</Link>
           </Button>
           <Button asChild>
             <Link href="/signup">Sign Up Free</Link>
-          </Button>
+          </Button> */}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -137,7 +137,8 @@ export default function Header() {
             >
               FAQ
             </Link>
-            <div className="flex flex-col gap-2 pt-2">
+            {/* TODO - We need to revoke once the website is  */}
+            {/* <div className="flex flex-col gap-2 pt-2">
               <Button asChild variant="outline" className="w-full">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                   Login
@@ -148,7 +149,7 @@ export default function Header() {
                   Sign Up Free
                 </Link>
               </Button>
-            </div>
+            </div> */}
           </div>
         </motion.div>
       )}

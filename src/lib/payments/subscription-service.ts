@@ -39,7 +39,7 @@ export class SubscriptionService {
 
     // Create or get customer
     let customerId = user[0].dodoCustomerId as string | undefined;
-
+    
     if (!customerId) {
       const customer = await dodoClient.customers.create({
         email: user[0].email as string,
