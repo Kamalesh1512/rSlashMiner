@@ -1,45 +1,75 @@
-"use client"
+"use client";
 
-import { useRef } from "react"
-import Image from "next/image"
-import { motion, useInView } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useRef } from "react";
+import Image from "next/image";
+import { motion, useInView } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const testimonials = [
   {
     quote:
-      "Skroub has completely transformed how we gather market intelligence. The AI agents find relevant discussions on Reddit that we would have never discovered manually.",
-    author: "Sarah Johnson",
-    title: "Marketing Director, TechCorp",
+      "Day 2: Skroub pinged a thread asking for exactly what we sell. Closed the deal before lunch.",
+    author: "Syed Ali Hasan",
+    title: "Cronos PMC",
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
     quote:
-      "As a product manager, I need to stay on top of user feedback. Skroub helps me monitor Reddit for mentions of our product and competitors in real-time.",
-    author: "Michael Chen",
-    title: "Product Manager, SaaS Solutions",
+      "We run an agency. One Reddit lead via Skroub paid for its yearly expense in one hit.",
+
+    author: "Ritesh Hegde",
+    title: "Ritz7 Automations",
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
     quote:
-      "The scheduled monitoring feature saves me hours every week. I get notifications about relevant Reddit discussions without having to manually search.",
-    author: "Alex Rivera",
-    title: "Content Strategist, MediaGroup",
+      "I'm not techy; setup took 5 minutes. My VA just replies and books demos.",
+    author: "Prashant Sharma",
+    title: "Build School",
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
     quote:
-      "We've increased our customer acquisition by 30% since implementing Skroub. It helps us identify potential customers expressing pain points our product solves.",
-    author: "Jessica Wong",
-    title: "Growth Lead, StartupX",
+      "We ditched cold email and filled our pipeline entirely from Skroub alerts.",
+    author: "Ankur Dhanuka",
+    title: "C2X",
     avatar: "/placeholder.svg?height=40&width=40",
   },
-]
+
+  {
+    quote:
+      "Cold email used to be like shooting in the void. First week using Skroub: 3 inbound DMs from Reddit without even trying. Love it.",
+    author: "Ayush Garg",
+    title: "Signwith",
+    avatar: "/placeholder.svg?height=40&width=40",
+  },
+  {
+    quote:
+      "Skroub is great. Now we track our brand and competitors—huge intel!",
+    author: "Sathyanand",
+    title: "Logbase",
+    avatar: "/placeholder.svg?height=40&width=40",
+  },
+  {
+    quote:
+      "Used it to spot new, viable game ideas. Free tier wasn't enough—upgraded fast!",
+    author: "Arvindh",
+    title: "Put The Player First",
+    avatar: "/placeholder.svg?height=40&width=40",
+  },
+  {
+    quote:
+      "Skroub finds Reddit posts where founders need data help—those leads close the fastest.",
+    author: "Vatsal Sanghvi",
+    title: "1811 Labs",
+    avatar: "/placeholder.svg?height=40&width=40",
+  },
+];
 
 export default function TestimonialsSection() {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -49,7 +79,7 @@ export default function TestimonialsSection() {
         staggerChildren: 0.1,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -58,7 +88,7 @@ export default function TestimonialsSection() {
       y: 0,
       transition: { duration: 0.5 },
     },
-  }
+  };
 
   return (
     <section className="container px-4 md:px-6 mx-auto mt-16">
@@ -95,16 +125,32 @@ export default function TestimonialsSection() {
             <motion.div key={i} variants={itemVariants}>
               <Card className="h-full">
                 <CardContent className="p-6">
-                  <div className="mb-4 text-2xl">"</div>
-                  <p className="mb-6 italic text-muted-foreground">{testimonial.quote}</p>
+                  <div className="mb-4 text-2xl">
+                    <svg
+                      className="h-6 w-6 text-orange-500 mb-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                    </svg>
+                  </div>
+                  <p className="mb-6 italic text-muted-foreground">
+                    {testimonial.quote}
+                  </p>
                   <div className="flex items-center gap-4">
                     <Avatar>
-                      <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.author} />
+                      <AvatarImage
+                        src={testimonial.avatar || "/placeholder.svg"}
+                        alt={testimonial.author}
+                      />
                       <AvatarFallback>{testimonial.author[0]}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{testimonial.author}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {testimonial.title}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -113,7 +159,7 @@ export default function TestimonialsSection() {
           ))}
         </motion.div>
 
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -132,8 +178,8 @@ export default function TestimonialsSection() {
               />
             ))}
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
-  )
+  );
 }

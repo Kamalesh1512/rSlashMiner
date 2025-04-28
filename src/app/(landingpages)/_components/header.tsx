@@ -7,6 +7,7 @@ import { Menu, Slash, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import ThemeSwitcher from "@/components/global/mode-toggle";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,6 +32,7 @@ export default function Header() {
           : "bg-background/10"
       )}
     >
+      
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2">
           <motion.div
@@ -47,9 +49,11 @@ export default function Header() {
             </span>
           </motion.div>
         </Link>
+        
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
+          
           <Link
             href="#features"
             className="text-sm font-medium hover:text-primary transition-colors"
@@ -80,6 +84,7 @@ export default function Header() {
           <Button asChild>
             <Link href="/signup">Sign Up Free</Link>
           </Button> */}
+          <ThemeSwitcher/>
         </nav>
 
         {/* Mobile Menu Button */}

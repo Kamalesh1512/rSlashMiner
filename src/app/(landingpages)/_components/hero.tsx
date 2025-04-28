@@ -9,18 +9,31 @@ import Link from "next/link";
 import Slideshow from "./slide-show";
 import { useRouter } from "next/navigation";
 import { WaitlistForm } from "@/components/global/waitlist/waitlist-form";
+import LaunchBanner from "./launch-banner";
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
 
 export default function HeroSection() {
   const router = useRouter();
   return (
     <div className="container px-4 md:px-6 mx-auto">
       <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
+      
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-4 mt-32"
         >
+         
           <Badge
             variant="outline"
             className="px-4 py-1 border-primary/30 bg-primary/5 text-primary"
@@ -83,47 +96,10 @@ export default function HeroSection() {
 
           {/* Dashboard slideshow */}
           <Slideshow />
-
-          {/* Floating elements */}
-          {/* <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="absolute top-8 right-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
-            >
-              <div className="flex items-center gap-3">
-                <Search className="h-5 w-5 text-primary" />
-                <span className="font-medium">Intelligent Data Extraction</span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7 }}
-              className="absolute bottom-8 left-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
-            >
-              <div className="flex items-center gap-3">
-                <Bot className="h-5 w-5 text-primary" />
-                <span className="font-medium">AI-Powered Analysis</span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-              className="absolute bottom-8 right-8 bg-background/90 backdrop-blur-sm p-4 rounded-lg border shadow-lg z-20"
-            >
-              <div className="flex items-center gap-3">
-                <Database className="h-5 w-5 text-primary" />
-                <span className="font-medium">Customized Results</span>
-              </div>
-            </motion.div> */}
         </motion.div>
 
         {/* Stats or social proof */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.9 }}
@@ -145,6 +121,53 @@ export default function HeroSection() {
             <span className="text-3xl font-bold text-foreground">24/7</span>
             <span>Monitoring</span>
           </div>
+        </motion.div> */}
+
+        <motion.div>
+                  {/* Pain → Promise Section */}
+        <section className="py-16 bg-transparent rounded-2xl px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            Stop Wasting Hours — Start Talking to Buyers
+          </h2>
+          <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+          className="flex flex-col items-center gap-12"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <span className="text-red-500 text-xl mr-3">❌</span>
+                <p className="text-lg">Wasting time scrolling forums</p>
+              </div>
+              <div className="flex items-start">
+                <span className="text-red-500 text-xl mr-3">❌</span>
+                <p className="text-lg">Paying for ads that "might" work</p>
+              </div>
+              <div className="flex items-start">
+                <span className="text-red-500 text-xl mr-3">❌</span>
+                <p className="text-lg">Pitching people who never wanted you</p>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <span className="text-green-500 text-xl mr-3">✅</span>
+                <p className="text-lg">Instant alerts when prospects ask for help</p>
+              </div>
+              <div className="flex items-start">
+                <span className="text-green-500 text-xl mr-3">✅</span>
+                <p className="text-lg">Real conversations, no awkward cold pitch</p>
+              </div>
+              <div className="flex items-start">
+                <span className="text-green-500 text-xl mr-3">✅</span>
+                <p className="text-lg">More sales, less outreach pain</p>
+              </div>
+            </div>
+          </div>
+          </motion.div>
+        </section>
         </motion.div>
       </div>
     </div>

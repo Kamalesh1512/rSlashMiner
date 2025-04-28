@@ -39,7 +39,7 @@ export const generateKeywords = async (
 
   try {
     const res = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -51,7 +51,7 @@ export const generateKeywords = async (
           content: prompt,
         },
       ],
-      temperature: 0.7,
+      temperature: 0.8,
     });
 
     const content = res.choices[0].message.content;
@@ -93,9 +93,9 @@ async function generateAISubreddits(description: string): Promise<string[]> {
   const prompt = `Given the following topic or problem description, suggest the most relevant and active subreddits (maximum 10) where this topic could be discussed. Respond with only a comma-separated list of subreddit names, without the "r/" prefix. Description: "${description}"`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o", // or "gpt-3.5-turbo" if needed
+    model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" if needed
     messages: [{ role: "user", content: prompt }],
-    temperature: 0.7,
+    temperature: 0.8,
   });
 
   const raw = completion.choices[0].message.content || "";
@@ -160,7 +160,7 @@ export async function validateBusinessInput(input: string) {
         content: input,
       },
     ],
-    temperature: 0.3,
+    temperature: 0.2,
   });
 
   const reply = chat.choices[0].message.content?.toLowerCase() || "";

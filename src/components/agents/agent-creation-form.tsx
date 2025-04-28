@@ -58,6 +58,7 @@ interface FormData {
   suggestedSubreddits: string[];
   keywords: string[];
   suggestedKeywords: string[];
+  initialSuggestedSubreddits:string[]
   notificationMethod: "email" | "whatsapp" | "both";
   notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
   relevanceThreshold: number;
@@ -99,6 +100,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     description: "",
     subreddits: [],
     suggestedSubreddits: [],
+    initialSuggestedSubreddits:[],
     keywords: [],
     suggestedKeywords: [],
     notificationMethod: "email",
@@ -157,33 +159,88 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     setFormData((prev) => ({ ...prev, relevanceThreshold: value[0] }));
   };
 
+  // const addSubreddit = () => {
+  //   if (!newSubreddit.trim()) return;
+
+  //   // Remove 'r/' prefix if present
+  //   const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "");
+
+  //   if (formData.subreddits.includes(formattedSubreddit)) {
+  //     toast.error("Duplicate subreddit", {
+  //       description: "This subreddit is already in your list.",
+  //     });
+  //     return;
+  //   }
+
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     subreddits: [...prev.subreddits, formattedSubreddit],
+  //   }));
+  //   setNewSubreddit("");
+  // };
+
+  // const removeSubreddit = (subreddit: string) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     subreddits: prev.subreddits.filter((s) => s !== subreddit),
+  //   }));
+  // };
+
+  // const addSuggestedSubreddit = (subreddit: string) => {
+  //   if (formData.subreddits.includes(subreddit)) {
+  //     toast.error("Duplicate subreddit", {
+  //       description: "This subreddit is already in your list.",
+  //     });
+  //     return;
+  //   }
+
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     subreddits: [...prev.subreddits, subreddit],
+  //     suggestedSubreddits: prev.suggestedSubreddits.filter(
+  //       (s) => s !== subreddit
+  //     ),
+  //   }));
+  // };
+
   const addSubreddit = () => {
     if (!newSubreddit.trim()) return;
-
-    // Remove 'r/' prefix if present
+  
     const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "");
-
+  
     if (formData.subreddits.includes(formattedSubreddit)) {
       toast.error("Duplicate subreddit", {
         description: "This subreddit is already in your list.",
       });
       return;
     }
-
-    setFormData((prev) => ({
-      ...prev,
-      subreddits: [...prev.subreddits, formattedSubreddit],
-    }));
+  
+    setFormData((prev) => {
+      const wasSuggested = prev.suggestedSubreddits.includes(formattedSubreddit);
+      return {
+        ...prev,
+        subreddits: [...prev.subreddits, formattedSubreddit],
+        suggestedSubreddits: wasSuggested
+          ? prev.suggestedSubreddits.filter((s) => s !== formattedSubreddit)
+          : prev.suggestedSubreddits,
+      };
+    });
     setNewSubreddit("");
   };
-
+  
   const removeSubreddit = (subreddit: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      subreddits: prev.subreddits.filter((s) => s !== subreddit),
-    }));
+    setFormData((prev) => {
+      const wasOriginallySuggested = prev.initialSuggestedSubreddits?.includes(subreddit); // See below about initialSuggestedSubreddits
+      return {
+        ...prev,
+        subreddits: prev.subreddits.filter((s) => s !== subreddit),
+        suggestedSubreddits: wasOriginallySuggested
+          ? [...prev.suggestedSubreddits, subreddit]
+          : prev.suggestedSubreddits,
+      };
+    });
   };
-
+  
   const addSuggestedSubreddit = (subreddit: string) => {
     if (formData.subreddits.includes(subreddit)) {
       toast.error("Duplicate subreddit", {
@@ -191,15 +248,14 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       });
       return;
     }
-
+  
     setFormData((prev) => ({
       ...prev,
       subreddits: [...prev.subreddits, subreddit],
-      suggestedSubreddits: prev.suggestedSubreddits.filter(
-        (s) => s !== subreddit
-      ),
+      suggestedSubreddits: prev.suggestedSubreddits.filter((s) => s !== subreddit),
     }));
   };
+  
 
   const addKeyword = () => {
     if (!newKeyword.trim()) return;
@@ -501,26 +557,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           : "justify-start"
                       }`}
                     >
-                      {/* <div
-                        className={`flex items-start gap-3 max-w-[80%] ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        } rounded-lg p-3`}
-                      >
-                        {message.role === "assistant" && (
-                          <Avatar className="h-8 w-8 bg-orange-500 items-center justify-center">
-                            <Bot>
-                              <AvatarFallback>AI</AvatarFallback>
-                            </Bot>
-                          </Avatar>
-                        )}
-                        <div className="space-y-1">
-                          <p className="text-sm whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-                        </div>
-                      </div> */}
                       <ChatMessage message={message}/>
                     </div>
                   ))}
@@ -569,48 +605,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     value={formData.name}
                     onChange={handleInputChange}
                   />
-                </div>
-
-              {/* Industry */}
-                {/* <div className="space-y-2">
-                  <Label htmlFor="industry">Business Industry</Label>
-                  <Select
-                    value={formData.industry}
-                    onValueChange={(value) =>
-                      handleSelectChange("industry", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="technology">
-                        Technology & SaaS
-                      </SelectItem>
-                      <SelectItem value="ecommerce">
-                        E-commerce & Retail
-                      </SelectItem>
-                      <SelectItem value="finance">Finance & Fintech</SelectItem>
-                      <SelectItem value="health">Health & Wellness</SelectItem>
-                      <SelectItem value="education">
-                        Education & E-learning
-                      </SelectItem>
-                      <SelectItem value="marketing">
-                        Marketing & Advertising
-                      </SelectItem>
-                      <SelectItem value="food">Food & Beverage</SelectItem>
-                      <SelectItem value="travel">
-                        Travel & Hospitality
-                      </SelectItem>
-                      <SelectItem value="entertainment">
-                        Entertainment & Media
-                      </SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
-                <div className="space-y-2">
+                </div> 
+               <div className="space-y-2">
                   <Label htmlFor="description">Business Description</Label>
                   <Textarea
                     id="description"

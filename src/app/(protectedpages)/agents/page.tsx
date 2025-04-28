@@ -27,7 +27,7 @@ export default function AgentsPage() {
     }
 
     if (status === "authenticated") {
-      setIsLoading(false)
+      fetchAgents()
     }
   }, [status, router])
 

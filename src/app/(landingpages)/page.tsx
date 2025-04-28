@@ -12,6 +12,9 @@ import PricingSection from "./_components/pricing";
 import FaqSection from "./_components/faq";
 import Footer from "./_components/footer";
 import BackgroundGradient from "./_components/bg-gradient";
+import LaunchBanner from "./_components/launch-banner";
+import CtaSection from "./_components/cta";
+import FooterCta from "./_components/footer-cta";
 
 export default function LandingPage() {
   const controls = useAnimation();
@@ -28,15 +31,22 @@ export default function LandingPage() {
 
   return (
     <BackgroundGradient className="min-h-screen bg-background">
+      
       <div>
         <Header />
         <main>
+          <div className="mt-16">
+          <LaunchBanner/> 
+          </div>
+        
           <HeroSection />
           <FeaturesSection />
           <DemoSection />
           <TestimonialsSection />
           <PricingSection />
           <FaqSection />
+          <CtaSection/>
+          <FooterCta/>
         </main>
         <Footer />
       </div>

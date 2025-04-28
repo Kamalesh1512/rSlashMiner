@@ -166,7 +166,7 @@ export default function PricingSection() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" variant={plan.popular ? "default" : "outline"} onClick={() => router.push('/login')}>
+                  <Button className="w-full" variant={plan.popular ? "default" : "outline"} onClick={() => router.push('/login')} disabled>
                     {plan.cta}
                   </Button>
                 </CardFooter>

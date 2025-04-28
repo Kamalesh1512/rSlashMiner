@@ -89,17 +89,12 @@ export default function AgentDetailPage() {
     useEffect(() => {
 
       const timer = setTimeout(() => {
-      if (status === "unauthenticated") {
-        router.push("/login")
-      }
-  
-      if (status === "authenticated") {
+
         fetchAgents()
-      }
     }, 1000);
 
     return () => clearTimeout(timer);
-    }, [status, router])
+    }, [])
 
   const toggleAgentStatus = () => {
     if (!agent) return;

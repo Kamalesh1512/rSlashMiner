@@ -104,7 +104,7 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
                   >
                     View My Agents
                   </Button>
-                  <Button onClick={() => router.push("/pricing")}>
+                  <Button onClick={() => router.push("/settings")}>
                     Upgrade Plan
                   </Button>
                 </div>
