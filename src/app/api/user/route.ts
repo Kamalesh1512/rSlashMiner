@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
     const allPaidUsers = await db.select().from(users).where(isNotNull(users.paidUserIndex))
 
-    if (!allPaidUsers || allPaidUsers.length ==0) {
+    if (!allPaidUsers) {
       return NextResponse.json({ users: "No users Found" }, { status: 200 });
     }
 
