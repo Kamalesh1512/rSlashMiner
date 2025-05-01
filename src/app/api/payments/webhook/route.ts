@@ -122,7 +122,7 @@ export async function POST(request: Request) {
 //     .where(eq(users.id, userId));
 // }
 
-export async function assignPaidUserIndexIfEligible(email: string) {
+async function assignPaidUserIndexIfEligible(email: string) {
   // Check if the user already has a signup_index
   const existing = await db.select({ paidUser: users.paidUserIndex })
     .from(users)
