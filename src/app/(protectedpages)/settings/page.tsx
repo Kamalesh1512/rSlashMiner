@@ -29,27 +29,27 @@ export default function SettingsPage() {
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionstatusProps['creationLimit']>();
 
 
-  const fetchSubscriptionLimit = async () => {
-    try {
-      const res = await fetch("/api/subscription/check-limit");
+  // const fetchSubscriptionLimit = async () => {
+  //   try {
+  //     const res = await fetch("/api/subscription/check-limit");
 
-      if (res.ok) {
-        const response = await res.json();
-        setSubscriptionDetails(response.data);
-      } 
-    } catch (error) {
-      console.error("Error fetching subscription details:", error);
-    }
-  };
+  //     if (res.ok) {
+  //       const response = await res.json();
+  //       setSubscriptionDetails(response.data);
+  //     } 
+  //   } catch (error) {
+  //     console.error("Error fetching subscription details:", error);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-    if (status === "authenticated") {
-      fetchSubscriptionLimit()
-    }
-  }, [status, router]);
+  // useEffect(() => {
+  //   if (status === "unauthenticated") {
+  //     router.push("/login");
+  //   }
+  //   if (status === "authenticated") {
+  //     fetchSubscriptionLimit()
+  //   }
+  // }, [status, router]);
 
 
 
