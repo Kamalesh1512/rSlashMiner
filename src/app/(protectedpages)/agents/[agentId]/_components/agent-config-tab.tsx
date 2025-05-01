@@ -33,33 +33,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Agent, SubscriptionstatusProps, weekDays } from "@/lib/constants/types";
+import {
+  Agent,
+  SubscriptionstatusProps,
+  weekDays,
+} from "@/lib/constants/types";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAgentStore } from "@/store/agentstore";
 
-interface AgentConfigTabProps{
-  agent:Agent,
-  subscription:string
+interface AgentConfigTabProps {
+  agent: Agent;
+  subscription: string;
 }
 
-export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
+export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [originalForm, setOriginalForm] = useState({ ...agent.configuration });
   const [form, setForm] = useState({ ...agent.configuration });
   const [isActive, setIsActive] = useState(agent.isActive);
-  const {agents,setAgents} = useAgentStore()
-  const [isSaving,setIsSaving] = useState(false)
+  const { agents, setAgents } = useAgentStore();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const router = useRouter()
+  const router = useRouter();
 
   const isFree = subscription === "free";
 
   const handleChange = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-  
+
   const saveSettings = async () => {
     setIsSaving(true);
     try {
@@ -69,27 +73,27 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
         body: JSON.stringify({
           configuration: form,
           isActive,
-          agentId:agent.id
+          agentId: agent.id,
         }),
       });
-  
+
       if (response.ok) {
         setIsEditing(false);
         toast.success("Settings saved successfully");
-        
-      // ✅ Update agent in store
-      const updatedAgent = {
-        ...agent,
-        configuration: form,
-        isActive,
-        updatedAt:new Date(),
-      };
 
-      const updatedAgents = agents.map((a) =>
-        a.id === agent.id ? updatedAgent : a
-      );
+        // ✅ Update agent in store
+        const updatedAgent = {
+          ...agent,
+          configuration: form,
+          isActive,
+          updatedAt: new Date(),
+        };
 
-      setAgents(updatedAgents);
+        const updatedAgents = agents.map((a) =>
+          a.id === agent.id ? updatedAgent : a
+        );
+
+        setAgents(updatedAgents);
       } else {
         const error = await response.json();
         toast.error(error.message || "Failed to save settings");
@@ -97,8 +101,8 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
     } catch (err) {
       toast.error("Something went wrong while saving settings");
       console.error("Save error:", err);
-    }finally{
-        setIsSaving(false)
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -113,12 +117,29 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
     setIsEditing(false);
   };
 
+  const handleDeleteAgent = async () => {
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/delete`);
+      if (response.ok) {
+        const updatedAgents = agents.filter(res => res.id !== agent.id);
+        setAgents(updatedAgents);
+        toast.success("Settings saved successfully");
+        router.push("/agents");
+      }
+    } catch (error) {
+      toast.error("Something went wrong while Deleting agent");
+      console.error("Delete error:", error);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-end mb-4 gap-2">
         {isEditing ? (
           <>
-            <Button onClick={saveSettings} disabled={isSaving}>{isSaving ? "Saving...":"Save Changes"}</Button>
+            <Button onClick={saveSettings} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
             <Button variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
@@ -309,23 +330,22 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
                   <Label>Days</Label>
                   {isEditing ? (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {(
-                        Object.entries(form.scheduleDays ?? {})
-                      ).map(([day, isEnabled]) => (
-                        <div key={day} className="flex flex-col items-center">
-                          <Label
-                            htmlFor={day}
-                            className="mb-1 text-xs uppercase"
-                          >
-                            {day.slice(0, 3)}
-                          </Label>
-                          <Switch
-                            id={day}
-                            checked={isEnabled}
-                            onCheckedChange={(checked) =>
-                              setForm((prev) => ({
-                                ...prev,
-                                scheduleDays: {
+                      {Object.entries(form.scheduleDays ?? {}).map(
+                        ([day, isEnabled]) => (
+                          <div key={day} className="flex flex-col items-center">
+                            <Label
+                              htmlFor={day}
+                              className="mb-1 text-xs uppercase"
+                            >
+                              {day.slice(0, 3)}
+                            </Label>
+                            <Switch
+                              id={day}
+                              checked={isEnabled}
+                              onCheckedChange={(checked) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  scheduleDays: {
                                     monday: false,
                                     tuesday: false,
                                     wednesday: false,
@@ -333,14 +353,16 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
                                     friday: false,
                                     saturday: false,
                                     sunday: false,
-                                  ...prev.scheduleDays,
-                                  [day as keyof typeof prev.scheduleDays]: checked,
-                                },
-                              }))
-                            }
-                          />
-                        </div>
-                      ))}
+                                    ...prev.scheduleDays,
+                                    [day as keyof typeof prev.scheduleDays]:
+                                      checked,
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                        )
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
@@ -384,10 +406,20 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-          {isFree?(<span className="text-sm text-muted-foreground">Free Tier Do not have option to delete agent</span>):(<></>)}
+            {isFree ? (
+              <span className="text-sm text-muted-foreground">
+                Free Tier Do not have option to delete agent
+              </span>
+            ) : (
+              <></>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full" disabled={isFree}>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={isFree}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Agent
                 </Button>
@@ -404,7 +436,7 @@ export function AgentConfigTab({ agent ,subscription}: AgentConfigTabProps) {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      /* call delete function */
+                      handleDeleteAgent();
                     }}
                     className="bg-destructive text-destructive-foreground"
                   >

@@ -137,10 +137,11 @@ export function SubscriptionManagement() {
   }
 
   const planName =
-    subscription.plan === "pro"
-      ? "Pro"
-      : subscription.plan === "premium"
-      ? "Business"
+    subscription.plan === "starter"
+      ? "Starter"
+      : subscription.plan === "growth"
+      ? "Growth"
+      :subscription.plan ==='enterprise'? "Enterprise"
       : "Free";
 
   return (

@@ -79,9 +79,9 @@ export default function LoginPage() {
         password: formData.password,
       });
 
-      if (result?.error) {
+      if (result?.error === 'CredentialsSignin') {
         toast.error("Login failed", {
-          description: result.error,
+          description: "Invalid Credentials",
         });
       } else {
         router.push("/agents");

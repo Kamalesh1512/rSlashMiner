@@ -30,7 +30,8 @@ export const users = pgTable("users", {
   subscriptionExpiresAt: timestamp("subscription_expires_at", { mode: "date" }),
   dodoCustomerId:text('dodo_customer_id'),
   dodoSubscriptionId:text('dodo_subscription_id'),
-  cancelAtPeriodEnd:boolean('cancel_at_period_end').default(false)
+  cancelAtPeriodEnd:boolean('cancel_at_period_end').default(false),
+  paidUserIndex:integer('paid_user_index'),
 
 });
 
@@ -280,7 +281,9 @@ export const usageLimits = pgTable("usage_limits", {
     .references(() => users.id, { onDelete: "cascade" }),
   period: text("period").notNull(), // daily, monthly
   agentCreationCount: integer("agent_creation_count").default(0).notNull(),
-  monitoringRequestCount: integer("monitoring_request_count").default(0).notNull(),
+  keywordTrackCount: integer("keyword_track_count").default(0).notNull(),
+  manualRunCount: integer("manual_run_count").default(0).notNull(),
+  scheduledRunCount: integer("scheduled_run_count").default(0).notNull(),
   lastResetAt: timestamp("last_reset_at", { mode: "date" }).defaultNow().notNull(),
 })
 

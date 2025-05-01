@@ -604,6 +604,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     placeholder="E.g., My SaaS Product Monitor"
                     value={formData.name}
                     onChange={handleInputChange}
+                    required
                   />
                 </div> 
                <div className="space-y-2">

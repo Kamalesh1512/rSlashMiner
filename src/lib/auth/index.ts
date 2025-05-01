@@ -19,19 +19,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password required");
+          const error = new Error("Email and password required");
+          error.message ='Email and password required'
+          return null
         }
 
         const user = await db.select().from(users).where(eq(users.email, credentials.email as string));
 
         if (!user.length || !user[0].password) {
-          throw new Error("No user found with this email");
+          const error = new Error("No user found with this email");
+          error.message='No user found with this email'
+          return null;
         }
 
         const isPasswordValid = await compare(credentials.password as string, user[0].password);
 
         if (!isPasswordValid) {
-          throw new Error("Invalid password");
+          const error = new Error("Incorrect password");
+          error.message='Incorrect password'
+          return null
         }
 
         return user[0];
@@ -50,7 +56,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
     signOut: "/",
     error: "/login",
-    newUser: "/dashboard",
+    newUser: "/agents",
   },
   session: {
     strategy: "jwt",
@@ -73,5 +79,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
+  debug:false,
   secret: process.env.NEXTAUTH_SECRET,
 });

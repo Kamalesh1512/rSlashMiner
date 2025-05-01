@@ -14,9 +14,6 @@ interface SubscriptionCardProps {
 export function SubscriptionCard({ plan, isCurrentPlan = false, showYearlySavings = false }: SubscriptionCardProps) {
   const yearlyEquivalent = plan.interval === "month" && plan.price > 0 ? plan.price * 12 : null
 
-  const yearlySavings = yearlyEquivalent
-    ? Math.round(((yearlyEquivalent - plan.price * 0.85 * 12) / yearlyEquivalent) * 100)
-    : null
 
   return (
     <Card className={`flex flex-col h-full ${plan.popular ? "border-primary shadow-lg relative" : ""}`}>
@@ -32,8 +29,8 @@ export function SubscriptionCard({ plan, isCurrentPlan = false, showYearlySaving
           <span className="text-4xl font-bold">${plan.price}</span>
           {plan.price > 0 && <span className="text-muted-foreground">/{plan.interval}</span>}
 
-          {showYearlySavings && yearlySavings && (
-            <div className="mt-1 text-xs text-primary font-medium">Save {yearlySavings}% with annual billing</div>
+          {showYearlySavings && plan.id!=='free' && (
+            <div className="mt-1 text-xs text-green-400 font-medium">Save 5 months with annual billing</div>
           )}
         </div>
       </CardHeader>

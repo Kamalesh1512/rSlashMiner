@@ -105,11 +105,6 @@ export default function AgentDetailPage() {
     });
   };
 
-  const deleteAgent = () => {
-    // In a real app, this would call an API to delete the agent
-    router.push("/agents");
-  };
-
   if (status === "loading" || isLoading) {
     return (
       <div className="flex h-[calc(100vh-5rem)] items-center justify-center">

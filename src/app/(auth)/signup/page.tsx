@@ -72,13 +72,6 @@ export default function SignupPage() {
         description: "Please check your email to verify your account.",
       });
 
-      // Sign in the user automatically
-      await signIn("credentials", {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Registration failed", {
@@ -89,7 +82,6 @@ export default function SignupPage() {
       });
     } finally {
       setIsLoading(false);
-      setIsSubmitted(false);
     }
   };
 
@@ -113,10 +105,16 @@ export default function SignupPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
-            <CardDescription>
-              Enter your information to create an account
-            </CardDescription>
+            {!isSubmitted ? (
+              <>
+                <CardTitle>Sign Up</CardTitle>
+                <CardDescription>
+                  Enter your information to create an account
+                </CardDescription>
+              </>
+            ) : (
+              <></>
+            )}
           </CardHeader>
           <CardContent>
             {isSubmitted ? (
@@ -126,7 +124,7 @@ export default function SignupPage() {
                 </div>
                 <h3 className="text-xl font-semibold">Check your email</h3>
                 <p className="text-center text-muted-foreground">
-                  We've sent a password reset link to{" "}
+                  We've sent a verification email link to {" "}
                   <span className="font-medium">{formData.email}</span>
                 </p>
                 <p className="text-center text-sm text-muted-foreground">
@@ -251,7 +249,7 @@ export default function SignupPage() {
             href="/login"
             className="font-medium text-primary hover:underline"
           >
-            Sign in <ArrowRight className="inline h-3 w-3" />
+            Log in <ArrowRight className="inline h-3 w-3" />
           </Link>
         </p>
       </motion.div>

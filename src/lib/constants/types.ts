@@ -266,19 +266,19 @@ export interface Agent {
   results?: {
     id: string;
     agentId: string;
-    author:string | null,
-    content:string,
-    createdAt:Date,
-    processed:boolean,
-    redditCommentId:string,
-    redditPostId:string,
+    author: string | null;
+    content: string;
+    createdAt: Date;
+    processed: boolean;
+    redditCommentId: string;
+    redditPostId: string;
     subreddit: string;
     relevanceScore: number;
-    score:number,
-    sentimentScore:number,
-    url:string,
-    matchedKeywords:string[],
-    type?:'post' | 'comment'
+    score: number;
+    sentimentScore: number;
+    url: string;
+    matchedKeywords: string[];
+    type?: "post" | "comment";
   }[];
 }
 
@@ -404,10 +404,14 @@ export const weekDays: Day[] = [
   "sunday",
 ];
 
-
-
-export type Payment = BasePayment & { payload_type: string , product_id:string };
-export type Subscription = BaseSubscription & { payload_type: string,product_id:string};
+export type Payment = BasePayment & {
+  payload_type: string;
+  product_id: string;
+};
+export type Subscription = BaseSubscription & {
+  payload_type: string;
+  product_id: string;
+};
 
 export type OneTimeProduct = {
   product_id: string;
@@ -417,21 +421,20 @@ export type OneTimeProduct = {
 export type SubscriptionDetails = {
   activated_at: string;
   subscription_id: string;
-  payment_frequency_interval: 'Day' | 'Week' | 'Month' | 'Year';
+  payment_frequency_interval: "Day" | "Week" | "Month" | "Year";
   product_id: string;
 };
 
 export type WebhookPayload = {
   type: string;
-  data: Payment | Subscription
+  data: Payment | Subscription;
 };
 
-
 export interface FaqItem {
-  id: string
-  question: string
-  answer: string
-  category: "general" | "agents" | "billing" | "technical"
+  id: string;
+  question: string;
+  answer: string;
+  category: "general" | "agents" | "billing" | "technical";
 }
 
 export const faqs: FaqItem[] = [
@@ -505,4 +508,118 @@ export const faqs: FaqItem[] = [
       "Yes, you can pause and resume agents at any time. When paused, the agent will stop monitoring and won't use your daily monitoring requests.",
     category: "agents",
   },
-]
+];
+
+export type planConfigType = {
+  agent: number;
+  keywords: number;
+  manualRuns: {
+    runCount: number;
+    interval: string;
+    type: string;
+  };
+  scheduledRuns: {
+    enabled: boolean;
+    interval: string | null;
+    type: string;
+  };
+  alerts: string[];
+  dataExport: boolean;
+  autoReply: boolean;
+  planTier?:string
+};
+
+// config/planLimits.ts
+export const planLimits = {
+  free: {
+    agent: 1,
+    keywords: 5,
+    manualRuns: {
+      runCount: 1,
+      interval: "weekly",
+      type: "manual",
+    },
+    scheduledRuns: {
+      enabled: false,
+      interval: null,
+      type: "scheduled",
+    },
+    alerts: ["email"],
+    dataExport: false,
+    autoReply: false,
+  },
+  starter: {
+    agent: 2,
+    keywords: 10,
+    manualRuns: {
+      runCount: 3,
+      interval: "daily",
+      type: "manual",
+    },
+    scheduledRuns: {
+      enabled: true,
+      interval: "weekly",
+      type: "scheduled",
+    },
+    alerts: ["email", "slack"],
+    dataExport: true,
+    autoReply: false,
+  },
+  growth: {
+    agent: 5,
+    keywords: 25,
+    manualRuns: {
+      runCount: 10,
+      interval: "daily",
+      type: "manual",
+    },
+    scheduledRuns: {
+      enabled: true,
+      interval: "daily",
+      type: "scheduled",
+    },
+    alerts: ["email", "slack"],
+    dataExport: true,
+    autoReply: true,
+  },
+  enterprise: {
+    agent: Infinity,
+    keywords: 100,
+    manualRuns: {
+      runCount: Infinity,
+      interval: "daily",
+      type: "manual",
+    },
+    scheduledRuns: {
+      enabled: true,
+      interval: "hourly",
+      type: "scheduled",
+    },
+    alerts: ["email", "slack"],
+    dataExport: true,
+    autoReply: true,
+  },
+};
+
+export type usageLimitProps = {
+  tier: string | null;
+  agent: {
+    used: number | null;
+    limit: number | null;
+  };
+  keywords: {
+    used: number | null;
+    limit: number | null;
+  };
+  manualRuns: {
+    used: number | null;
+    limit: number | null;
+    interval: string | null;
+  };
+  scheduledRuns: {
+    used: number | null;
+    enabled: boolean | null;
+    interval: string | null;
+    limit: number | null;
+  };
+};

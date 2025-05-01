@@ -6,22 +6,18 @@ import { motion } from "framer-motion"
 import { getSession, signIn, useSession } from "next-auth/react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
-import { SubscriptionCard } from "@/components/payments/subscription-card"
 import { SubscriptionManagement } from "@/components/payments/subscription-management"
-import { getMonthlyPlans, getYearlyPlans } from "@/lib/payments/subscription-plans"
+import SubscriptionPlansDisplay from "./subscription-plans-display"
 
 export default function SubscriptionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly")
   const [showSuccess, setShowSuccess] = useState(false)
   const [showCanceled, setShowCanceled] = useState(false)
 
-  // Get plans
-  const monthlyPlans = getMonthlyPlans()
-  const yearlyPlans = getYearlyPlans()
+
 
   useEffect(() => {
     // Check for success or canceled params
@@ -114,45 +110,7 @@ export default function SubscriptionPage() {
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Upgrade Your Plan</h2>
 
-            <Tabs defaultValue="monthly" onValueChange={(value) => setBillingCycle(value as "monthly" | "annual")}>
-              <div className="flex justify-center mb-8">
-                <TabsList>
-                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                  <TabsTrigger value="annual">Annual (Save 15%)</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="monthly">
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {monthlyPlans.map((plan) => (
-                    <SubscriptionCard
-                      key={plan.id}
-                      plan={plan}
-                      isCurrentPlan={
-                        session?.user?.subscriptionTier ===
-                        (plan.id === "pro_monthly" ? "pro" : plan.id === "business_monthly" ? "premium" : "free")
-                      }
-                      showYearlySavings={true}
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="annual">
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {yearlyPlans.map((plan) => (
-                    <SubscriptionCard
-                      key={plan.id}
-                      plan={plan}
-                      isCurrentPlan={
-                        session?.user?.subscriptionTier ===
-                        (plan.id === "pro_yearly" ? "pro" : plan.id === "business_yearly" ? "premium" : "free")
-                      }
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <SubscriptionPlansDisplay/>
           </div>
         </div>
       </motion.div>

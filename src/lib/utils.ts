@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { addHours, addDays, addWeeks, addMonths, isBefore } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -58,3 +59,18 @@ export const getRunsInLastNDays = (lastRunAt: Date | null, runCount: number, day
 //   }
 //   return 0;
 // }; 
+
+
+
+
+export function shouldReset(lastReset: Date, period: string): boolean {
+  const now = new Date();
+  const nextReset = {
+    hourly: addHours(lastReset, 1),
+    daily: addDays(lastReset, 1),
+    weekly: addWeeks(lastReset, 1),
+    monthly: addMonths(lastReset, 1),
+  }[period];
+
+  return isBefore(nextReset as Date, now);
+}

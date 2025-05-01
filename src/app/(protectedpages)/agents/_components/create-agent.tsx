@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { checkAgentCreationLimit } from "@/lib/check-subscriptions/subscriptions";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -10,27 +9,22 @@ import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import AgentCreationForm from "@/components/agents/agent-creation-form";
+import { planConfigType, usageLimitProps } from "@/lib/constants/types";
 
-interface CreateAgentProps {
-  creationLimit: {
-    canCreate: boolean;
-    used: number;
-    limit: number;
-    tier: string;
-    monitoringRequests: number;
-  };
+interface CreateAgentPageProps {
+  createAgent: boolean;
+  usage: usageLimitProps | null;
 }
 
-export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
+export default function CreateAgentPage({
+  createAgent,
+  usage,
+}: CreateAgentPageProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [canCreateAgent, setCanCreateAgent] = useState(true);
-  const [limitInfo, setLimitInfo] = useState<{
-    used: number;
-    limit: number;
-    tier: string;
-  } | null>(null);
+  const [limitInfo, setLimitInfo] = useState<usageLimitProps>();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -40,9 +34,10 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
     if (status === "authenticated" && session?.user?.id) {
       const checkLimit = async () => {
         try {
-          const result = creationLimit;
-          setCanCreateAgent(result.canCreate);
-          setLimitInfo(result);
+          setCanCreateAgent(createAgent);
+          if (usage) {
+            setLimitInfo(usage);
+          }
         } catch (error) {
           toast.error("Error", {
             description: "Failed to check subscription limits",
@@ -85,11 +80,13 @@ export default function CreateAgentPage({ creationLimit }: CreateAgentProps) {
               <h2 className="text-lg sm:text-xl font-semibold">
                 Agent Creation Limit Reached
               </h2>
-              <p className="text-sm sm:text-base">
-                You have used {limitInfo?.used} out of {limitInfo?.limit} agent
-                creation {limitInfo?.limit === 1 ? "slot" : "slots"} for your{" "}
-                {limitInfo?.tier} subscription.
-              </p>
+              {usage && (
+                <p className="text-sm sm:text-base">
+                  You have used {usage.agent.used} out of {usage.agent.limit}{" "}
+                  agent creation {usage?.agent.limit === 1 ? "slot" : "slots"}{" "}
+                  for your {usage?.tier} subscription.
+                </p>
+              )}
               <div className="mt-4 sm:mt-6 space-y-4">
                 <p className="text-sm sm:text-base">
                   To create more agents, you can:

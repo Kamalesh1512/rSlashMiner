@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth'
-import { checkAgentCreationLimit } from '@/lib/check-subscriptions/subscriptions'
 import React from 'react'
 import CreateAgentPage from '../_components/create-agent'
+import { canCreateAgent, getUsageOverview } from '@/lib/payments/check-subscriptions/subscriptions'
+import { planConfigType, usageLimitProps } from '@/lib/constants/types'
 
 const page = async () => {
   //agent create main page
@@ -12,10 +13,11 @@ const page = async () => {
     return <div>Unauthorised</div>
   }
 
-  const result =await checkAgentCreationLimit(session?.user.id)
+  const result =await canCreateAgent(session?.user.id)
+  const usageOverview = await getUsageOverview(session.user.id)
   return (
     <div>
-      <CreateAgentPage creationLimit={result}/>
+      <CreateAgentPage createAgent={result} usage={usageOverview}/>
     </div>
   )
 }

@@ -15,6 +15,8 @@ import BackgroundGradient from "./_components/bg-gradient";
 import LaunchBanner from "./_components/launch-banner";
 import CtaSection from "./_components/cta";
 import FooterCta from "./_components/footer-cta";
+import SubscriptionPlansDisplay from "@/components/payments/subscription-plans-display";
+import { signOut } from "next-auth/react";
 
 export default function LandingPage() {
   const controls = useAnimation();
@@ -23,11 +25,21 @@ export default function LandingPage() {
     threshold: 0.1,
   });
 
+ 
+
   useEffect(() => {
     if (inView) {
       controls.start("visible");
     }
   }, [controls, inView]);
+
+  useEffect(()=>{
+    handleAutomaticSignOut()
+  },[])
+
+   const handleAutomaticSignOut = async () => {
+      await signOut({ redirect: false })
+    }
 
   return (
     <BackgroundGradient className="min-h-screen bg-background">
@@ -43,7 +55,8 @@ export default function LandingPage() {
           <FeaturesSection />
           <DemoSection />
           <TestimonialsSection />
-          <PricingSection />
+          {/* <PricingSection /> */}
+          <SubscriptionPlansDisplay/>
           <FaqSection />
           <CtaSection/>
           <FooterCta/>

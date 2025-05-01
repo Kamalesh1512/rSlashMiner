@@ -181,10 +181,10 @@ export class SubscriptionService {
     /// create subscription for a new user
     const plan = getPlanByDodoId(data.product_id);
 
-    const planTier = plan?.id.startsWith("pro")
-      ? "pro"
-      : plan?.id.startsWith("business")
-      ? "premium"
+    const planTier = plan?.id.startsWith("starter")
+      ? "starter"
+      : plan?.id.startsWith("growth")
+      ? "growth" : plan?.id.startsWith('enterprise')? "enterprise"
       : "free";
 
     // Update user subscription

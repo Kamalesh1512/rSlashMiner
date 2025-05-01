@@ -1,6 +1,6 @@
 
 import { NextResponse } from "next/server";
-import { checkAgentCreationLimit } from "@/lib/check-subscriptions/subscriptions";
+import { checkAgentCreationLimit } from "@/lib/payments/check-subscriptions/subscriptions";
 import { auth } from "@/lib/auth"; // adjust to your auth config
 
 export async function GET() {

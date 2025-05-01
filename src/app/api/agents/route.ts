@@ -9,9 +9,9 @@ import {
 import { auth } from "@/lib/auth";
 import { createId } from "@paralleldrive/cuid2";
 import {
-  checkAgentCreationLimit,
-  incrementAgentCreationCount,
-} from "@/lib/check-subscriptions/subscriptions";
+  canCreateAgent,
+  incrementAgentCount,
+} from "@/lib/payments/check-subscriptions/subscriptions";
 import { desc, eq, inArray } from "drizzle-orm";
 import { Agent } from "@/lib/constants/types";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user can create a new agent
-    const { canCreate } = await checkAgentCreationLimit(userId);
+    const canCreate  = await canCreateAgent(userId)
 
     if (!canCreate) {
       return NextResponse.json(
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     }
 
     // Increment the user's agent creation count
-    await incrementAgentCreationCount(userId);
+    await incrementAgentCount(userId);
 
     return NextResponse.json(
       { message: "Agent created successfully", agentId },
