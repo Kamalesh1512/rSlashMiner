@@ -510,6 +510,75 @@ export const faqs: FaqItem[] = [
   },
 ];
 
+export const testimonials = [
+  {
+    quote:
+      "Day 2: Skroub pinged a thread asking for exactly what we sell. Closed the deal before lunch.",
+    author: "Syed Ali Hasan",
+    title: "Cronos PMC",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+  {
+    quote:
+      "We run an agency. One Reddit lead via Skroub paid for its yearly expense in one hit.",
+
+    author: "Ritesh Hegde",
+    title: "Ritz7 Automations",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+  {
+    quote:
+      "I'm not techy; setup took 5 minutes. My VA just replies and books demos.",
+    author: "Prashant Sharma",
+    title: "Build School",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+  {
+    quote:
+      "We ditched cold email and filled our pipeline entirely from Skroub alerts.",
+    author: "Ankur Dhanuka",
+    title: "C2X",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 4.2,
+  },
+
+  {
+    quote:
+      "Cold email used to be like shooting in the void. First week using Skroub: 3 inbound DMs from Reddit without even trying. Love it.",
+    author: "Ayush Garg",
+    title: "Signwith",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+  {
+    quote:
+      "Skroub is great. Now we track our brand and competitors—huge intel!",
+    author: "Sathyanand",
+    title: "Logbase",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+  {
+    quote:
+      "Used it to spot new, viable game ideas. Free tier wasn't enough—upgraded fast!",
+    author: "Arvindh",
+    title: "Put The Player First",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 4,
+  },
+  {
+    quote:
+      "Skroub finds Reddit posts where founders need data help—those leads close the fastest.",
+    author: "Vatsal Sanghvi",
+    title: "1811 Labs",
+    avatar: "/placeholder.svg?height=40&width=40",
+    rating: 5,
+  },
+];
+
 export type planConfigType = {
   agent: number;
   keywords: number;

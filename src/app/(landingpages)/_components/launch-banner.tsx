@@ -13,7 +13,7 @@ export default function LaunchBanner() {
 
   const router = useRouter();
 
-  const fetchUsers = async () => {
+  const fetchPaidUsers = async () => {
     try {
       const response = await fetch("/api/user");
       const data = await response.json();
@@ -29,7 +29,7 @@ export default function LaunchBanner() {
   };
 
   useEffect(() => {
-      fetchUsers();
+    fetchPaidUsers();
   }, []);
 
   if (!isVisible) return null;

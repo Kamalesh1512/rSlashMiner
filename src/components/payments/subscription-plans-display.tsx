@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getMonthlyPlans,
@@ -15,7 +16,28 @@ const SubscriptionPlansDisplay = () => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly"
   );
+  const [offerAvailable, setOfferAvailable] = useState(false);
   const { data: session, status } = useSession();
+
+  const fetchPaidUsers = async () => {
+    try {
+      const response = await fetch("/api/user");
+      const data = await response.json();
+      const status = data.users.length < 25;
+      setOfferAvailable(status);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch agents");
+      }
+    } catch (error) {
+      console.error("Failed to fetch users");
+    }
+  };
+
+  useEffect(() => {
+    fetchPaidUsers();
+  }, []);
+
   return (
     <div className="container px-4 md:px-6 mx-auto mt-16">
       <Tabs
@@ -27,12 +49,12 @@ const SubscriptionPlansDisplay = () => {
         <div className="flex justify-center mb-8">
           <TabsList>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
-            <TabsTrigger value="annual">Annual (Save 15%)</TabsTrigger>
+            <TabsTrigger value="annual">Annual (Save 5 months)</TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="monthly">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {monthlyPlans.map((plan) => (
               <SubscriptionCard
                 key={plan.id}
@@ -48,6 +70,8 @@ const SubscriptionPlansDisplay = () => {
                     : "free")
                 }
                 showYearlySavings={true}
+                signedIn={status === "unauthenticated" ? false : true}
+                offerAvailable={offerAvailable}
               />
             ))}
           </div>
@@ -67,6 +91,8 @@ const SubscriptionPlansDisplay = () => {
                     ? "premium"
                     : "free")
                 }
+                signedIn={status === "unauthenticated" ? false : true}
+                offerAvailable={offerAvailable}
               />
             ))}
           </div>
@@ -76,5 +102,4 @@ const SubscriptionPlansDisplay = () => {
   );
 };
 
-export default SubscriptionPlansDisplay
-    ;
+export default SubscriptionPlansDisplay;

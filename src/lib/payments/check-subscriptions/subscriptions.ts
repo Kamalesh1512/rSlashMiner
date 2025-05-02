@@ -26,8 +26,7 @@ export async function createUsageLimitForUser(
   userId: string,
   plan: keyof typeof planLimits
 ) {
-  const scheduledRunPeriod = planLimits[plan].scheduledRuns.interval || "";
-  const manualRunPeriod = planLimits[plan].manualRuns.interval || "";
+
   const existingUsageLimit = await db
     .select()
     .from(usageLimits)
@@ -37,8 +36,8 @@ export async function createUsageLimitForUser(
     await db.insert(usageLimits).values({
       userId,
       period: JSON.stringify({
-        manualRunInterval: manualRunPeriod,
-        scheduledRunInterval: scheduledRunPeriod,
+        manualRunInterval: planLimits[plan].manualRuns.interval || "",
+        scheduledRunInterval: planLimits[plan].scheduledRuns.interval || "",
       }),
       agentCreationCount: 0,
       keywordTrackCount: 0,
@@ -51,8 +50,8 @@ export async function createUsageLimitForUser(
       .update(usageLimits)
       .set({
         period: JSON.stringify({
-          manualRunInterval: manualRunPeriod,
-          scheduledRunInterval: manualRunPeriod,
+          manualRunInterval: planLimits[plan].manualRuns.interval || "",
+          scheduledRunInterval: planLimits[plan].scheduledRuns.interval || "",
         }),
       })
       .where(eq(usageLimits.userId, userId));
