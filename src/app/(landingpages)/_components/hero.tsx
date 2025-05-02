@@ -48,9 +48,9 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400"
         >
-          Turn Searches into Business Leads,{" "}
-          <span className="bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-            Intelligently
+          Turn Reddit Conversations into Customers{" "}
+          <span className="bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent text-wrap">
+          Automatically - 24/7
           </span>
         </motion.h1>
 

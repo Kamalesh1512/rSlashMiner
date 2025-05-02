@@ -11,8 +11,6 @@ import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { testimonials } from "@/lib/constants/types";
 
-
-
 export default function TestimonialsCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -123,20 +121,26 @@ export default function TestimonialsCarousel() {
   };
 
   return (
-    <div className="relative w-full">
-      <div className="mx-auto mt-16 flex flex-col items-center justify-between mb-12">
-        <h1 className="text-3xl md:text-4xl font-bold inline-flex items-center">
+    <div className="container px-4 md:px-6 mx-auto mt-16">
+      <div className="container px-4 md:px-6 text-center mb-12">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+        >
           What Users Are Saying
-        </h1>
+        </motion.h2>
         <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-xl text-muted-foreground max-w-2xl mx-auto"
-          >
-             Discover how businesses of all sizes are using Skroub to gain leads.
-          </motion.p>
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-lg text-muted-foreground max-w-2xl mx-auto"
+        >
+          Discover how businesses of all sizes are using Skroub to gain leads.
+        </motion.p>
       </div>
       <div
         className="overflow-hidden"
@@ -208,6 +212,28 @@ export default function TestimonialsCarousel() {
         <span>← Swipe to see more →</span>
       </div>
 
+      {/* Navigation Arrows */}
+      {/* <Button
+        variant="outline"
+        size="icon"
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full bg-orange-400 backdrop-blur-sm shadow-md z-10 hidden md:flex"
+        onClick={goToPrevious}
+        disabled={currentIndex === 0}
+      >
+        <ChevronLeft className="h-5 w-5 text-black" />
+        <span className="sr-only">Previous</span>
+      </Button>
+
+      <Button
+        variant="outline"
+        size="icon"
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rounded-full bg-orange-400 backdrop-blur-sm shadow-md z-10 hidden md:flex"
+        onClick={goToNext}
+        disabled={currentIndex >= maxIndex}
+      >
+        <ChevronRight className="h-5 w-5 text-black" />
+        <span className="sr-only">Next</span>
+      </Button> */}
 
       {/* Pagination Dots */}
       <div className="flex justify-center mt-6 gap-2">

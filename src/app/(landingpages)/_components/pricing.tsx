@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, useInView } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -39,17 +40,22 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="mx-auto mt-16">
-      <div className="flex flex-col items-center justify-between mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold inline-flex items-center">
+    <section id="pricing" className="container px-4 md:px-6 mx-auto mt-16">
+      <div className="text-center mb-12">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+        >
           Plans & Launch Pricing
           <Badge className="ml-3 bg-orange-100 text-red-800 hover:bg-red-100">
             prices rise after first 25 paid users
           </Badge>
-        </h2>
-        </div>
-        <SubscriptionPlansDisplay />
-      
+        </motion.h2>
+      </div>
+      <SubscriptionPlansDisplay />
     </section>
   );
 }

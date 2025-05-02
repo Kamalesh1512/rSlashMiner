@@ -120,16 +120,17 @@ export const suggestSubreddits = async (
   try {
     const aiSuggested = await generateAISubreddits(description);
 
-    const verifiedSubreddits = new Set<string>();
+    // const verifiedSubreddits = new Set<string>();
 
-    for (const name of aiSuggested) {
-      const matches = await redditService.searchSubreddits(name, 1);
-      matches.forEach((sub: SubredditProps) =>
-        verifiedSubreddits.add(sub.name)
-      );
-    }
+    // for (const name of aiSuggested) {
+    //   const matches = await redditService.searchSubreddits(name, 1);
+    //   matches.forEach((sub: SubredditProps) =>
+    //     verifiedSubreddits.add(sub.name)
+    //   );
+    // }
 
-    const finalList = Array.from(verifiedSubreddits);
+    // Array.from(verifiedSubreddits);
+    const finalList = aiSuggested
 
     console.log("Finaled subreddits", finalList);
 

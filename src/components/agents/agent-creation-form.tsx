@@ -42,8 +42,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import ChatMessage from "../chat/chat-messages";
 import { Message } from "@/lib/constants/types";
-import { generateKeywords, suggestSubreddits, validateBusinessInput } from "@/actions/text-generator";
+import {
+  generateKeywords,
+  suggestSubreddits,
+  validateBusinessInput,
+} from "@/actions/text-generator";
 import { useFeedback } from "@/hooks/use-feedback";
+import { useKeywordLimit } from "@/hooks/usage-limits/use-keyword-limit";
+import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
+import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
 
 interface AgentCreationFormProps {
   userId: string;
@@ -58,8 +65,8 @@ interface FormData {
   suggestedSubreddits: string[];
   keywords: string[];
   suggestedKeywords: string[];
-  initialSuggestedSubreddits:string[]
-  notificationMethod: "email" | "whatsapp" | "both";
+  initialSuggestedSubreddits: string[];
+  notificationMethod: "email" | "slack" | "both";
   notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
   relevanceThreshold: number;
   whatsappNumber: string;
@@ -76,7 +83,6 @@ interface FormData {
   scheduleTime: string;
 }
 
-
 export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FormStep>("describe");
@@ -85,7 +91,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const [newSubreddit, setNewSubreddit] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
   const [chatInput, setChatInput] = useState("");
-  const {triggerAgentCreatedFeedback} = useFeedback()
+  const { triggerAgentCreatedFeedback } = useFeedback();
   const [chatMessages, setChatMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -100,7 +106,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     description: "",
     subreddits: [],
     suggestedSubreddits: [],
-    initialSuggestedSubreddits:[],
+    initialSuggestedSubreddits: [],
     keywords: [],
     suggestedKeywords: [],
     notificationMethod: "email",
@@ -120,6 +126,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     scheduleTime: "09:00",
   });
 
+  const { canAddMore, increment, decrement, remaining, loading, maxKeywords } =
+    useKeywordLimit();
+
+  const { availableAlerts, selectOptions } = useAllowedNotifications();
+  const { scheduledRuns } = useScheduledRuns();
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -159,104 +170,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     setFormData((prev) => ({ ...prev, relevanceThreshold: value[0] }));
   };
 
-  // const addSubreddit = () => {
-  //   if (!newSubreddit.trim()) return;
-
-  //   // Remove 'r/' prefix if present
-  //   const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "");
-
-  //   if (formData.subreddits.includes(formattedSubreddit)) {
-  //     toast.error("Duplicate subreddit", {
-  //       description: "This subreddit is already in your list.",
-  //     });
-  //     return;
-  //   }
-
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     subreddits: [...prev.subreddits, formattedSubreddit],
-  //   }));
-  //   setNewSubreddit("");
-  // };
-
-  // const removeSubreddit = (subreddit: string) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     subreddits: prev.subreddits.filter((s) => s !== subreddit),
-  //   }));
-  // };
-
-  // const addSuggestedSubreddit = (subreddit: string) => {
-  //   if (formData.subreddits.includes(subreddit)) {
-  //     toast.error("Duplicate subreddit", {
-  //       description: "This subreddit is already in your list.",
-  //     });
-  //     return;
-  //   }
-
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     subreddits: [...prev.subreddits, subreddit],
-  //     suggestedSubreddits: prev.suggestedSubreddits.filter(
-  //       (s) => s !== subreddit
-  //     ),
-  //   }));
-  // };
-
-  const addSubreddit = () => {
-    if (!newSubreddit.trim()) return;
-  
-    const formattedSubreddit = newSubreddit.trim().replace(/^r\//, "");
-  
-    if (formData.subreddits.includes(formattedSubreddit)) {
-      toast.error("Duplicate subreddit", {
-        description: "This subreddit is already in your list.",
-      });
-      return;
-    }
-  
-    setFormData((prev) => {
-      const wasSuggested = prev.suggestedSubreddits.includes(formattedSubreddit);
-      return {
-        ...prev,
-        subreddits: [...prev.subreddits, formattedSubreddit],
-        suggestedSubreddits: wasSuggested
-          ? prev.suggestedSubreddits.filter((s) => s !== formattedSubreddit)
-          : prev.suggestedSubreddits,
-      };
-    });
-    setNewSubreddit("");
-  };
-  
-  const removeSubreddit = (subreddit: string) => {
-    setFormData((prev) => {
-      const wasOriginallySuggested = prev.initialSuggestedSubreddits?.includes(subreddit); // See below about initialSuggestedSubreddits
-      return {
-        ...prev,
-        subreddits: prev.subreddits.filter((s) => s !== subreddit),
-        suggestedSubreddits: wasOriginallySuggested
-          ? [...prev.suggestedSubreddits, subreddit]
-          : prev.suggestedSubreddits,
-      };
-    });
-  };
-  
-  const addSuggestedSubreddit = (subreddit: string) => {
-    if (formData.subreddits.includes(subreddit)) {
-      toast.error("Duplicate subreddit", {
-        description: "This subreddit is already in your list.",
-      });
-      return;
-    }
-  
-    setFormData((prev) => ({
-      ...prev,
-      subreddits: [...prev.subreddits, subreddit],
-      suggestedSubreddits: prev.suggestedSubreddits.filter((s) => s !== subreddit),
-    }));
-  };
-  
-
   const addKeyword = () => {
     if (!newKeyword.trim()) return;
 
@@ -267,10 +180,18 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       return;
     }
 
+    if (!canAddMore) {
+      toast.error("Limit reached", {
+        description: "You've reached the keyword tracking limit for your plan.",
+      });
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       keywords: [...prev.keywords, newKeyword.trim()],
     }));
+    increment();
     setNewKeyword("");
   };
 
@@ -278,7 +199,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     setFormData((prev) => ({
       ...prev,
       keywords: prev.keywords.filter((k) => k !== keyword),
+      suggestedKeywords: [...prev.suggestedKeywords, keyword],
     }));
+    decrement();
   };
 
   const addSuggestedKeyword = (keyword: string) => {
@@ -289,11 +212,19 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
       return;
     }
 
+    if (!canAddMore) {
+      toast.error("Limit reached", {
+        description: "You've reached the keyword tracking limit for your plan.",
+      });
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       keywords: [...prev.keywords, keyword],
       suggestedKeywords: prev.suggestedKeywords.filter((k) => k !== keyword),
     }));
+    increment();
   };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -317,10 +248,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     ]);
 
     try {
-
       //check the chat input is business related
-      const response = await validateBusinessInput(chatInput)
-      
+      const response = await validateBusinessInput(chatInput);
+
       if (!response.isValid) {
         setChatMessages((prev) => [
           ...prev.slice(0, -1),
@@ -333,11 +263,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         return;
       }
 
-      const keywordsResponse = await generateKeywords(chatInput)
+      const keywordsResponse = await generateKeywords(chatInput);
 
-      const subredditsResponse = await suggestSubreddits(chatInput)
-
-      if (keywordsResponse.status!==200 || !keywordsResponse.data || !subredditsResponse.data || subredditsResponse.status!==200) {
+      if (keywordsResponse.status !== 200 || !keywordsResponse.data) {
         setChatMessages((prev) => [
           ...prev.slice(0, -1), // remove "thinking..." message
           {
@@ -349,21 +277,13 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         return;
       }
 
-
-      const subredditList = subredditsResponse.data?.subreddits 
-      const suggestedSubredditsList = subredditsResponse.data?.suggestedSubreddits 
-
-      const keywordsList = keywordsResponse.data.keywords
-      const suggestedKeywordList = keywordsResponse.data?.suggestedKeywords
+      const suggestedKeywordList = keywordsResponse.data?.suggestedKeywords;
 
       // Update form data with generated values
       setFormData((prev) => ({
         ...prev,
         description: chatInput,
-        keywords:keywordsList,
-        suggestedKeywords:suggestedKeywordList,
-        subreddits:subredditList,
-        suggestedSubreddits:suggestedSubredditsList,
+        suggestedKeywords: suggestedKeywordList,
       }));
 
       // Update chat with response
@@ -377,14 +297,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           {
             role: "assistant",
             content: `Great! I've analyzed your request and created an agent to monitor discussions about ${chatInput}. Here's what I've set up:
-            1. **Subreddits**: ${subredditList
-                          .slice(0, 5)
-                          .map((s: string) => `r/${s}`)
-                          .join(", ")}
-            2. **Keywords**: ${keywordsList.slice(0, 5).join(", ")}${
-                          keywordsList.length > 5 ? "..." : ""
-                        }
-            You can refine these suggestions in the next step. Click Next!!`,
+            1. **Suggested Keywords**:
+            ${suggestedKeywordList}${
+              suggestedKeywordList.length > 5 ? "..." : ""
+            }
+            Please Select from these above suggestions in the next step. Click Next!!`,
           },
         ];
       });
@@ -409,22 +326,28 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     if (currentStep === "describe") {
       setCurrentStep("refine");
     } else if (currentStep === "refine") {
-      if (formData.subreddits.length === 0) {
-        toast.error("No subreddits added", {
-          description: "Please add at least one subreddit to monitor.",
-        });
-        return;
-      }
+      // if (formData.subreddits.length === 0) {
+      //   toast.error("No subreddits added", {
+      //     description: "Please add at least one subreddit to monitor.",
+      //   });
+      //   return;
+      // }
       if (formData.keywords.length === 0) {
         toast.error("No keywords added", {
           description: "Please add at least one keyword to track.",
         });
         return;
       }
+      if (!formData.name.trim()) {
+        toast.error("Agent Name Required", {
+          description: "Please add Agent Name.",
+        });
+        return;
+      }
       setCurrentStep("configure");
     } else if (currentStep === "configure") {
       if (
-        formData.notificationMethod === "whatsapp" ||
+        formData.notificationMethod === "slack" ||
         formData.notificationMethod === "both"
       ) {
         if (!formData.whatsappNumber) {
@@ -495,7 +418,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
       router.push("/agents");
 
-      triggerAgentCreatedFeedback(data.id)
+      triggerAgentCreatedFeedback(data.id);
     } catch (error) {
       toast.error("Error", {
         description:
@@ -557,7 +480,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           : "justify-start"
                       }`}
                     >
-                      <ChatMessage message={message}/>
+                      <ChatMessage message={message} />
                     </div>
                   ))}
                   <div ref={messagesEndRef} />
@@ -606,8 +529,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     onChange={handleInputChange}
                     required
                   />
-                </div> 
-               <div className="space-y-2">
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="description">Business Description</Label>
                   <Textarea
                     id="description"
@@ -619,86 +542,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   />
                 </div>
 
-                <Tabs defaultValue="subreddits" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="subreddits">Subreddits</TabsTrigger>
+                <Tabs defaultValue="keywords" className="w-full">
+                  <TabsList className="grid w-full grid-cols-1">
                     <TabsTrigger value="keywords">Keywords</TabsTrigger>
                   </TabsList>
-
-                  <TabsContent value="subreddits" className="space-y-4 mt-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter subreddit name (without r/)"
-                        value={newSubreddit}
-                        onChange={(e) => setNewSubreddit(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addSubreddit();
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        onClick={addSubreddit}
-                        disabled={!newSubreddit.trim()}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Your Selected Subreddits</Label>
-                      {formData.subreddits.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {formData.subreddits.map((subreddit) => (
-                            <Badge
-                              key={subreddit}
-                              variant="secondary"
-                              className="flex items-center gap-1"
-                            >
-                              r/{subreddit}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4 p-0 ml-1"
-                                onClick={() => removeSubreddit(subreddit)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          No subreddits added yet.
-                        </p>
-                      )}
-                    </div>
-
-                    {formData.suggestedSubreddits.length > 0 && (
-                      <div className="space-y-2 mt-6">
-                        <Label>Suggested Subreddits</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Click on a subreddit to add it to your monitoring
-                          list.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {formData.suggestedSubreddits.map((subreddit) => (
-                            <Badge
-                              key={subreddit}
-                              variant="outline"
-                              className="cursor-pointer hover:bg-secondary"
-                              onClick={() => addSuggestedSubreddit(subreddit)}
-                            >
-                              r/{subreddit}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </TabsContent>
 
                   <TabsContent value="keywords" className="space-y-4 mt-4">
                     <div className="flex gap-2">
@@ -709,14 +556,22 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
-                            addKeyword();
+
+                            if (canAddMore) {
+                              addKeyword();
+                            } else {
+                              toast.error("Keyword limit reached", {
+                                description:
+                                  "You cannot add more keywords to your tracking list.",
+                              });
+                            }
                           }
                         }}
                       />
                       <Button
                         type="button"
                         onClick={addKeyword}
-                        disabled={!newKeyword.trim()}
+                        disabled={!newKeyword.trim() || !canAddMore}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add
@@ -764,7 +619,16 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                               key={keyword}
                               variant="outline"
                               className="cursor-pointer hover:bg-secondary"
-                              onClick={() => addSuggestedKeyword(keyword)}
+                              onClick={() => {
+                                if (canAddMore) {
+                                  addSuggestedKeyword(keyword);
+                                } else {
+                                  toast.error("Keyword limit reached", {
+                                    description:
+                                      "You cannot add more keywords to your tracking list.",
+                                  });
+                                }
+                              }}
                             >
                               {keyword}
                             </Badge>
@@ -790,9 +654,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               <Tabs defaultValue="notifications" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="notifications">
-                    Notification Settings
+                    Notification / Schedule Settings
                   </TabsTrigger>
-                  <TabsTrigger value="schedule">Schedule Settings</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="notifications" className="space-y-6 mt-4">
@@ -809,18 +672,16 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           <SelectValue placeholder="Select notification method" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="email">Email Only</SelectItem>
-                          <SelectItem value="whatsapp">
-                            WhatsApp Only
-                          </SelectItem>
-                          <SelectItem value="both">
-                            Both Email and WhatsApp
-                          </SelectItem>
+                          {selectOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {(formData.notificationMethod === "whatsapp" ||
+                    {(formData.notificationMethod === "slack" ||
                       formData.notificationMethod === "both") && (
                       <div className="space-y-2">
                         <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
@@ -837,33 +698,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         </p>
                       </div>
                     )}
-
-                    <div className="space-y-2">
-                      <Label>Notification Frequency</Label>
-                      <Select
-                        value={formData.notificationFrequency}
-                        onValueChange={(value) =>
-                          handleSelectChange("notificationFrequency", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="realtime">
-                            Real-time (As Found)
-                          </SelectItem>
-                          <SelectItem value="hourly">Hourly Digest</SelectItem>
-                          <SelectItem value="daily">Daily Digest</SelectItem>
-                          <SelectItem value="weekly">Weekly Digest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-sm text-muted-foreground">
-                        How often you want to receive notifications about
-                        potential matches.
-                      </p>
-                    </div>
-
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <Label>Relevance Threshold</Label>
@@ -884,10 +718,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       </p>
                     </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="schedule" className="space-y-6 mt-4">
-                  <div className="space-y-4">
+                  {/* <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Schedule Type</Label>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
@@ -975,6 +806,40 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         </div>
                       </>
                     )}
+                  </div> */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Scheduling</Label>
+                      {!scheduledRuns.enabled ? (
+                        <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                          Scheduling Agent Run is not available on your current plan.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+                            Scheduled runs are available every{" "}
+                            <strong>{scheduledRuns.interval}</strong> based on
+                            your <strong>{scheduledRuns.type}</strong> plan.
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="startTime">Start Time</Label>
+                            <Input
+                              id="startTime"
+                              name="startTime"
+                              type="time"
+                              value={formData.scheduleTime}
+                              onChange={handleInputChange}
+                              disabled={!scheduledRuns.enabled}
+                            />
+                            <p className="text-sm text-muted-foreground">
+                              The agent will start at this time every{" "}
+                              {scheduledRuns.interval}.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -1020,20 +885,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         </div>
                       </div>
                     </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium">
-                        Subreddits to Monitor
-                      </h4>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {formData.subreddits.map((subreddit) => (
-                          <Badge key={subreddit} variant="secondary">
-                            r/{subreddit}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
                     <div>
                       <h4 className="text-sm font-medium">Keywords to Track</h4>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -1057,12 +908,12 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           <span className="text-sm">
                             {formData.notificationMethod === "email"
                               ? "Email Only"
-                              : formData.notificationMethod === "whatsapp"
-                              ? "WhatsApp Only"
-                              : "Email and WhatsApp"}
+                              : formData.notificationMethod === "slack"
+                              ? "Slack Only"
+                              : "Email and Slack"}
                           </span>
                         </div>
-                        {(formData.notificationMethod === "whatsapp" ||
+                        {(formData.notificationMethod === "slack" ||
                           formData.notificationMethod === "both") && (
                           <div>
                             <span className="text-sm font-medium">
@@ -1075,20 +926,6 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         )}
                         <div>
                           <span className="text-sm font-medium">
-                            Frequency:
-                          </span>{" "}
-                          <span className="text-sm">
-                            {formData.notificationFrequency === "realtime"
-                              ? "Real-time (As Found)"
-                              : formData.notificationFrequency === "hourly"
-                              ? "Hourly Digest"
-                              : formData.notificationFrequency === "daily"
-                              ? "Daily Digest"
-                              : "Weekly Digest"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium">
                             Relevance Threshold:
                           </span>{" "}
                           <span className="text-sm">
@@ -1097,34 +934,33 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         </div>
                       </div>
                     </div>
-
                     <div>
                       <h4 className="text-sm font-medium">Schedule Settings</h4>
                       <div className="mt-2 space-y-2">
-                        <div>
-                          <span className="text-sm font-medium">Type:</span>{" "}
-                          <span className="text-sm">
-                            {formData.scheduleType === "always"
-                              ? "Run continuously"
-                              : "Run on specific days/times"}
-                          </span>
-                        </div>
-                        {formData.scheduleType === "specific" && (
+                        {!scheduledRuns.enabled ? (
+                          <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                            Scheduling Agent Run is not available on your current plan.
+                          </div>
+                        ) : (
                           <>
                             <div>
-                              <span className="text-sm font-medium">Days:</span>{" "}
-                              <span className="text-sm">
-                                {Object.entries(formData.scheduleDays)
-                                  .filter(([_, isEnabled]) => isEnabled)
-                                  .map(
-                                    ([day]) =>
-                                      day.charAt(0).toUpperCase() + day.slice(1)
-                                  )
-                                  .join(", ")}
+                              <span className="text-sm font-medium">Plan:</span>{" "}
+                              <span className="text-sm capitalize">
+                                {scheduledRuns.type}
                               </span>
                             </div>
                             <div>
-                              <span className="text-sm font-medium">Time:</span>{" "}
+                              <span className="text-sm font-medium">
+                                Interval:
+                              </span>{" "}
+                              <span className="text-sm capitalize">
+                                Every {scheduledRuns.interval}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">
+                                Start Time:
+                              </span>{" "}
                               <span className="text-sm">
                                 {formData.scheduleTime}
                               </span>
