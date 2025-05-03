@@ -47,18 +47,18 @@ export const getRunsInLastNDays = (lastRunAt: Date | null, runCount: number, day
 };
 
 
-// export const getResultsInLastNDays = (lastRunAt: Date | null, runCount: number, days: number): number => {
-//   if (!lastRunAt) return 0; // If no last run, return 0
+export const getResultsInLastNDays = (lastRunAt: Date | null, runCount: number, days: number): number => {
+  if (!lastRunAt) return 0; // If no last run, return 0
 
-//   const currentDate = new Date();
-//   const diffInTime = currentDate.getTime() - new Date(lastRunAt).getTime();
-//   const diffInDays = diffInTime / (1000 * 3600 * 24); // Convert milliseconds to days
+  const currentDate = new Date();
+  const diffInTime = currentDate.getTime() - new Date(lastRunAt).getTime();
+  const diffInDays = diffInTime / (1000 * 3600 * 24); // Convert milliseconds to days
   
-//   if (diffInDays <= days) {
-//     return runCount;
-//   }
-//   return 0;
-// }; 
+  if (diffInDays <= days) {
+    return runCount;
+  }
+  return 0;
+}; 
 
 
 

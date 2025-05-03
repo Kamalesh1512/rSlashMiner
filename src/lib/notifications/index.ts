@@ -10,7 +10,7 @@ interface NotificationOptions {
   success: boolean;
   message: string;
   resultsCount?: number;
-  processedSubreddits?: number;
+  processedKeywords?: number;
   error?: string;
 }
 
@@ -19,7 +19,7 @@ export async function sendRunNotification({
   message,
   success,
   error,
-  processedSubreddits,
+  processedKeywords,
   resultsCount,
 }: NotificationOptions): Promise<void> {
   try {
@@ -56,8 +56,8 @@ export async function sendRunNotification({
     const content = success
       ? `Your agent "${agent[0].name}" has completed its run.\n\n` +
         `Results: ${resultsCount || 0} relevant items found across ${
-          processedSubreddits || 0
-        } subreddits.\n\n` +
+          processedKeywords || 0
+        } keywords.\n\n` +
         `${message}`
       : `Your agent "${agent[0].name}" encountered an error during its run.\n\n` +
         `Error: ${error || "Unknown error"}\n\n` +
@@ -94,7 +94,7 @@ export async function sendRunNotification({
       }
     }
 
-    if (notificationMethod === "whatsapp" || notificationMethod === "both") {
+    if (notificationMethod === "slack" || notificationMethod === "both") {
       if (whatsappNumber) {
         await sendWhatsAppMessage({
           to: whatsappNumber,

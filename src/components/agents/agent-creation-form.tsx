@@ -51,6 +51,7 @@ import { useFeedback } from "@/hooks/use-feedback";
 import { useKeywordLimit } from "@/hooks/usage-limits/use-keyword-limit";
 import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
 import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
+import { SlackConnect } from "../slack/slack-connect";
 
 interface AgentCreationFormProps {
   userId: string;
@@ -684,17 +685,12 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     {(formData.notificationMethod === "slack" ||
                       formData.notificationMethod === "both") && (
                       <div className="space-y-2">
-                        <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
-                        <Input
-                          id="whatsappNumber"
-                          name="whatsappNumber"
-                          placeholder="+1234567890"
-                          value={formData.whatsappNumber}
-                          onChange={handleInputChange}
-                        />
+                        <Label htmlFor="SlackNotification">
+                          Slack Notification
+                        </Label>
+                        <SlackConnect />
                         <p className="text-sm text-muted-foreground">
-                          Enter your WhatsApp number with country code (e.g., +1
-                          for US).
+                          You’ll receive alerts via Slack.
                         </p>
                       </div>
                     )}
@@ -812,7 +808,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       <Label>Scheduling</Label>
                       {!scheduledRuns.enabled ? (
                         <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                          Scheduling Agent Run is not available on your current plan.
+                          Scheduling Agent Run is not available on your current
+                          plan.
                         </div>
                       ) : (
                         <>
@@ -939,7 +936,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       <div className="mt-2 space-y-2">
                         {!scheduledRuns.enabled ? (
                           <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                            Scheduling Agent Run is not available on your current plan.
+                            Scheduling Agent Run is not available on your
+                            current plan.
                           </div>
                         ) : (
                           <>

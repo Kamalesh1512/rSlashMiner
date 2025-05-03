@@ -42,6 +42,8 @@ import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAgentStore } from "@/store/agentstore";
+import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
+import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
 
 interface AgentConfigTabProps {
   agent: Agent;
@@ -55,6 +57,9 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const [isActive, setIsActive] = useState(agent.isActive);
   const { agents, setAgents } = useAgentStore();
   const [isSaving, setIsSaving] = useState(false);
+
+  const { scheduledRuns } = useScheduledRuns();
+  const { availableAlerts, selectOptions } = useAllowedNotifications();
 
   const router = useRouter();
 
@@ -121,7 +126,7 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
     try {
       const response = await fetch(`/api/agents/${agent.id}/delete`);
       if (response.ok) {
-        const updatedAgents = agents.filter(res => res.id !== agent.id);
+        const updatedAgents = agents.filter((res) => res.id !== agent.id);
         setAgents(updatedAgents);
         toast.success("Settings saved successfully");
         router.push("/agents");
@@ -222,9 +227,11 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="email">Email Only</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp Only</SelectItem>
-                    <SelectItem value="both">Email and WhatsApp</SelectItem>
+                    {selectOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               ) : (
@@ -254,43 +261,11 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                 </div>
               )}
             </div>
-
-            <div>
-              <Label>Notification Frequency</Label>
-              {isEditing ? (
-                <Select
-                  value={form.notificationFrequency}
-                  onValueChange={(val) =>
-                    handleChange("notificationFrequency", val)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="realtime">
-                      Real-time (As Found)
-                    </SelectItem>
-                    <SelectItem value="hourly">Hourly Digest</SelectItem>
-                    <SelectItem value="daily">Daily Digest</SelectItem>
-                    <SelectItem value="weekly">Weekly Digest</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p>
-                  {form.notificationFrequency === "realtime" &&
-                    "Real-time (As Found)"}
-                  {form.notificationFrequency === "hourly" && "Hourly Digest"}
-                  {form.notificationFrequency === "daily" && "Daily Digest"}
-                  {form.notificationFrequency === "weekly" && "Weekly Digest"}
-                </p>
-              )}
-            </div>
           </CardContent>
         </Card>
 
         {/* Schedule Settings */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Schedule Settings</CardTitle>
             <CardDescription>
@@ -391,6 +366,51 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                   ) : (
                     <p>{form.scheduleTime}</p>
                   )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card> */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Schedule Settings</CardTitle>
+            <CardDescription>
+              Configure when this agent should start running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!scheduledRuns.enabled ? (
+              <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                Scheduling Agent Run is not available on your current plan.
+              </div>
+            ) : (
+              <>
+                <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+                  This agent is scheduled to run every{" "}
+                  <strong>{scheduledRuns.interval}</strong>
+                  based on your <strong>{scheduledRuns.type}</strong> plan.
+                </div>
+
+                <div>
+                  <Label htmlFor="scheduleTime">Start Time</Label>
+                  {isEditing ? (
+                    <Input
+                      id="scheduleTime"
+                      type="time"
+                      value={form.scheduleTime}
+                      onChange={(e) =>
+                        handleChange("scheduleTime", e.target.value)
+                      }
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {form.scheduleTime}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1">
+                    The agent will start at this time every{" "}
+                    {scheduledRuns.interval}.
+                  </p>
                 </div>
               </>
             )}

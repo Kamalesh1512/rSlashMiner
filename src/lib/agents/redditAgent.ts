@@ -1,6 +1,7 @@
 import { StateGraph, Annotation } from "@langchain/langgraph";
 import {
   analyzeContent,
+  checkExistingPost,
   getComments,
   searchReddit,
   storeResult,
@@ -9,8 +10,7 @@ import {
 // 1. Define the agent state
 const StateAnnotation = Annotation.Root({
   agentId: Annotation<string>(),
-  subreddit: Annotation<string>(),
-  query: Annotation<string[]>(),
+  query: Annotation<string>(),
   relevanceThreshold: Annotation<string>(),
   businessInterests: Annotation<string[]>(),
   businessDescription: Annotation<string>(),
@@ -22,7 +22,8 @@ const StateAnnotation = Annotation.Root({
   onProgress: Annotation<((message: string) => void) | undefined>(),
   currentPostIndex: Annotation<number>(),
   hasMorePosts: Annotation<boolean>(),
-  nextStep:Annotation<string>(),
+  nextStep: Annotation<string>(),
+  exists:Annotation<boolean>(),
 });
 
 // 2. Define node functions
@@ -30,11 +31,12 @@ const StateAnnotation = Annotation.Root({
 // Search for Reddit posts
 async function searchPosts(state: typeof StateAnnotation.State) {
   // Report progress if callback exists
-  state.onProgress?.("Searching for relevant posts in r/" + state.subreddit);
+  state.onProgress?.("Searching for relevant posts in r/" + state.query);
 
   const result = await searchReddit.invoke({
-    subreddit: state.subreddit,
-    queries: state.query,
+    query: state.query,
+    timeframe: "month",
+    limit: 5,
   });
 
   const posts = JSON.parse(result);
@@ -56,25 +58,42 @@ async function pickPost(state: typeof StateAnnotation.State) {
     state.currentPostIndex === -1 ||
     state.currentPostIndex >= state.posts.length
   ) {
-    return {selectedPost:undefined}
+    return { selectedPost: undefined };
   }
   const currentPost = state.posts[state.currentPostIndex];
-  const newCurrentPostIndex = state.currentPostIndex + 1
+  const newCurrentPostIndex = state.currentPostIndex + 1;
 
-  console.log("Current Post",currentPost.title)
-  console.log("currentPostIndex",newCurrentPostIndex)
+  // console.log("Current Post", currentPost.title);
+  // console.log("currentPostIndex", newCurrentPostIndex);
 
   state.onProgress?.(
-    `Selected post ${state.currentPostIndex}/${
-      state.posts.length
-    }: "${currentPost.title?.substring(0, 50)}..."`
+    `Checking if post ID ${currentPost.id} already exists`
   );
-  return { selectedPost: currentPost, currentPostIndex: newCurrentPostIndex}
+  const result = await checkExistingPost.invoke({
+    postId: currentPost.id,
+  });
+  const postExists = JSON.parse(result);
+  if (postExists.success) {
+    state.onProgress?.("Post already exists in the database. Skipping.");
+    console.log("Post already exists skipping", newCurrentPostIndex);
+    return { selectedPost: undefined}
+  }else{
+    state.onProgress?.("Post is new. Proceeding...");
+    state.onProgress?.(
+      `Selected post ${state.currentPostIndex}/${
+        state.posts.length
+      }: "${currentPost.title?.substring(0, 50)}..."`
+    );
+    return { selectedPost: currentPost, currentPostIndex: newCurrentPostIndex };
+  }
+
 }
 
 // Get comments from a selected post
 async function fetchComments(state: typeof StateAnnotation.State) {
   if (!state.selectedPost) {
+    console.log("Post already exists skipping inside fecth comments", state.selectedPost);
+
     state.onProgress?.("No post selected for comment analysis");
     return { comments: [] };
   }
@@ -103,6 +122,8 @@ async function fetchComments(state: typeof StateAnnotation.State) {
 // Analyze content (post + top comment combined)
 async function analyze(state: typeof StateAnnotation.State) {
   if (!state.selectedPost) {
+    console.log("Post already exists skipping inside analyze", state.selectedPost);
+
     state.onProgress?.("No content available for analysis");
     return {
       analysis: { relevanceScore: 0, matchedKeywords: [], sentimentScore: 0 },
@@ -166,7 +187,7 @@ async function storeToDB(state: typeof StateAnnotation.State) {
     content:
       state.selectedPost.title + "\n\n" + (state.selectedPost.selftext ?? ""),
     author: state.selectedPost.author,
-    subreddit: state.subreddit,
+    subreddit: state.selectedPost.subreddit,
     url: state.selectedPost.url,
     score: state.selectedPost.score,
     matchedKeywords: state.analysis.matchedKeywords,
@@ -186,11 +207,10 @@ async function storeToDB(state: typeof StateAnnotation.State) {
 function checkMorePosts(state: typeof StateAnnotation.State) {
   if (!state.posts || state.currentPostIndex >= state.posts.length) {
     state.onProgress?.("All posts processed");
-    return "End" ;
+    return "End";
   }
-  return "NextPost" ;
+  return "NextPost";
 }
-
 
 //agent workflow -2
 export const advancedGraph = new StateGraph(StateAnnotation)
@@ -201,9 +221,9 @@ export const advancedGraph = new StateGraph(StateAnnotation)
   .addNode("storeToDB", storeToDB)
   .addEdge("__start__", "searchPosts")
   .addEdge("searchPosts", "pickPost")
-  .addConditionalEdges("pickPost", checkMorePosts,{
-    NextPost:'fetchComments',
-    End:'__end__'
+  .addConditionalEdges("pickPost", checkMorePosts, {
+    NextPost: "fetchComments",
+    End: "__end__",
   })
   .addEdge("fetchComments", "analyze")
   .addConditionalEdges("analyze", checkRelevance, {
@@ -216,8 +236,7 @@ export const advancedGraph = new StateGraph(StateAnnotation)
 // Helper function to run the agent with progress reporting
 export async function runAgent(params: {
   agentId: string;
-  subreddit: string;
-  query: string[];
+  query: string;
   relevanceThreshold: string;
   businessInterests: string[];
   businessDescription: string;
@@ -226,7 +245,6 @@ export async function runAgent(params: {
   try {
     const {
       agentId,
-      subreddit,
       query,
       relevanceThreshold,
       businessInterests,
@@ -237,7 +255,6 @@ export async function runAgent(params: {
     // Initialize with all required parameters
     const result = await advancedGraph.invoke({
       agentId,
-      subreddit,
       query,
       relevanceThreshold,
       businessInterests,
@@ -253,10 +270,7 @@ export async function runAgent(params: {
 
     return result;
   } catch (error) {
-    console.error(
-      `Error running agent for subreddit ${params.subreddit}:`,
-      error
-    );
+    console.error(`Error running agent for subreddit ${params.query}:`, error);
     throw error;
   }
 }

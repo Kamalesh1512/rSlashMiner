@@ -276,30 +276,46 @@ export default function ResultsPage() {
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <span>r/{result.subreddit}</span>
-                        <span>•</span>
+                        {/* <span>r/{result.subreddit}</span> */}
+
                         {/* <span>u/{result.author}</span> */}
                         <span>{result.redditPostId ? "Post" : "Comment"}</span>
-
+                        <span>•</span>
                         <div
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                          result.relevanceScore >= 85
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.relevanceScore >= 70
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {result.relevanceScore}% Relevant
-                      </div>
+                          className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                            result.relevanceScore >= 85
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                              : result.relevanceScore >= 70
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                          }`}
+                        >
+                          {result.relevanceScore}% Relevant
+                        </div>
+                        <span>•</span>
+                        <div
+                          className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
+                            result.sentimentScore >= 75
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                              : result.sentimentScore >= 50
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                          }`
+                        }
+                        >
+                          {result.sentimentScore >= 75
+                            ? "😊"
+                            : result.sentimentScore >= 50
+                            ? "😐"
+                            : "😠"}{" "}
+                          {result.sentimentScore}% Sentiment
+                        </div>
                       </div>
 
                       <h3 className="text-lg font-medium mb-2">
-                        {result.author}
-                      </h3>
-                      <p className="text-sm mb-4">
                         "{`${result.content.slice(0, 75)}...`}"
-                      </p>
+                      </h3>
+                      <p className="text-sm mb-4">{result.author}</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {result.matchedKeywords.map((keyword, index) => (
@@ -312,12 +328,12 @@ export default function ResultsPage() {
                         ))}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row justify-center gap-2 text-sm">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-sm">
                         <Link
                           href={`/agents/${result.agentId}`}
                           className="text-primary hover:underline text-xs md:text-lg font-medium"
                         >
-                          <span className="text-muted-foreground text-sm md:text-lg">
+                          <span className="text-muted-foreground text-sm md:text-lg mr-1">
                             Agent:
                           </span>
                           {
@@ -332,8 +348,6 @@ export default function ResultsPage() {
                     </div>
 
                     <div className="flex flex-col items-end gap-4">
-
-
                       <Button variant="outline" size="sm" asChild>
                         <a
                           href={result.url}

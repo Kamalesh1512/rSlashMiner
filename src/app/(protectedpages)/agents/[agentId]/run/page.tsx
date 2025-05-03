@@ -223,15 +223,15 @@ export default function RunAgentPage() {
         <CardHeader>
           <CardTitle>Manual Agent Run</CardTitle>
           <CardDescription>
-            Run this agent now to search Reddit for relevant content matching your keywords and subreddits.
+            Run this agent now to search Reddit for relevant content matching your keywords.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!isRunning && steps.length === 0 && !runResult ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
               <p className="text-center text-muted-foreground max-w-md">
-                Running the agent will search Reddit for new content matching your keywords in the selected subreddits.
-                This process may take a few minutes depending on the number of subreddits and keywords.
+                Running the agent will search Reddit for new content matching your keywords.
+                This process may take a few minutes depending on the number of keywords.
               </p>
               <Button onClick={runAgent} size="lg">
                 Run Agent Now

@@ -5,14 +5,19 @@ import { openai } from "./genai";
 import { db } from "@/lib/db";
 import { monitoringResults } from "@/lib/db/schema";
 import redditService from "@/lib/services/reddit";
+import { eq } from "drizzle-orm";
 
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
-    const { subreddit, queries, timeframe = "all" } = input;
+    const { query, timeframe = "all", limit } = input;
     // console.log("The subreddit", { subreddit, queries, timeframe });
     // const posts = await redditService.searchPosts(subreddit, query, timeframe);
-    const posts = await redditService.searchMultipleRedditPosts(subreddit, queries, timeframe);
+    const posts = await redditService.searchPostsByKeyword(
+      query,
+      timeframe,
+      limit
+    );
 
     return JSON.stringify(posts);
   },
@@ -20,8 +25,8 @@ export const searchReddit = tool(
     name: "search_reddit",
     description: "Search for posts in a specific subreddit with a query.",
     schema: z.object({
-      subreddit: z.string().describe("The subreddit to search in."),
-      queries: z.array(z.string()).describe("The search query."),
+      limit: z.number().describe("The Limit to search top posts"),
+      query: z.string().describe("The search query."),
       timeframe: z
         .enum(["hour", "day", "week", "month", "year", "all"])
         .optional()
@@ -57,7 +62,7 @@ export const analyzeContent = tool(
                       - matchedKeywords: An array of keywords from the business interests that match the content
                       - reasoning: A brief explanation (1-2 sentences) of why this content is or isn't relevant
                       - sentimentScore: A number from -100 to 100 indicating the sentiment (-100 very negative, 0 neutral, 100 very positive)
-                      - potentialAction: A suggested action to take (e.g., "reach out", "monitor", "ignore")` 
+                      - potentialAction: A suggested action to take (e.g., "reach out", "monitor", "ignore")`;
     try {
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -72,12 +77,11 @@ export const analyzeContent = tool(
                 "reasoning": string,
                 "sentimentScore": number (-100 to 100),
                 "potentialAction": string ("reach out", "monitor", "ignore")
-                }.`
-                
+                }.`,
           },
           {
             role: "user",
-            content: prompt
+            content: prompt,
           },
         ],
         temperature: 0.2,
@@ -124,26 +128,27 @@ export const storeResult = tool(
     sentimentScore,
   }) => {
     try {
-
-
       const resultId = createId();
 
-      await db.insert(monitoringResults).values({
-        id: resultId,
-        agentId,
-        redditPostId: redditPostId || null,
-        redditCommentId: redditCommentId || null,
-        content,
-        author,
-        subreddit,
-        url,
-        score: score ?? 0,
-        createdAt: new Date(),
-        matchedKeywords: JSON.stringify(matchedKeywords),
-        relevanceScore,
-        processed: false,
-        sentimentScore: sentimentScore ?? 0,
-      }).onConflictDoNothing();
+      await db
+        .insert(monitoringResults)
+        .values({
+          id: resultId,
+          agentId,
+          redditPostId: redditPostId || null,
+          redditCommentId: redditCommentId || null,
+          content,
+          author,
+          subreddit,
+          url,
+          score: score ?? 0,
+          createdAt: new Date(),
+          matchedKeywords: JSON.stringify(matchedKeywords),
+          relevanceScore,
+          processed: false,
+          sentimentScore: sentimentScore ?? 0,
+        })
+        .onConflictDoNothing();
 
       return JSON.stringify({ success: true, resultId });
     } catch (error) {
@@ -178,6 +183,30 @@ export const storeResult = tool(
     }),
   }
 );
-
+export const checkExistingPost = tool(
+  async ({ postId }) => {
+    try {
+      const existingRecord = await db
+        .select()
+        .from(monitoringResults)
+        .where(eq(monitoringResults.redditPostId, postId));
+      if (existingRecord.length>0) {
+        return JSON.stringify({ success: true, postId });
+      }else{
+        return JSON.stringify({ success: false, postId });
+      }
+    } catch (error) {
+      console.error("Error reading existing data:", error);
+      return JSON.stringify({ success: false, error: String(error) });
+    }
+  },
+  {
+    name: "check_existing_post",
+    description: "Checks database for already existing data",
+    schema: z.object({
+      postId: z.string().describe("The ID of the post to get comments from."),
+    }),
+  }
+);
 // Instantiate the tools
-const tools = [searchReddit, getComments, analyzeContent, storeResult];
+const tools = [searchReddit, getComments, analyzeContent, storeResult,checkExistingPost];

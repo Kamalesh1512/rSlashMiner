@@ -110,6 +110,45 @@ class RedditService {
       };
     });
   }
+  async searchPostsByKeyword(
+    keyword: string,
+    time: Timeframe,
+    limit:number
+  ): Promise<RedditPost[]> {
+    const data = await this.fetchFromReddit(`/search`, {
+      q: keyword,
+      sort: "relevance",
+      t: time,
+      limit,
+      restrict_sr: false,
+      include_over_18: false, // Optional: filter NSFW
+    });
+  
+    const posts = (data.data?.children || []).map((child: any) => {
+      const post = child.data;
+      return {
+        id: post.id,
+        title: post.title,
+        selftext: post.selftext,
+        author: post.author,
+        subreddit: post.subreddit,
+        url: `https://www.reddit.com${post.permalink}`,
+        score: post.score,
+        created_utc: post.created_utc,
+        num_comments: post.num_comments ?? 0,
+      };
+    });
+  
+    // Engagement score = upvotes + comment count
+    posts.sort((a:any, b:any) => {
+      const engagementA = a.score + (a.num_comments ?? 0);
+      const engagementB = b.score + (b.num_comments ?? 0);
+      return engagementB - engagementA;
+    });
+  
+    return posts;
+  }
+  
 
   async searchPosts(
     subreddit: string,

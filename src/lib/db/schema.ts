@@ -32,7 +32,9 @@ export const users = pgTable("users", {
   dodoSubscriptionId:text('dodo_subscription_id'),
   cancelAtPeriodEnd:boolean('cancel_at_period_end').default(false),
   paidUserIndex:integer('paid_user_index'),
-
+  slackUserId:text('slack_user_id'),
+  slackAccessToken:text('slack_access_token'),
+  teamId:text('team_id'),
 });
 
 // User relations

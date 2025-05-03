@@ -211,11 +211,11 @@ export const navItems = [
     href: "/results",
     icon: BarChart3,
   },
-  {
-    name: "Monitoring",
-    href: "/monitoring",
-    icon: Clock,
-  },
+  // {
+  //   name: "Monitoring",
+  //   href: "/monitoring",
+  //   icon: Clock,
+  // },
   {
     name: "Notifications",
     href: "/notifications",

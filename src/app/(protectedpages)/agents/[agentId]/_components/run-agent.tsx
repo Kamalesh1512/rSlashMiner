@@ -21,6 +21,7 @@ import {
   Clock,
   Trash2,
   History,
+  AlertCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -54,7 +55,7 @@ interface RunHistoryItem {
   completedAt?: Date;
   success?: boolean;
   resultsCount: number;
-  processedSubreddits: number;
+  processedKeywords: number;
   summary?: string;
   error?: string;
   steps: Step[];
@@ -68,8 +69,8 @@ export default function RunAgentPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
-  const {updateAgentById} = useAgentStore()
-  const {triggerAgentRunFeedback} = useFeedback()
+  const { updateAgentById } = useAgentStore();
+  const { triggerAgentRunFeedback } = useFeedback();
   const [runResult, setRunResult] = useState<{
     success: boolean;
     summary: string;
@@ -80,6 +81,7 @@ export default function RunAgentPage() {
   const [activeTab, setActiveTab] = useState<"current" | "history">("current");
   const eventSourceRef = useRef<EventSource | null>(null);
   const currentRunIdRef = useRef<string | null>(null);
+  const { agents, setAgents } = useAgentStore();
 
   const agentId = params.agentId as string;
 
@@ -136,6 +138,25 @@ export default function RunAgentPage() {
     localStorage.removeItem(`runHistory-${agentId}`);
   }, [agentId]);
 
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch("/api/agents");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch agents");
+      }
+      setAgents(data.agents);
+    } catch (error) {
+      toast.error("Error", {
+        description:
+          error instanceof Error ? error.message : "Failed to fetch agents",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const runAgent = async () => {
     // Reset state for new run
     setIsRunning(true);
@@ -153,7 +174,7 @@ export default function RunAgentPage() {
       id: runId,
       startedAt: new Date(),
       resultsCount: 0,
-      processedSubreddits: 0,
+      processedKeywords: 0,
       steps: [],
     };
 
@@ -174,23 +195,23 @@ export default function RunAgentPage() {
 
     eventSource.onmessage = (event) => {
       try {
+        if (currentRunIdRef.current !== runId) return;
         const data = JSON.parse(event.data);
 
         if (data.type === "step") {
           // Extract subreddit from step ID if available
           let subreddit: string | undefined;
-          if (data.id.startsWith("subreddit-")) {
+          if (data.id.startsWith("keyword-")) {
             const parts = data.id.split("-");
-            const subredditIndex = Number.parseInt(parts[1]);
-            subreddit = data.subredditName || `Subreddit ${subredditIndex + 1}`;
+            const keywordIndex = Number.parseInt(parts[1]);
+            subreddit = data.subredditName || `Keyword ${keywordIndex + 1}`;
           } else if (data.id.includes("-")) {
             // For substeps, extract the parent subreddit
             const parentId = data.id.split("-")[0];
-            if (parentId.startsWith("subreddit-")) {
+            if (parentId.startsWith("keyword-")) {
               const parts = parentId.split("-");
-              const subredditIndex = Number.parseInt(parts[1]);
-              subreddit =
-                data.subredditName || `Subreddit ${subredditIndex + 1}`;
+              const keywordIndex = Number.parseInt(parts[1]);
+              subreddit = data.subredditName || `Keyword ${keywordIndex + 1}`;
             }
           }
 
@@ -287,14 +308,14 @@ export default function RunAgentPage() {
             summary: data.summary,
             resultsCount: data.resultsCount,
           });
-          updateAgentById(agentId,{
-            results:data.recentResults
-          })
-          
+          updateAgentById(agentId, {
+            results: data.recentResults,
+          });
+
           setProgress(100);
           setIsRunning(false);
-
-
+          console.log("calling api--get agents");
+          fetchAgents();
           // Update run history
           setRunHistory((prevHistory) => {
             const currentRunIndex = prevHistory.findIndex(
@@ -307,7 +328,7 @@ export default function RunAgentPage() {
                 completedAt: new Date(),
                 success: true,
                 resultsCount: data.resultsCount,
-                processedSubreddits: data.processedSubreddits,
+                processedKeywords: data.processedKeywords,
                 summary: data.summary,
               };
               return updatedHistory;
@@ -322,7 +343,8 @@ export default function RunAgentPage() {
           // Close the connection
           eventSource.close();
           eventSourceRef.current = null;
-          triggerAgentRunFeedback(agentId,true)
+
+          triggerAgentRunFeedback(agentId, true);
         } else if (data.type === "error") {
           // Handle error
           setRunResult({
@@ -521,7 +543,7 @@ export default function RunAgentPage() {
               <CardTitle>Manual Agent Run</CardTitle>
               <CardDescription>
                 Run this agent now to search Reddit for relevant content
-                matching your keywords and subreddits.
+                matching your keywords.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -529,12 +551,11 @@ export default function RunAgentPage() {
                 <div className="flex flex-col items-center justify-center py-8 space-y-4">
                   <p className="text-center text-muted-foreground max-w-md">
                     Running the agent will search Reddit for new content
-                    matching your keywords in the selected subreddits. This
-                    process may take a few minutes depending on the number of
-                    subreddits and keywords.
+                    matching your keywords. This process may take a few minutes
+                    depending on the number of keywords.
                   </p>
                   <Button onClick={runAgent} size="lg">
-                    Run Agent Now
+                    Run Agent
                   </Button>
                 </div>
               ) : (
@@ -702,7 +723,7 @@ export default function RunAgentPage() {
                                   </div>
                                   <div className="flex-grow">
                                     <div className="font-medium">
-                                      Processing r/{subreddit}
+                                      Processing {subreddit}
                                     </div>
                                   </div>
                                 </div>
@@ -810,6 +831,8 @@ export default function RunAgentPage() {
                                         <Loader2 className="h-4 w-4 text-primary animate-spin" />
                                       ) : step.status === "completed" ? (
                                         <CheckCircle className="h-4 w-4 text-green-500" />
+                                      ) : step.status == "skipped" ? (
+                                        <AlertCircle className="h-4 w-4 text-yellow-500" />
                                       ) : step.status === "error" ? (
                                         <AlertCircle className="h-4 w-4 text-red-500" />
                                       ) : (
@@ -949,7 +972,7 @@ export default function RunAgentPage() {
                           {historyItem.success && (
                             <p className="text-sm font-medium">
                               {historyItem.resultsCount} results from{" "}
-                              {historyItem.processedSubreddits} subreddits
+                              {historyItem.processedKeywords} Keywords
                             </p>
                           )}
                           {historyItem.completedAt && historyItem.startedAt && (
@@ -1005,7 +1028,7 @@ export default function RunAgentPage() {
                                           ? "Agent Initialization"
                                           : group === "configuration"
                                           ? "Agent Configuration"
-                                          : `r/${group}`}
+                                          : `${group}`}
                                       </h4>
                                       <div className="space-y-2">
                                         {groupSteps.map((step) => (
@@ -1017,6 +1040,9 @@ export default function RunAgentPage() {
                                               <div className="mt-0.5">
                                                 {step.status === "completed" ? (
                                                   <CheckCircle className="h-3 w-3 text-green-500" />
+                                                ) : step.status ===
+                                                  "skipped" ? (
+                                                  <AlertCircleIcon className="h-3 w-3 text-yellow-500" />
                                                 ) : step.status === "error" ? (
                                                   <AlertCircle className="h-3 w-3 text-red-500" />
                                                 ) : (

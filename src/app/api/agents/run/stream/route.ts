@@ -124,23 +124,23 @@ async function processAgentRun(
       .from(keywords)
       .where(eq(keywords.agentId, agentId));
 
-    const subredditResult = await db
-      .select({ name: subreddits.subredditName })
-      .from(subreddits)
-      .where(eq(subreddits.agentId, agentId));
+    // const subredditResult = await db
+    //   .select({ name: subreddits.subredditName })
+    //   .from(subreddits)
+    //   .where(eq(subreddits.agentId, agentId));
 
-    const subredditList = subredditResult.map((sub) => sub.name);
+    // const subredditList = subredditResult.map((sub) => sub.name);
     const keywordList = keywordsResult.map((key) => key.name);
 
-    if (subredditList.length === 0 || keywordList.length === 0) {
-      sendEvent({
-        type: "error",
-        error:
-          "Agent configuration incomplete. Agent must have at least one subreddit and one keyword.",
-      });
-      close();
-      return;
-    }
+    // if (subredditList.length === 0 || keywordList.length === 0) {
+    //   sendEvent({
+    //     type: "error",
+    //     error:
+    //       "Agent configuration incomplete. Agent must have at least one subreddit and one keyword.",
+    //   });
+    //   close();
+    //   return;
+    // }
 
     // Send initial step
     sendEvent({
@@ -157,7 +157,7 @@ async function processAgentRun(
       id: "config",
       status: "running",
       message: "Loading agent configuration",
-      details: `Found ${subredditList.length} subreddits and ${keywordList.length} keywords`,
+      details: `Found ${keywordList.length} keywords`,
       progress: 10,
     });
 
@@ -170,34 +170,34 @@ async function processAgentRun(
       id: "config",
       status: "completed",
       message: "Agent configuration loaded",
-      details: `Ready to monitor ${subredditList.length} subreddits with ${keywordList.length} keywords`,
+      details: `Ready to track ${keywordList.length} keywords`,
       progress: 15,
     });
 
     // Process each subreddit
     const results = [];
     const storedResultIds = [];
-    const totalSubreddits = subredditList.length;
+    const totalkeywords = keywordList.length;
 
-    for (let i = 0; i < subredditList.length; i++) {
-      const subreddit = subredditList[i];
-      const stepId = `subreddit-${i}`;
-      const progressBase = 15 + i * (70 / totalSubreddits);
-      const progressEnd = 15 + (i + 1) * (70 / totalSubreddits);
+    for (let i = 0; i < keywordList.length; i++) {
+      const keyword = keywordList[i];
+      const stepId = `keyword-${i}`;
+      const progressBase = 15 + i * (70 / totalkeywords);
+      const progressEnd = 15 + (i + 1) * (70 / totalkeywords);
 
       // Send step for processing this subreddit
       sendEvent({
         type: "step",
         id: stepId,
         status: "running",
-        message: `Processing subreddit r/${subreddit}`,
-        details: `Searching for content matching ${keywordList.length} keywords`,
+        message: `Processing Keyword ${keyword}`,
+        details: `Searching for content matching ${keyword} keyword`,
         progress: progressBase,
       });
 
       try {
         // We'll use the first keyword as the main query, but include all keywords for analysis
-        const query = keywordList;
+        const query = keyword;
 
         const relevanceThreshold = JSON.parse(
           agent[0].configuration
@@ -206,8 +206,7 @@ async function processAgentRun(
         // Run the agent with progress reporting
         const result = await runAgent({
           agentId,
-          subreddit,
-          query,
+          query:keyword,
           relevanceThreshold,
           businessInterests: keywordList,
           businessDescription: agent[0].description as string,
@@ -225,8 +224,8 @@ async function processAgentRun(
             sendEvent({
               type: "step",
               id: `${stepId}-progress`,
-              status: isSkipped ? "skipped" : "complete", // ✅ Mark as completed if skipped
-              message: `Processing r/${subreddit}`,
+              status: isSkipped ? "skipped" : "completed", // ✅ Mark as completed if skipped
+              message: `Tracking Keyword ${keyword}`,
               details: message,
               progress: progressBase + (progressEnd - progressBase) * 0.5,
             });
@@ -236,7 +235,7 @@ async function processAgentRun(
         // Complete this subreddit step
         if (result.storedResult && result.storedResult.success) {
           results.push({
-            subreddit,
+            keyword,
             resultId: result.storedResult.resultId,
             success: true,
           });
@@ -246,7 +245,7 @@ async function processAgentRun(
             type: "step",
             id: stepId,
             status: "completed",
-            message: `Completed processing r/${subreddit}`,
+            message: `Completed tracking ${keyword}`,
             details: `🙂Found relevant content with ${
               result.analysis?.relevanceScore || 0
             }% relevance`,
@@ -257,27 +256,27 @@ async function processAgentRun(
             type: "step",
             id: stepId,
             status: "completed",
-            message: `Completed processing r/${subreddit}`,
+            message: `Completed tracking ${keyword}`,
             details: "☹️No relevant content found",
             progress: progressEnd,
           });
         }
       } catch (error) {
-        console.error(`Error processing subreddit ${subreddit}:`, error);
+        console.error(`Error processing keyword ${keyword}:`, error);
 
         // Mark this subreddit step as error
         sendEvent({
           type: "step",
           id: stepId,
           status: "error",
-          message: `Error processing r/${subreddit}`,
+          message: `Error processing ${keyword}`,
           details:
             error instanceof Error ? error.message : "Unknown error occurred",
           progress: progressEnd,
         });
 
         results.push({
-          subreddit,
+          keyword,
           success: false,
           error: String(error),
         });
@@ -323,13 +322,13 @@ async function processAgentRun(
         .orderBy(monitoringResults.createdAt)
         .limit(10);
 
-      summary = `Found ${storedResultIds.length} relevant results across ${subredditList.length} subreddits.`;
+      summary = `Found ${storedResultIds.length} relevant results across ${keywordList.length} keywords.`;
 
       if (recentResults.length > 0) {
-        summary += ` Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
+        summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
       }
     } else {
-      summary = `No relevant results found across ${subredditList.length} subreddits.`;
+      summary = `No New relevant results found across ${keywordList.length} keywords.`;
     }
 
     // Send final completion event
@@ -338,7 +337,7 @@ async function processAgentRun(
       success: true,
       summary,
       resultsCount: storedResultIds.length,
-      processedSubreddits: subredditList.length,
+      processedKeywords: keywordList.length,
       progress: 100,
       recentResults: recentResults,
     });
@@ -352,7 +351,7 @@ async function processAgentRun(
       success: true,
       message: summary,
       resultsCount: storedResultIds.length,
-      processedSubreddits: subredditList.length,
+      processedKeywords: keywordList.length,
     });
   } catch (error) {
     console.error("Error in agent run:", error);
