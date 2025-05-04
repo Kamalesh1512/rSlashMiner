@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SlackConnect } from "@/components/slack/slack-connect";
+import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
 
 // Define interfaces for our data types
 interface Notification {
@@ -133,6 +134,8 @@ export default function NotificationsPage() {
     dailyDigest: true,
     digestTime: "09:00",
   });
+
+  const { availableAlerts } = useAllowedNotifications();
 
   useEffect(() => {
     // Simulate loading data
@@ -424,7 +427,7 @@ export default function NotificationsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Notification Methods</h3>
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="email-notifications">
@@ -462,6 +465,53 @@ export default function NotificationsPage() {
                         You’ll receive alerts via Slack.
                       </p>
                     </div>
+                  )}
+                </div> */}
+                <div className="space-y-4">
+                  {availableAlerts.includes("email") && (
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="email-notifications">
+                        Email Notifications
+                      </Label>
+                      <Switch
+                        id="email-notifications"
+                        checked={notificationSettings.email}
+                        onCheckedChange={(checked) =>
+                          setNotificationSettings((prev) => ({
+                            ...prev,
+                            email: checked,
+                          }))
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {availableAlerts.includes("slack") && (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <Label htmlFor="slack">Enable Slack Alerts</Label>
+                        <Switch
+                          id="slack"
+                          checked={notificationSettings.slack}
+                          onCheckedChange={(checked) =>
+                            setNotificationSettings((prev) => ({
+                              ...prev,
+                              slack: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      {notificationSettings.slack && (
+                        <div className="space-y-2 pl-6">
+                          <SlackConnect />
+                          <p className="text-sm text-muted-foreground">
+                            You’ll receive alerts via Slack.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

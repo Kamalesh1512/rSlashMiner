@@ -14,11 +14,13 @@ import { planConfigType, usageLimitProps } from "@/lib/constants/types";
 interface CreateAgentPageProps {
   createAgent: boolean;
   usage: usageLimitProps | null;
+  isEmailVerified: boolean;
 }
 
 export default function CreateAgentPage({
   createAgent,
   usage,
+  isEmailVerified,
 }: CreateAgentPageProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -78,14 +80,32 @@ export default function CreateAgentPage({
           <Card className="sm:p-6">
             <div className="text-center space-y-4">
               <h2 className="text-lg sm:text-xl font-semibold">
-                Agent Creation Limit Reached
+                Agent Creation Constraints
               </h2>
-              {usage && (
-                <p className="text-sm sm:text-base">
-                  You have used {usage.agent.used} out of {usage.agent.limit}{" "}
-                  agent creation {usage?.agent.limit === 1 ? "slot" : "slots"}{" "}
-                  for your {usage?.tier} subscription.
-                </p>
+
+              {!isEmailVerified ? (
+                <>
+                  <p className="text-lg text-red-500">
+                    Please verify your email address to create an agent.
+                  </p>
+                  <Button
+                    variant={"outline"}
+                    onClick={() => router.push("/verify-email")}
+                  >
+                    Verify Now
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {usage && (
+                    <p className="text-sm sm:text-base">
+                      You have used {usage.agent.used} out of{" "}
+                      {usage.agent.limit} agent creation{" "}
+                      {usage?.agent.limit === 1 ? "slot" : "slots"} for your{" "}
+                      {usage?.tier} subscription.
+                    </p>
+                  )}
+                </>
               )}
               <div className="mt-4 sm:mt-6 space-y-4">
                 <p className="text-sm sm:text-base">

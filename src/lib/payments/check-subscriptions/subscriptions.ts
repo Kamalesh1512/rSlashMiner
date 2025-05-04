@@ -98,7 +98,24 @@ export async function canCreateAgent(userId: string): Promise<boolean> {
     .from(usageLimits)
     .where(eq(usageLimits.userId, userId));
 
-  return usage.agentCreationCount < planResult.plan.agent;
+  const isVerified = await db.select().from(users).where(and(eq(users.id,userId),isNotNull(users.emailVerified))).limit(1)
+
+  if (isVerified.length>0) {
+    return usage.agentCreationCount < planResult.plan.agent;
+  }
+  return false
+  
+}
+
+export async function isEmailVerified(userId: string): Promise<boolean> {
+  
+  const isVerified = await db.select().from(users).where(and(eq(users.id,userId),isNotNull(users.emailVerified))).limit(1)
+
+  if (isVerified.length>0) {
+    return true
+  }
+  return false
+  
 }
 
 export async function incrementAgentCount(userId: string) {
