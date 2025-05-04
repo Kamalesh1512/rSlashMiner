@@ -1,27 +1,42 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Loader2, Bell, Mail, MessageSquare, Clock, CheckCircle, Trash2 } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Loader2,
+  Bell,
+  Mail,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { SlackConnect } from "@/components/slack/slack-connect";
 
 // Define interfaces for our data types
 interface Notification {
-  id: string
-  title: string
-  content: string
-  timestamp: string
-  type: "match" | "agent" | "system"
-  read: boolean
-  agentId?: string
-  agentName?: string
-  resultId?: string
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+  type: "match" | "agent" | "system";
+  read: boolean;
+  agentId?: string;
+  agentName?: string;
+  resultId?: string;
 }
 
 // Hardcoded data
@@ -29,7 +44,8 @@ const notifications: Notification[] = [
   {
     id: "1",
     title: "New high-relevance match found",
-    content: "Your agent 'SaaS Product Monitor' found a new potential customer in r/startups with 95% relevance.",
+    content:
+      "Your agent 'SaaS Product Monitor' found a new potential customer in r/startups with 95% relevance.",
     timestamp: "10 minutes ago",
     type: "match",
     read: false,
@@ -40,7 +56,8 @@ const notifications: Notification[] = [
   {
     id: "2",
     title: "Agent completed scheduled run",
-    content: "Your agent 'Competitor Tracker' completed its scheduled run and found 3 new matches.",
+    content:
+      "Your agent 'Competitor Tracker' completed its scheduled run and found 3 new matches.",
     timestamp: "1 hour ago",
     type: "agent",
     read: false,
@@ -59,7 +76,8 @@ const notifications: Notification[] = [
   {
     id: "4",
     title: "New match found",
-    content: "Your agent 'Product Hunt Monitor' found a new match in r/ProductHunt with 82% relevance.",
+    content:
+      "Your agent 'Product Hunt Monitor' found a new match in r/ProductHunt with 82% relevance.",
     timestamp: "2 days ago",
     type: "match",
     read: true,
@@ -90,7 +108,8 @@ const notifications: Notification[] = [
   {
     id: "7",
     title: "New high-relevance match found",
-    content: "Your agent 'Competitor Tracker' found a new potential customer in r/marketing with 91% relevance.",
+    content:
+      "Your agent 'Competitor Tracker' found a new potential customer in r/marketing with 91% relevance.",
     timestamp: "5 days ago",
     type: "match",
     read: true,
@@ -98,71 +117,91 @@ const notifications: Notification[] = [
     agentName: "Competitor Tracker",
     resultId: "2",
   },
-]
+];
 
 export default function NotificationsPage() {
-  const { data: session, status } = useSession()
-  const [isLoading, setIsLoading] = useState(true)
-  const [notificationsList, setNotificationsList] = useState<Notification[]>([])
+  const { data: session, status } = useSession();
+  const [isLoading, setIsLoading] = useState(true);
+  const [notificationsList, setNotificationsList] = useState<Notification[]>(
+    []
+  );
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
-    whatsapp: false,
-    whatsappNumber: "",
+    slack: false,
+    slackWebhookUrl: "",
     highRelevanceOnly: false,
     dailyDigest: true,
     digestTime: "09:00",
-  })
+  });
 
   useEffect(() => {
     // Simulate loading data
     const timer = setTimeout(() => {
-      setNotificationsList(notifications)
-      setIsLoading(false)
-    }, 1000)
+      setNotificationsList(notifications);
+      setIsLoading(false);
+    }, 1000);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   const markAsRead = (id: string) => {
     setNotificationsList((prev) =>
-      prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
-    )
-  }
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  };
 
   const markAllAsRead = () => {
-    setNotificationsList((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
+    setNotificationsList((prev) =>
+      prev.map((notification) => ({ ...notification, read: true }))
+    );
+  };
 
   const deleteNotification = (id: string) => {
-    setNotificationsList((prev) => prev.filter((notification) => notification.id !== id))
-  }
+    setNotificationsList((prev) =>
+      prev.filter((notification) => notification.id !== id)
+    );
+  };
 
   const clearAllNotifications = () => {
-    setNotificationsList([])
-  }
+    setNotificationsList([]);
+  };
 
   if (status === "loading" || isLoading) {
     return (
       <div className="flex h-[calc(100vh-5rem)] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
-  const unreadCount = notificationsList.filter((n) => !n.read).length
+  const unreadCount = notificationsList.filter((n) => !n.read).length;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground">Stay updated on your monitoring results and agent activity</p>
+          <p className="text-muted-foreground">
+            Stay updated on your monitoring results and agent activity
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={markAllAsRead}
+            disabled={unreadCount === 0}
+          >
             Mark All as Read
           </Button>
-          <Button variant="outline" size="sm" onClick={clearAllNotifications} disabled={notificationsList.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearAllNotifications}
+            disabled={notificationsList.length === 0}
+          >
             Clear All
           </Button>
         </div>
@@ -170,7 +209,9 @@ export default function NotificationsPage() {
 
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="all">All ({notificationsList.length})</TabsTrigger>
+          <TabsTrigger value="all">
+            All ({notificationsList.length})
+          </TabsTrigger>
           <TabsTrigger value="unread">Unread ({unreadCount})</TabsTrigger>
           <TabsTrigger value="settings">Notification Settings</TabsTrigger>
         </TabsList>
@@ -188,7 +229,10 @@ export default function NotificationsPage() {
             </Card>
           ) : (
             notificationsList.map((notification) => (
-              <Card key={notification.id} className={notification.read ? "" : "border-primary"}>
+              <Card
+                key={notification.id}
+                className={notification.read ? "" : "border-primary"}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
@@ -197,24 +241,40 @@ export default function NotificationsPage() {
                           notification.type === "match"
                             ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                             : notification.type === "agent"
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
                         }`}
                       >
-                        {notification.type === "match" && <CheckCircle className="h-5 w-5" />}
-                        {notification.type === "agent" && <Clock className="h-5 w-5" />}
-                        {notification.type === "system" && <Bell className="h-5 w-5" />}
+                        {notification.type === "match" && (
+                          <CheckCircle className="h-5 w-5" />
+                        )}
+                        {notification.type === "agent" && (
+                          <Clock className="h-5 w-5" />
+                        )}
+                        {notification.type === "system" && (
+                          <Bell className="h-5 w-5" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className={`font-medium ${notification.read ? "" : "font-semibold"}`}>
+                          <h3
+                            className={`font-medium ${
+                              notification.read ? "" : "font-semibold"
+                            }`}
+                          >
                             {notification.title}
                           </h3>
-                          {!notification.read && <span className="h-2 w-2 rounded-full bg-primary"></span>}
+                          {!notification.read && (
+                            <span className="h-2 w-2 rounded-full bg-primary"></span>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">{notification.content}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {notification.content}
+                        </p>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-xs text-muted-foreground">{notification.timestamp}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {notification.timestamp}
+                          </span>
                           {notification.agentId && (
                             <Link
                               href={`/agents/${notification.agentId}`}
@@ -236,11 +296,19 @@ export default function NotificationsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {!notification.read && (
-                        <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markAsRead(notification.id)}
+                        >
                           Mark as Read
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => deleteNotification(notification.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteNotification(notification.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -257,7 +325,9 @@ export default function NotificationsPage() {
               <CardContent className="flex flex-col items-center justify-center py-10">
                 <CheckCircle className="h-10 w-10 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">All caught up!</h3>
-                <p className="text-muted-foreground text-center mt-2">You've read all your notifications.</p>
+                <p className="text-muted-foreground text-center mt-2">
+                  You've read all your notifications.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -273,22 +343,34 @@ export default function NotificationsPage() {
                             notification.type === "match"
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                               : notification.type === "agent"
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                                : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
                           }`}
                         >
-                          {notification.type === "match" && <CheckCircle className="h-5 w-5" />}
-                          {notification.type === "agent" && <Clock className="h-5 w-5" />}
-                          {notification.type === "system" && <Bell className="h-5 w-5" />}
+                          {notification.type === "match" && (
+                            <CheckCircle className="h-5 w-5" />
+                          )}
+                          {notification.type === "agent" && (
+                            <Clock className="h-5 w-5" />
+                          )}
+                          {notification.type === "system" && (
+                            <Bell className="h-5 w-5" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{notification.title}</h3>
+                            <h3 className="font-semibold">
+                              {notification.title}
+                            </h3>
                             <span className="h-2 w-2 rounded-full bg-primary"></span>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{notification.content}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {notification.content}
+                          </p>
                           <div className="flex items-center gap-4 mt-2">
-                            <span className="text-xs text-muted-foreground">{notification.timestamp}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {notification.timestamp}
+                            </span>
                             {notification.agentId && (
                               <Link
                                 href={`/agents/${notification.agentId}`}
@@ -309,10 +391,18 @@ export default function NotificationsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markAsRead(notification.id)}
+                        >
                           Mark as Read
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteNotification(notification.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteNotification(notification.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -327,84 +417,96 @@ export default function NotificationsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>Configure how and when you receive notifications</CardDescription>
+              <CardDescription>
+                Configure how and when you receive notifications
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Notification Methods</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center space-x-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="email-notifications">Email Notifications</Label>
-                    </div>
+                      <Label htmlFor="email-notifications">
+                        Email Notifications
+                      </Label>
                     <Switch
                       id="email-notifications"
                       checked={notificationSettings.email}
-                      onCheckedChange={(checked) => setNotificationSettings((prev) => ({ ...prev, email: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({
+                          ...prev,
+                          email: checked,
+                        }))
+                      }
                     />
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="whatsapp-notifications">WhatsApp Notifications</Label>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="slack">Enable Slack Alerts</Label>
                     <Switch
-                      id="whatsapp-notifications"
-                      checked={notificationSettings.whatsapp}
-                      onCheckedChange={(checked) => setNotificationSettings((prev) => ({ ...prev, whatsapp: checked }))}
+                      id="slack"
+                      checked={notificationSettings.slack}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({
+                          ...prev,
+                          slack: checked,
+                        }))
+                      }
                     />
                   </div>
 
-                  {notificationSettings.whatsapp && (
+                  {notificationSettings.slack && (
                     <div className="space-y-2 pl-6">
-                      <Label htmlFor="whatsapp-number">WhatsApp Number</Label>
-                      <Input
-                        id="whatsapp-number"
-                        placeholder="+1234567890"
-                        value={notificationSettings.whatsappNumber}
-                        onChange={(e) =>
-                          setNotificationSettings((prev) => ({ ...prev, whatsappNumber: e.target.value }))
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter your WhatsApp number with country code (e.g., +1 for US).
+                      <SlackConnect />
+                      <p className="text-sm text-muted-foreground">
+                        You’ll receive alerts via Slack.
                       </p>
                     </div>
                   )}
                 </div>
               </div>
-
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Notification Preferences</h3>
+                <h3 className="text-lg font-medium">
+                  Notification Preferences
+                </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="high-relevance-only">High Relevance Only</Label>
-                      <p className="text-sm text-muted-foreground">Only notify for matches with 80%+ relevance</p>
+                      <Label htmlFor="high-relevance-only">
+                        High Relevance Only
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Only notify for matches with 80%+ relevance
+                      </p>
                     </div>
                     <Switch
                       id="high-relevance-only"
                       checked={notificationSettings.highRelevanceOnly}
                       onCheckedChange={(checked) =>
-                        setNotificationSettings((prev) => ({ ...prev, highRelevanceOnly: checked }))
+                        setNotificationSettings((prev) => ({
+                          ...prev,
+                          highRelevanceOnly: checked,
+                        }))
                       }
                     />
                   </div>
-
+                  {/* 
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="daily-digest">Daily Digest</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive a daily summary instead of individual notifications
+                        Receive a daily summary instead of individual
+                        notifications
                       </p>
                     </div>
                     <Switch
                       id="daily-digest"
                       checked={notificationSettings.dailyDigest}
                       onCheckedChange={(checked) =>
-                        setNotificationSettings((prev) => ({ ...prev, dailyDigest: checked }))
+                        setNotificationSettings((prev) => ({
+                          ...prev,
+                          dailyDigest: checked,
+                        }))
                       }
                     />
                   </div>
@@ -416,10 +518,15 @@ export default function NotificationsPage() {
                         id="digest-time"
                         type="time"
                         value={notificationSettings.digestTime}
-                        onChange={(e) => setNotificationSettings((prev) => ({ ...prev, digestTime: e.target.value }))}
+                        onChange={(e) =>
+                          setNotificationSettings((prev) => ({
+                            ...prev,
+                            digestTime: e.target.value,
+                          }))
+                        }
                       />
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
 
@@ -431,6 +538,5 @@ export default function NotificationsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

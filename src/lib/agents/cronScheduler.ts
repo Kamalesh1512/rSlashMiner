@@ -67,87 +67,87 @@ export async function shouldAgentRunToday(agentId: string): Promise<boolean> {
   }
   
   // Function to process scheduled runs
-  export async function processScheduledRuns(): Promise<void> {
-    try {
-      // Get pending scheduled runs
-      const pendingRuns = await db.select().from(scheduledRuns).where(eq(scheduledRuns.status, "pending"),)
+  // export async function processScheduledRuns(): Promise<void> {
+  //   try {
+  //     // Get pending scheduled runs
+  //     const pendingRuns = await db.select().from(scheduledRuns).where(eq(scheduledRuns.status, "pending"),)
   
-      for (const run of pendingRuns) {
-        try {
-          // Mark as processing
-          await db
-            .update(scheduledRuns)
-            .set({ status: "processing", startedAt: new Date() })
-            .where(eq(scheduledRuns.id, run.id))
+  //     for (const run of pendingRuns) {
+  //       try {
+  //         // Mark as processing
+  //         await db
+  //           .update(scheduledRuns)
+  //           .set({ status: "processing", startedAt: new Date() })
+  //           .where(eq(scheduledRuns.id, run.id))
   
-          // Get agent details
-          const agent = await db.select().from(agents).where(eq(agents.id, run.agentId))
+  //         // Get agent details
+  //         const agent = await db.select().from(agents).where(eq(agents.id, run.agentId))
   
-          if (!agent) {
-            throw new Error(`Agent ${run.agentId} not found`)
-          }
+  //         if (!agent) {
+  //           throw new Error(`Agent ${run.agentId} not found`)
+  //         }
   
-          // Get keywords and subreddits
-          const keywordsResult = await db.select().from(keywords).where(eq(keywords.agentId, run.agentId))
+  //         // Get keywords and subreddits
+  //         const keywordsResult = await db.select().from(keywords).where(eq(keywords.agentId, run.agentId))
   
-          const subredditsResult = await db.select().from(subreddits).where(eq(subreddits.agentId, run.agentId))
+  //         const subredditsResult = await db.select().from(subreddits).where(eq(subreddits.agentId, run.agentId))
   
-          const relevanceThreshold = JSON.parse(agent[0].configuration).relevanceThreshold
+  //         const relevanceThreshold = JSON.parse(agent[0].configuration).relevanceThreshold
 
-          const keywordList = keywordsResult.map((key) => key.keyword);
-          // Run the agent for each subreddit
-          for (const subreddit of subredditsResult) {
-            await runAgent({
-              agentId: run.agentId,
-              subreddit: subreddit.subredditName,
-              relevanceThreshold:relevanceThreshold,
-              query: keywordList || "",
-              businessInterests: keywordsResult.map((k) => k.keyword),
-              businessDescription: agent[0].description || "",
-              onProgress: (message) => {
-                console.log(`[Scheduled Run ${run.id}] ${message}`)
-              },
-            })
-          }
+  //         const keywordList = keywordsResult.map((key) => key.keyword);
+  //         // Run the agent for each subreddit
+  //         for (const subreddit of subredditsResult) {
+  //           await runAgent({
+  //             agentId: run.agentId,
+  //             subreddit: subreddit.subredditName,
+  //             relevanceThreshold:relevanceThreshold,
+  //             query: keywordList || "",
+  //             businessInterests: keywordsResult.map((k) => k.keyword),
+  //             businessDescription: agent[0].description || "",
+  //             onProgress: (message) => {
+  //               console.log(`[Scheduled Run ${run.id}] ${message}`)
+  //             },
+  //           })
+  //         }
   
-          // Mark as completed
-          await db
-            .update(scheduledRuns)
-            .set({
-              status: "completed",
-              completedAt: new Date(),
-              result: JSON.stringify({ success: true }),
-            })
-            .where(eq(scheduledRuns.id, run.id))
+  //         // Mark as completed
+  //         await db
+  //           .update(scheduledRuns)
+  //           .set({
+  //             status: "completed",
+  //             completedAt: new Date(),
+  //             result: JSON.stringify({ success: true }),
+  //           })
+  //           .where(eq(scheduledRuns.id, run.id))
   
   
   
-          // Send notification
-          await sendRunNotification({agentId:run.agentId,message:"Scheduled agent run completed successfully",success:true,})
-        } catch (error) {
-          console.error(`Error processing scheduled run ${run.id}: ${error}`)
+  //         // Send notification
+  //         await sendRunNotification({agentId:run.agentId,message:"Scheduled agent run completed successfully",success:true,})
+  //       } catch (error) {
+  //         console.error(`Error processing scheduled run ${run.id}: ${error}`)
   
-          // Mark as failed
-          await db
-            .update(scheduledRuns)
-            .set({
-              status: "failed",
-              completedAt: new Date(),
-              result: JSON.stringify({
-                success: false,
-                error: error instanceof Error ? error.message : String(error),
-              }),
-            })
-            .where(eq(scheduledRuns.id, run.id))
+  //         // Mark as failed
+  //         await db
+  //           .update(scheduledRuns)
+  //           .set({
+  //             status: "failed",
+  //             completedAt: new Date(),
+  //             result: JSON.stringify({
+  //               success: false,
+  //               error: error instanceof Error ? error.message : String(error),
+  //             }),
+  //           })
+  //           .where(eq(scheduledRuns.id, run.id))
   
-          // Send notification about failure
-          await sendRunNotification({agentId:run.agentId, success:false, message:`Scheduled agent run failed: ${error}`})
-        }
-      }
-    } catch (error) {
-      console.error(`Error processing scheduled runs: ${error}`)
-    }
-  }
+  //         // Send notification about failure
+  //         await sendRunNotification({agentId:run.agentId, success:false, message:`Scheduled agent run failed: ${error}`})
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error(`Error processing scheduled runs: ${error}`)
+  //   }
+  // }
   
   // Initialize scheduler
   let schedulerInitialized = false
@@ -179,7 +179,7 @@ export async function shouldAgentRunToday(agentId: string): Promise<boolean> {
         }
   
         // Process any pending scheduled runs
-        await processScheduledRuns()
+        // await processScheduledRuns()
       } catch (error) {
         console.error(`Scheduler error: ${error}`)
       }

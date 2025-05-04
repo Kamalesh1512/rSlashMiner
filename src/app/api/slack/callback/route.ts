@@ -8,10 +8,11 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
+  console.log("fetched code",code)
   const session = await auth(); // your auth logic
 
   if (!code || !session?.user)
-    return NextResponse.redirect("/?error=unauthorized");
+    return NextResponse.redirect(new URL("/?error=unauthorized", req.url));
 
   const res = await fetch("https://slack.com/api/oauth.v2.access", {
     method: "POST",
@@ -25,9 +26,13 @@ export async function GET(req: Request) {
   });
 
   const data = await res.json();
-  if (!data.ok) return NextResponse.redirect("/?error=slack_oauth_failed");
+  if (!data.ok) return NextResponse.redirect(new URL("/?error=slack_oauth_failed", req.url));
 
   const { access_token, authed_user, team } = data;
+  console.log("Access Token",access_token)
+  console.log("Authed User",authed_user)
+  console.log("Team",team)
+
 
   // Check if already connected
   const existing = await db
@@ -54,5 +59,5 @@ export async function GET(req: Request) {
     }).where(eq(users.id, session.user.id));
   }
 
-  return NextResponse.redirect("/agents?connected=slack");
+  return NextResponse.redirect(new URL("/agents?connected=slack", req.url));
 }
