@@ -63,9 +63,6 @@ async function pickPost(state: typeof StateAnnotation.State) {
   const currentPost = state.posts[state.currentPostIndex];
   const newCurrentPostIndex = state.currentPostIndex + 1;
 
-  // console.log("Current Post", currentPost.title);
-  // console.log("currentPostIndex", newCurrentPostIndex);
-
   state.onProgress?.(
     `Checking if post ID ${currentPost.id} already exists`
   );

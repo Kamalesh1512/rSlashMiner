@@ -12,7 +12,6 @@ export async function GET() {
 
   const planResult = await getUserPlan();
   if (!planResult) return NextResponse.json({ max: 0, used: 0 });
-
   const scheduledRuns = planResult.plan.scheduledRuns;
 
   return NextResponse.json({ scheduledRuns });

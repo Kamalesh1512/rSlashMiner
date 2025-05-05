@@ -22,9 +22,9 @@ export function useScheduledRuns() {
         const data = await res.json();
 
         setScheduledRuns({
-          enabled: data.enabled,
-          interval: data.interval,
-          type: data.type,
+          enabled: data.scheduledRuns.enabled,
+          interval: data.scheduledRuns.interval,
+          type: data.scheduledRuns.type,
         });
       } catch (err) {
         console.error("Failed to fetch scheduled runs info", err);

@@ -245,7 +245,7 @@ export interface Agent {
   runCount: number;
   configuration: {
     industry: string;
-    notificationMethod: "email" | "whatsapp" | "both";
+    notificationMethod: "email" | "slack" | "both";
     notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
     relevanceThreshold: number;
     whatsappNumber?: string;

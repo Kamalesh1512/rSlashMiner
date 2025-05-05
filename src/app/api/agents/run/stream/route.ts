@@ -124,23 +124,8 @@ async function processAgentRun(
       .from(keywords)
       .where(eq(keywords.agentId, agentId));
 
-    // const subredditResult = await db
-    //   .select({ name: subreddits.subredditName })
-    //   .from(subreddits)
-    //   .where(eq(subreddits.agentId, agentId));
-
-    // const subredditList = subredditResult.map((sub) => sub.name);
     const keywordList = keywordsResult.map((key) => key.name);
 
-    // if (subredditList.length === 0 || keywordList.length === 0) {
-    //   sendEvent({
-    //     type: "error",
-    //     error:
-    //       "Agent configuration incomplete. Agent must have at least one subreddit and one keyword.",
-    //   });
-    //   close();
-    //   return;
-    // }
 
     // Send initial step
     sendEvent({

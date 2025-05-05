@@ -132,6 +132,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
   const { availableAlerts, selectOptions } = useAllowedNotifications();
   const { scheduledRuns } = useScheduledRuns();
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -351,12 +352,12 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
         formData.notificationMethod === "slack" ||
         formData.notificationMethod === "both"
       ) {
-        if (!formData.whatsappNumber) {
-          toast.error("WhatsApp number required", {
-            description: "Please provide a WhatsApp number for notifications.",
-          });
-          return;
-        }
+        // if (!formData.whatsappNumber) {
+        //   toast.error("WhatsApp number required", {
+        //     description: "Please provide a WhatsApp number for notifications.",
+        //   });
+        //   return;
+        // }
       }
 
       if (
@@ -653,7 +654,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
               className="space-y-6"
             >
               <Tabs defaultValue="notifications" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-1">
                   <TabsTrigger value="notifications">
                     Notification / Schedule Settings
                   </TabsTrigger>
@@ -684,7 +685,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
                     {(formData.notificationMethod === "slack" ||
                       formData.notificationMethod === "both") && (
-                      <div className="space-y-2">
+                      <div className="mt-3 flex flex-col items-start justify-between gap-2">
                         <Label htmlFor="SlackNotification">
                           Slack Notification
                         </Label>
@@ -714,95 +715,7 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       </p>
                     </div>
                   </div>
-                  {/* <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Schedule Type</Label>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="always"
-                            name="scheduleType"
-                            value="always"
-                            checked={formData.scheduleType === "always"}
-                            onChange={() =>
-                              handleSelectChange("scheduleType", "always")
-                            }
-                            className="h-4 w-4 text-primary"
-                          />
-                          <Label htmlFor="always" className="font-normal">
-                            Run continuously
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="specific"
-                            name="scheduleType"
-                            value="specific"
-                            checked={formData.scheduleType === "specific"}
-                            onChange={() =>
-                              handleSelectChange("scheduleType", "specific")
-                            }
-                            className="h-4 w-4 text-primary"
-                          />
-                          <Label htmlFor="specific" className="font-normal">
-                            Run on specific days/times
-                          </Label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {formData.scheduleType === "specific" && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Days to Run</Label>
-                          <div className="grid grid-cols-7 gap-2">
-                            {Object.entries(formData.scheduleDays).map(
-                              ([day, isEnabled]) => (
-                                <div
-                                  key={day}
-                                  className="flex flex-col items-center"
-                                >
-                                  <Label
-                                    htmlFor={day}
-                                    className="mb-1 text-xs uppercase"
-                                  >
-                                    {day.slice(0, 3)}
-                                  </Label>
-                                  <Switch
-                                    id={day}
-                                    checked={isEnabled}
-                                    onCheckedChange={(checked) =>
-                                      handleScheduleDayChange(
-                                        day as keyof FormData["scheduleDays"],
-                                        checked
-                                      )
-                                    }
-                                  />
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="scheduleTime">Time to Run</Label>
-                          <Input
-                            id="scheduleTime"
-                            name="scheduleTime"
-                            type="time"
-                            value={formData.scheduleTime}
-                            onChange={handleInputChange}
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            The agent will run at this time on the selected
-                            days.
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div> */}
+  
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Scheduling</Label>
@@ -914,11 +827,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                           formData.notificationMethod === "both") && (
                           <div>
                             <span className="text-sm font-medium">
-                              WhatsApp Number:
+                              
                             </span>{" "}
-                            <span className="text-sm">
-                              {formData.whatsappNumber}
-                            </span>
+                            <p className="text-sm text-muted-foreground">
+                          You’ll receive alerts via Email & Slack.
+                        </p>
                           </div>
                         )}
                         <div>

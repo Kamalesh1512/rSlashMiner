@@ -15,8 +15,10 @@ export async function getUserPlan() {
     return "";
   }
 
-  const user = session.user;
-  const planTier = user.subscriptionTier;
+  const user = await db.select().from(users).where(eq(users.id,session.user.id))
+
+  const planTier = user[0].subscriptionTier;
+
   type Tier = keyof typeof planLimits;
   const plan = planLimits[planTier as Tier] as planConfigType;
   return { plan, planTier };

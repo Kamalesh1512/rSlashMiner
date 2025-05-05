@@ -44,6 +44,7 @@ import { useRouter } from "next/navigation";
 import { useAgentStore } from "@/store/agentstore";
 import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
 import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
+import { SlackConnect } from "@/components/slack/slack-connect";
 
 interface AgentConfigTabProps {
   agent: Agent;
@@ -124,7 +125,13 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
 
   const handleDeleteAgent = async () => {
     try {
-      const response = await fetch(`/api/agents/${agent.id}/delete`);
+      const response = await fetch(`/api/agents/${agent.id}/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agent.id,
+        }),
+      });
       if (response.ok) {
         const updatedAgents = agents.filter((res) => res.id !== agent.id);
         setAgents(updatedAgents);
@@ -237,27 +244,19 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
               ) : (
                 <p>
                   {form.notificationMethod === "email" && "Email Only"}
-                  {form.notificationMethod === "whatsapp" && "WhatsApp Only"}
-                  {form.notificationMethod === "both" && "Email and WhatsApp"}
+                  {form.notificationMethod === "slack" && "Slack Only"}
+                  {form.notificationMethod === "both" && "Email and Slack"}
                 </p>
               )}
 
-              {(form.notificationMethod === "whatsapp" ||
+              {(form.notificationMethod === "slack" ||
                 form.notificationMethod === "both") && (
-                <div className="mt-2">
-                  <Label>WhatsApp Number</Label>
-                  {isEditing ? (
-                    <Input
-                      value={form.whatsappNumber || ""}
-                      onChange={(e) =>
-                        handleChange("whatsappNumber", e.target.value)
-                      }
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      WhatsApp Number: {form.whatsappNumber}
-                    </p>
-                  )}
+                <div className="mt-3 flex flex-col items-start justify-between gap-2">
+                  <Label htmlFor="SlackNotification">Slack Notification</Label>
+                  <SlackConnect />
+                  <p className="text-sm text-muted-foreground">
+                    You’ll receive alerts via Slack.
+                  </p>
                 </div>
               )}
             </div>

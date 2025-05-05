@@ -55,12 +55,12 @@ export function SubscriptionCard({
               <span className="text-4xl font-bold">{plan.price}</span>
             ) : (
               <span className="text-4xl font-bold relative inline-block">
-                $
+                
                 <span className="mr-2 relative inline-block text-gray-500">
-                  {plan.msrpPrice}
+                  ${plan.msrpPrice}
                   <span className="absolute left-0 top-1/2 w-full h-0.5 bg-orange-400 transform -rotate-12 origin-center"></span>
                 </span>
-                {plan.price}
+                ${plan.price}
               </span>
             )
           ) : (
