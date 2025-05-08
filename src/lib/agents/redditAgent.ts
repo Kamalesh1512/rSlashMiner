@@ -23,7 +23,7 @@ const StateAnnotation = Annotation.Root({
   currentPostIndex: Annotation<number>(),
   hasMorePosts: Annotation<boolean>(),
   nextStep: Annotation<string>(),
-  exists:Annotation<boolean>(),
+  exists: Annotation<boolean>(),
 });
 
 // 2. Define node functions
@@ -63,18 +63,17 @@ async function pickPost(state: typeof StateAnnotation.State) {
   const currentPost = state.posts[state.currentPostIndex];
   const newCurrentPostIndex = state.currentPostIndex + 1;
 
-  state.onProgress?.(
-    `Checking if post ID ${currentPost.id} already exists`
-  );
+  state.onProgress?.(`Checking if post ID ${currentPost.id} already exists`);
   const result = await checkExistingPost.invoke({
     postId: currentPost.id,
   });
   const postExists = JSON.parse(result);
   if (postExists.success) {
     state.onProgress?.("Post already exists in the database. Skipping.");
+    console.log("Keyword",state.query)
     console.log("Post already exists skipping", newCurrentPostIndex);
-    return { selectedPost: undefined}
-  }else{
+    return { selectedPost: 0,currentPostIndex:newCurrentPostIndex };
+  } else {
     state.onProgress?.("Post is new. Proceeding...");
     state.onProgress?.(
       `Selected post ${state.currentPostIndex}/${
@@ -83,13 +82,15 @@ async function pickPost(state: typeof StateAnnotation.State) {
     );
     return { selectedPost: currentPost, currentPostIndex: newCurrentPostIndex };
   }
-
 }
 
 // Get comments from a selected post
 async function fetchComments(state: typeof StateAnnotation.State) {
   if (!state.selectedPost) {
-    console.log("Post already exists skipping inside fecth comments", state.selectedPost);
+    console.log(
+      "Post already exists skipping inside fecth comments",
+      state.selectedPost
+    );
 
     state.onProgress?.("No post selected for comment analysis");
     return { comments: [] };
@@ -119,7 +120,10 @@ async function fetchComments(state: typeof StateAnnotation.State) {
 // Analyze content (post + top comment combined)
 async function analyze(state: typeof StateAnnotation.State) {
   if (!state.selectedPost) {
-    console.log("Post already exists skipping inside analyze", state.selectedPost);
+    console.log(
+      "Post already exists skipping inside analyze",
+      state.selectedPost
+    );
 
     state.onProgress?.("No content available for analysis");
     return {
@@ -206,6 +210,9 @@ function checkMorePosts(state: typeof StateAnnotation.State) {
     state.onProgress?.("All posts processed");
     return "End";
   }
+ else if (state.selectedPost == 0) {
+    return 'Skip'
+  }
   return "NextPost";
 }
 
@@ -220,6 +227,7 @@ export const advancedGraph = new StateGraph(StateAnnotation)
   .addEdge("searchPosts", "pickPost")
   .addConditionalEdges("pickPost", checkMorePosts, {
     NextPost: "fetchComments",
+    Skip:'pickPost',
     End: "__end__",
   })
   .addEdge("fetchComments", "analyze")

@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       name,
       description,
       configuration,
-      subreddits: subredditList,
       keywords: keywordList,
     } = await request.json();
 
@@ -66,16 +65,6 @@ export async function POST(request: Request) {
         id: createId(),
         agentId,
         keyword,
-        createdAt: new Date(),
-      });
-    }
-
-    // Add subreddits
-    for (const subredditName of subredditList) {
-      await db.insert(subreddits).values({
-        id: createId(),
-        agentId,
-        subredditName,
         createdAt: new Date(),
       });
     }

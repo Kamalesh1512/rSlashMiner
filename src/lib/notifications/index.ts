@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { sendEmail } from "@/lib/services/email";
 import { sendWhatsAppMessage } from "@/lib/services/whatsapp";
 import { createId } from "@paralleldrive/cuid2";
+import { sendSlackNotification } from "../services/slack";
 
 interface NotificationOptions {
   agentId: string;
@@ -45,8 +46,6 @@ export async function sendRunNotification({
     // Get notification preferences from agent configuration
     const notificationMethod =
       JSON.parse(agent[0].configuration).notificationMethod || "email";
-    const whatsappNumber =
-      JSON.parse(agent[0].configuration).whatsappNumber || "";
 
     // Prepare notification content
     const subject = success
@@ -55,10 +54,7 @@ export async function sendRunNotification({
 
     const content = success
       ? `Your agent "${agent[0].name}" has completed its run.\n\n` +
-        `Results: ${resultsCount || 0} relevant items found across ${
-          processedKeywords || 0
-        } keywords.\n\n` +
-        `${message}`
+        `Results: ${message}.`
       : `Your agent "${agent[0].name}" encountered an error during its run.\n\n` +
         `Error: ${error || "Unknown error"}\n\n` +
         `${message}`;
@@ -95,24 +91,24 @@ export async function sendRunNotification({
     }
 
     if (notificationMethod === "slack" || notificationMethod === "both") {
-      if (whatsappNumber) {
-        await sendWhatsAppMessage({
-          to: whatsappNumber,
-          message: `${subject}\n\n${content}`,
-        });
-      }
+      const slackUser = {
+        slackAccessToken: user[0].slackAccessToken || "",
+        slackUserId: user[0].slackUserId || "",
+        slackDmChannelId: user[0].slackDmChannelId || "",
+      };
+      await sendSlackNotification(slackUser, message);
     }
 
-        // Create notification record in the database
-        const notificationId = createId()
-        await db.insert(notifications).values({
-          id: notificationId,
-          userId: agent[0].userId,
-          agentId: agentId,
-          type: "agent", // You might want to create different types
-          content: content,
-          status: "sent", // Initial status
-        })
+    // Create notification record in the database
+    const notificationId = createId();
+    await db.insert(notifications).values({
+      id: notificationId,
+      userId: agent[0].userId,
+      agentId: agentId,
+      type: "agent", // You might want to create different types
+      content: content,
+      status: "sent", // Initial status
+    });
 
     console.log(`Notification sent for agent ${agentId}`);
   } catch (error) {

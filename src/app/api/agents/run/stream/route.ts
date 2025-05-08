@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -126,7 +125,6 @@ async function processAgentRun(
 
     const keywordList = keywordsResult.map((key) => key.name);
 
-
     // Send initial step
     sendEvent({
       type: "step",
@@ -191,7 +189,7 @@ async function processAgentRun(
         // Run the agent with progress reporting
         const result = await runAgent({
           agentId,
-          query:keyword,
+          query: keyword,
           relevanceThreshold,
           businessInterests: keywordList,
           businessDescription: agent[0].description as string,
@@ -242,7 +240,7 @@ async function processAgentRun(
             id: stepId,
             status: "completed",
             message: `Completed tracking ${keyword}`,
-            details: "☹️No relevant content found",
+            details: "☹️No New relevant content found",
             progress: progressEnd,
           });
         }
@@ -305,9 +303,8 @@ async function processAgentRun(
         .from(monitoringResults)
         .where(eq(monitoringResults.agentId, agentId))
         .orderBy(monitoringResults.createdAt)
-        .limit(10);
 
-      summary = `Found ${storedResultIds.length} relevant results across ${keywordList.length} keywords.`;
+      summary = `Found results from ${storedResultIds.length} keywords across ${keywordList.length} keywords.`;
 
       if (recentResults.length > 0) {
         summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
@@ -315,6 +312,31 @@ async function processAgentRun(
     } else {
       summary = `No New relevant results found across ${keywordList.length} keywords.`;
     }
+    // Send notification
+    sendEvent({
+      type: "step",
+      id: "send-notification",
+      status: "running",
+      message: "Sending final user notification...",
+      progress: 98,
+    });
+
+    // Send notification
+    await sendRunNotification({
+      agentId,
+      success: true,
+      message: summary,
+      resultsCount: storedResultIds.length,
+      processedKeywords: keywordList.length,
+    });
+
+    sendEvent({
+      type: "step",
+      id: "send-notification",
+      status: "completed",
+      message: "Notification sent to user",
+      progress: 99,
+    });
 
     // Send final completion event
     sendEvent({
@@ -329,15 +351,6 @@ async function processAgentRun(
 
     // Close the stream
     close();
-
-    // Send notification
-    await sendRunNotification({
-      agentId,
-      success: true,
-      message: summary,
-      resultsCount: storedResultIds.length,
-      processedKeywords: keywordList.length,
-    });
   } catch (error) {
     console.error("Error in agent run:", error);
 

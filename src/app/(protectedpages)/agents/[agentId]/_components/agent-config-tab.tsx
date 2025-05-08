@@ -60,6 +60,8 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const { scheduledRuns } = useScheduledRuns();
+
+  const [isScheduled, setIsScheduled] = useState(scheduledRuns.enabled);
   const { availableAlerts, selectOptions } = useAllowedNotifications();
 
   const router = useRouter();
@@ -116,6 +118,10 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
 
   const toggleAgentStatus = (checked: boolean) => {
     setIsActive(checked);
+  };
+
+  const toggleScheduledStatus = (checked: boolean) => {
+    setIsScheduled(checked);
   };
 
   const handleCancel = () => {
@@ -264,115 +270,23 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
         </Card>
 
         {/* Schedule Settings */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Schedule Settings</CardTitle>
-            <CardDescription>
-              When this agent runs to check for new content
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Schedule Type</Label>
-              {isEditing ? (
-                <>
-                  <Select
-                    value={form.scheduleType}
-                    onValueChange={(val) => handleChange("scheduleType", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="always">Run Continuously</SelectItem>
-                      <SelectItem value="specific">Run on Schedule</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </>
-              ) : (
-                <p>
-                  {form.scheduleType === "always"
-                    ? "Run continuously (as allowed by your subscription)"
-                    : "Run on specific days/times"}
-                </p>
-              )}
-            </div>
 
-            {form.scheduleType === "specific" && (
-              <>
-                <div>
-                  <Label>Days</Label>
-                  {isEditing ? (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {Object.entries(form.scheduleDays ?? {}).map(
-                        ([day, isEnabled]) => (
-                          <div key={day} className="flex flex-col items-center">
-                            <Label
-                              htmlFor={day}
-                              className="mb-1 text-xs uppercase"
-                            >
-                              {day.slice(0, 3)}
-                            </Label>
-                            <Switch
-                              id={day}
-                              checked={isEnabled}
-                              onCheckedChange={(checked) =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  scheduleDays: {
-                                    monday: false,
-                                    tuesday: false,
-                                    wednesday: false,
-                                    thursday: false,
-                                    friday: false,
-                                    saturday: false,
-                                    sunday: false,
-                                    ...prev.scheduleDays,
-                                    [day as keyof typeof prev.scheduleDays]:
-                                      checked,
-                                  },
-                                }))
-                              }
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {form.scheduleDays &&
-                        Object.entries(form.scheduleDays)
-                          .filter(([_, isEnabled]) => isEnabled)
-                          .map(([day]) => (
-                            <Badge key={day} variant="outline">
-                              {day.charAt(0).toUpperCase() + day.slice(1)}
-                            </Badge>
-                          ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Time</Label>
-                  {isEditing ? (
-                    <Input
-                      type="time"
-                      value={form.scheduleTime}
-                      onChange={(e) =>
-                        handleChange("scheduleTime", e.target.value)
-                      }
-                    />
-                  ) : (
-                    <p>{form.scheduleTime}</p>
-                  )}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card> */}
         <Card>
           <CardHeader>
-            <CardTitle>Schedule Settings</CardTitle>
+            <CardTitle>
+              Schedule Settings
+              <div className="flex items-center gap-2">
+                <Label htmlFor="schedule-status">
+                  {isScheduled ? "On" : "Off"}
+                </Label>
+                <Switch
+                  id="schedule-status"
+                  checked={form.scheduleRuns.enabled}
+                  onCheckedChange={toggleScheduledStatus}
+                  disabled={!isEditing}
+                />
+              </div>
+            </CardTitle>
             <CardDescription>
               Configure when this agent should start running.
             </CardDescription>
@@ -384,33 +298,41 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
               </div>
             ) : (
               <>
-                <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
-                  This agent is scheduled to run every{" "}
-                  <strong>{scheduledRuns.interval}</strong>
-                  based on your <strong>{scheduledRuns.type}</strong> plan.
-                </div>
-
-                <div>
-                  <Label htmlFor="scheduleTime">Start Time</Label>
-                  {isEditing ? (
-                    <Input
-                      id="scheduleTime"
-                      type="time"
-                      value={form.scheduleTime}
-                      onChange={(e) =>
-                        handleChange("scheduleTime", e.target.value)
-                      }
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {form.scheduleTime}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    The agent will start at this time every{" "}
-                    {scheduledRuns.interval}.
-                  </p>
-                </div>
+                {isScheduled ? (
+                  <>
+                    {" "}
+                    <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+                      This agent is scheduled to run every{" "}
+                      <strong>{scheduledRuns.interval}</strong>
+                      based on your <strong>{scheduledRuns.type}</strong> plan.
+                    </div>
+                    <div>
+                      <Label htmlFor="scheduleTime">Start Time</Label>
+                      {isEditing ? (
+                        <Input
+                          id="scheduleTime"
+                          type="time"
+                          value={form.scheduleRuns.scheduleTime}
+                          onChange={(e) =>
+                            handleChange("scheduleTime", e.target.value)
+                          }
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {form.scheduleRuns.scheduleTime}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-1">
+                        The agent will start at this time every{" "}
+                        {scheduledRuns.interval}.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                    Scheduling Agent Run is Off.
+                  </div>
+                )}
               </>
             )}
           </CardContent>

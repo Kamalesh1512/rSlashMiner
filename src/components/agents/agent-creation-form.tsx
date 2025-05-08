@@ -133,6 +133,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
   const { availableAlerts, selectOptions } = useAllowedNotifications();
   const { scheduledRuns } = useScheduledRuns();
 
+  const [isScheduled, setIsScheduled] = useState(scheduledRuns.enabled);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -380,6 +382,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     else if (currentStep === "review") setCurrentStep("configure");
   };
 
+  const toggleScheduledStatus = (checked: boolean) => {
+    setIsScheduled(checked);
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
 
@@ -395,14 +401,13 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           description: formData.description,
           configuration: {
             notificationMethod: formData.notificationMethod,
-            notificationFrequency: formData.notificationFrequency,
             relevanceThreshold: formData.relevanceThreshold,
-            whatsappNumber: formData.whatsappNumber,
-            scheduleType: formData.scheduleType,
-            scheduleDays: formData.scheduleDays,
-            scheduleTime: formData.scheduleTime,
+            scheduleRuns: {
+              enabled: isScheduled,
+              interval: scheduledRuns.interval,
+              scheduleTime: formData.scheduleTime,
+            },
           },
-          subreddits: formData.subreddits,
           keywords: formData.keywords,
         }),
       });
@@ -715,10 +720,21 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                       </p>
                     </div>
                   </div>
-  
+
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Scheduling</Label>
+                      <Label>Schedule Settings</Label>
+                      <div className="flex flex-row items-center justify-between gap-2">
+                        <Label htmlFor="schedule-status" className="text-sm text-muted-foreground">
+                          Scheduled Status: {isScheduled ? "On" : "Off"}
+                        </Label>
+                        <Switch
+                          id="schedule-status"
+                          checked={isScheduled}
+                          onCheckedChange={toggleScheduledStatus}
+                          disabled={!scheduledRuns.enabled}
+                        />
+                      </div>
                       {!scheduledRuns.enabled ? (
                         <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
                           Scheduling Agent Run is not available on your current
@@ -726,27 +742,36 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         </div>
                       ) : (
                         <>
-                          <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
-                            Scheduled runs are available every{" "}
-                            <strong>{scheduledRuns.interval}</strong> based on
-                            your <strong>{scheduledRuns.type}</strong> plan.
-                          </div>
+                          {isScheduled ? (
+                            <>
+                              <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+                                Scheduled runs are available every{" "}
+                                <strong>{scheduledRuns.interval}</strong> based
+                                on your <strong>{scheduledRuns.type}</strong>{" "}
+                                plan.
+                              </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="startTime">Start Time</Label>
-                            <Input
-                              id="startTime"
-                              name="startTime"
-                              type="time"
-                              value={formData.scheduleTime}
-                              onChange={handleInputChange}
-                              disabled={!scheduledRuns.enabled}
-                            />
-                            <p className="text-sm text-muted-foreground">
-                              The agent will start at this time every{" "}
-                              {scheduledRuns.interval}.
-                            </p>
-                          </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input
+                                  id="startTime"
+                                  name="startTime"
+                                  type="time"
+                                  value={formData.scheduleTime}
+                                  onChange={handleInputChange}
+                                  disabled={!scheduledRuns.enabled}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                  The agent will start at this time every{" "}
+                                  {scheduledRuns.interval}.
+                                </p>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                              Scheduling Agent Run is Off.
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -826,12 +851,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                         {(formData.notificationMethod === "slack" ||
                           formData.notificationMethod === "both") && (
                           <div>
-                            <span className="text-sm font-medium">
-                              
-                            </span>{" "}
+                            <span className="text-sm font-medium"></span>{" "}
                             <p className="text-sm text-muted-foreground">
-                          You’ll receive alerts via Email & Slack.
-                        </p>
+                              You’ll receive alerts via Email & Slack.
+                            </p>
                           </div>
                         )}
                         <div>

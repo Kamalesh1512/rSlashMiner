@@ -246,20 +246,13 @@ export interface Agent {
   configuration: {
     industry: string;
     notificationMethod: "email" | "slack" | "both";
-    notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
     relevanceThreshold: number;
     whatsappNumber?: string;
-    scheduleType: "always" | "specific";
-    scheduleDays?: {
-      monday: boolean;
-      tuesday: boolean;
-      wednesday: boolean;
-      thursday: boolean;
-      friday: boolean;
-      saturday: boolean;
-      sunday: boolean;
+    scheduleRuns: {
+      enabled: false;
+      interval: string;
+      scheduleTime?: string;
     };
-    scheduleTime?: string;
   };
   keywords: { id: string; keyword: string }[];
   subreddits: { id: string; subredditName: string }[];
@@ -595,7 +588,7 @@ export type planConfigType = {
   alerts: string[];
   dataExport: boolean;
   autoReply: boolean;
-  planTier?:string
+  planTier?: string;
 };
 
 // config/planLimits.ts

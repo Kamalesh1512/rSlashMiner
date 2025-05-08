@@ -35,6 +35,7 @@ export const users = pgTable("users", {
   slackUserId:text('slack_user_id'),
   slackAccessToken:text('slack_access_token'),
   teamId:text('team_id'),
+  slackDmChannelId:text('slack_dm_channel_id'),
 });
 
 // User relations
@@ -337,7 +338,7 @@ export const runHistory = pgTable("run_history", {
   completedAt: timestamp("completed_at", { mode: "date" }),
   success: boolean("success"),
   resultsCount: integer("results_count").default(0),
-  processedSubreddits: integer("processed_subreddits").default(0),
+  processedKeywords: integer("processed_keywords").default(0),
   summary: text("summary"),
   error: text("error"),
   isScheduled: boolean("is_scheduled").default(false),
