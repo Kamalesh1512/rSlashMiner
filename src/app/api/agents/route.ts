@@ -132,7 +132,7 @@ export async function GET(request: Request) {
       updatedAt: agent.updatedAt,
       lastRunAt: agent.lastRunAt,
       runCount: agent.runCount,
-      configuration: JSON.parse(agent.configuration), // assuming it's already stored as a JSON object
+      configuration: JSON.parse(agent.configuration),
       keywords: keywordRows
         .filter((k) => k.agentId === agent.id)
         .map((k) => ({ id: k.id, keyword: k.keyword })),

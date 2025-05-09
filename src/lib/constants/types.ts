@@ -211,11 +211,11 @@ export const navItems = [
     href: "/results",
     icon: BarChart3,
   },
-  // {
-  //   name: "Monitoring",
-  //   href: "/monitoring",
-  //   icon: Clock,
-  // },
+  {
+    name: "Monitoring",
+    href: "/monitoring",
+    icon: Clock,
+  },
   {
     name: "Notifications",
     href: "/notifications",
@@ -244,12 +244,11 @@ export interface Agent {
   lastRunAt: Date | null;
   runCount: number;
   configuration: {
-    industry: string;
-    notificationMethod: "email" | "slack" | "both";
-    relevanceThreshold: number;
+    notificationMethod?: "email" | "slack" | "both";
+    relevanceThreshold?: number;
     whatsappNumber?: string;
     scheduleRuns: {
-      enabled: false;
+      enabled: boolean;
       interval: string;
       scheduleTime?: string;
     };

@@ -85,16 +85,15 @@ export default function AgentsPage() {
         {agents.length === 0 ? (
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>No agents found</CardTitle>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+                "No Agents Yet — Time to Build Something Brilliant."
+              </CardTitle>
               <CardDescription>
-                You haven't created any Reddit monitoring agents yet.
+                Set it up in minutes — monitor, analyze, or automate with zero
+                hassle.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Create your first agent to start monitoring Reddit for potential
-                customers.
-              </p>
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button asChild>

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import NotificationBell from "./notification-bell";
 
 interface User {
   id: string;
@@ -75,7 +76,7 @@ const UpperInfoBar = ({ user }: UpperInfoBarProps) => {
           </Button>
         )}
 
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="relative">
               <Bell className="h-4 w-4" />
@@ -134,7 +135,8 @@ const UpperInfoBar = ({ user }: UpperInfoBarProps) => {
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
+        <NotificationBell/>
       </div>
     </div>
   );

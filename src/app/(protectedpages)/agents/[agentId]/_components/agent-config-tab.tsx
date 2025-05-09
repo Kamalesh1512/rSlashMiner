@@ -180,7 +180,7 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
               {isEditing ? (
                 <>
                   <Slider
-                    value={[form.relevanceThreshold]}
+                    value={[form.relevanceThreshold || 0]}
                     min={0}
                     max={100}
                     step={5}

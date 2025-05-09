@@ -98,7 +98,7 @@ const NavFooter = ({ user }: NavFooterProps) => {
                     {user?.email}
                   </span>
                 </div>
-                {getSubscriptionBadge()}
+                {/* {getSubscriptionBadge()} */}
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
