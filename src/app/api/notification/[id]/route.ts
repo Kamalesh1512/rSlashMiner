@@ -5,7 +5,15 @@ import { notifications } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+
+
+interface configProps{
+  params:Promise<{
+    id:string,
+    }>
+}
+
+export async function DELETE(request: Request, { params }: configProps) {
   try {
     const session = await auth()
 
@@ -13,7 +21,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
-    const id = params.id
+    const {id} = await params
 
     // Delete the notification
     const result = await db

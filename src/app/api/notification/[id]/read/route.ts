@@ -4,7 +4,13 @@ import { db } from "@/lib/db"
 import { notifications } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+interface configProps{
+  params:Promise<{
+    id:string,
+    }>
+}
+
+export async function POST(request: Request, { params }: configProps) {
   try {
     const session = await auth()
 
@@ -12,7 +18,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
-    const id = params.id
+    const {id} = await params
 
     // Mark the notification as read
     const result = await db
