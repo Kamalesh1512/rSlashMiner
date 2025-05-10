@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  web:
+    container_name: skroub_web
+    build:
+      context: .
+      dockerfile: src/docker/web.Dockerfile
+    image: skroub/web:latest
+    ports:
+      - '3000:3000'
+    restart: always
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - worker
+    networks:
+      - app-net
+    env_file:
+      - .env.production
+
+  worker:
+    container_name: skroub_worker
+    build:
+      context: .
+      dockerfile: src/docker/worker.Dockerfile
+    image: skroub/worker:latest
+    restart: always
+    environment:
+      NODE_ENV: production
+    env_file:
+      - .env.production
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

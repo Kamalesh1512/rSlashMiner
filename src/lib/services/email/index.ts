@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer"
-
 // Configure email transporter
 
 const isProduction = process.env.NODE_ENV === "production"
@@ -25,7 +24,7 @@ export async function sendVerificationEmail({ to, token, username }: SendVerific
   const verificationUrl = `${baseUrl}/api/auth/verify/${token}`
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_SERVER_USER || 'skroub.official@gmail.com',
     to,
     subject: "Verify your email address",
     text: `Hello ${username},\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nIf you did not request this email, please ignore it.\n\nThanks,\nThe Skroub Team`,
@@ -61,7 +60,7 @@ export async function sendPasswordResetEmail({ to, token, username }: SendPasswo
   const resetUrl = `${baseUrl}/reset-password/${token}`
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM || '"Skroub" <noreply@skroub.com>',
+    from: process.env.EMAIL_SERVER_USER || 'skroub.official@gmail.com',
     to,
     subject: "Reset your password",
     text: `Hello ${username},\n\nYou requested to reset your password. Please click the link below to set a new password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you did not request this email, please ignore it.\n\nThanks,\nThe skroub Team`,
