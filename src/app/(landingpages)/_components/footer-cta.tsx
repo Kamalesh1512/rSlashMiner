@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 export default function FooterCta() {
   const [isVisible, setIsVisible] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
+
+  const route = useRouter()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,7 +40,7 @@ export default function FooterCta() {
     >
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between">
         <p className="text-gray-700 mb-3 sm:mb-0">👋 Still thinking? Try Skroub free—see leads waiting for you.</p>
-        {/* <Button className="bg-orange-600 hover:bg-orange-700 text-white">Start Free</Button> */}
+        <Button className="bg-orange-600 hover:bg-orange-700 text-white" onClick={()=>route.push('/signup')}>Start Free</Button>
       </div>
     </div>
   )

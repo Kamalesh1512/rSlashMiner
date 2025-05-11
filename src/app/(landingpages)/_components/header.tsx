@@ -78,12 +78,12 @@ export default function Header() {
           >
             FAQ
           </Link>
-          {/* <Button asChild variant="outline" className="ml-2">
+          <Button asChild variant="outline" className="ml-2">
             <Link href="/login">Login</Link>
           </Button>
           <Button asChild>
             <Link href="/signup">Sign Up Free</Link>
-          </Button> */}
+          </Button>
           <ThemeSwitcher/>
         </nav>
 

@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: src/docker/web.Dockerfile
-    image: skroub/web:latest
+    image: kamalesh1512/skroub:web
     ports:
       - '3000:3000'
     restart: always
@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: src/docker/worker.Dockerfile
-    image: skroub/worker:latest
+    image: kamalesh1512/skroub:worker
     restart: always
     environment:
       NODE_ENV: production

@@ -70,7 +70,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-4 mb-12"
         >
-          {/* <Button
+          <Button
             size="lg"
             className="text-base px-8 h-12"
             onClick={() => router.push("/signup")}
@@ -82,8 +82,8 @@ export default function HeroSection() {
             <Button size="lg" variant="outline" className="text-base px-8 h-12">
               Watch Demo
             </Button>
-          </Link> */}
-          <WaitlistForm />
+          </Link>
+          {/* <WaitlistForm /> */}
         </motion.div>
 
         <motion.div
