@@ -11,7 +11,7 @@ export interface SubscriptionPlan {
     currency: string
     interval: "month" | "year"
     features: string[]
-    dodoPlanId: string
+    dodoPlanId: string[]
     popular?: boolean
   }
   
@@ -30,7 +30,7 @@ export interface SubscriptionPlan {
         "1 Manual Run per Week",
         "Email Notifications",
       ],
-      dodoPlanId: "free_plan",
+      dodoPlanId: ["free_plan"],
     },
     starter_monthly: {
       id: "starter_monthly",
@@ -46,7 +46,7 @@ export interface SubscriptionPlan {
         "Weekly Scheduled Runs per Agent",
         "Email & Slack Alerts",
       ],
-      dodoPlanId: "pdt_MkIuemAtMWBYos90TI5cC",
+      dodoPlanId: ["pdt_IrnUHW4QWCZRDDrKyJeeA","pdt_ufj9873AJ8ZKmmnr8KOze"],
       popular: true,
     },
     starter_yearly: {
@@ -63,7 +63,7 @@ export interface SubscriptionPlan {
         "Weekly Scheduled Runs per Agent",
         "Email & Slack Alerts",
       ],
-      dodoPlanId: "pdt_uiKYUROaE9rWrjfdVvGq8",
+      dodoPlanId: ["pdt_mPYyCxbiyAVuXrnYBJg0A","pdt_uDbl0jjVTAku6JPWovLbP"],
       popular: true,
     },
     growth_monthly: {
@@ -81,7 +81,7 @@ export interface SubscriptionPlan {
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
-      dodoPlanId: "pdt_jxlCjttTwJEriDOtt9nU2",
+      dodoPlanId: ["pdt_EzwMoNOE7n1STFo0Ft1bj","pdt_r5ABWCZLE9aMqbKjb8zmk"],
     },
     growth_yearly: {
       id: "growth_yearly",
@@ -98,7 +98,7 @@ export interface SubscriptionPlan {
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
-      dodoPlanId: "pdt_zKpK2gmevdKm85rrs5kz9",
+      dodoPlanId: ["pdt_TsaZG91XynAl7W3jAAaSl","pdt_1DaA4d6CVQoOpMVRUT5Hq"],
     },
     enterprise_monthly: {
       id: "enterprise_monthly",
@@ -115,7 +115,7 @@ export interface SubscriptionPlan {
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
-      dodoPlanId: "pdt_jxlCjttTwJEriDOtt9nU2",
+      dodoPlanId: ["pdt_Z7b6xkD34iWSgEVkPn9Vo","pdt_Iq7yl2AhbKHe1ghHSjauQ"],
     },
     enterprise_yearly: {
       id: "enterprise_yearly",
@@ -132,7 +132,7 @@ export interface SubscriptionPlan {
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
-      dodoPlanId: "pdt_zKpK2gmevdKm85rrs5kz9",
+      dodoPlanId: ["pdt_fBc1m7BFxFLGgph7zQ1hJ",'pdt_kglftGzNI4MJ0KFBHadbL'],
     },
   };
   
@@ -142,7 +142,7 @@ export interface SubscriptionPlan {
   }
 
   export function getPlanByDodoId(dodoPlanId: string): SubscriptionPlan | undefined {
-    return Object.values(SUBSCRIPTION_PLANS).find(plan => plan.dodoPlanId === dodoPlanId);
+    return Object.values(SUBSCRIPTION_PLANS).find(plan => plan.dodoPlanId.find((id)=> id == dodoPlanId));
   }
   
   export function getMonthlyPlans(): SubscriptionPlan[] {

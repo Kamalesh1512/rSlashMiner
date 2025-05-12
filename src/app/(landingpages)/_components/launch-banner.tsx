@@ -6,31 +6,21 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Wand2 } from "lucide-react";
+import { usePaidUsers } from "@/hooks/use-paidusers";
 
 export default function LaunchBanner() {
+  const router = useRouter();
+
   const [seatsLeft, setSeatsLeft] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
-  const router = useRouter();
-
-  const fetchPaidUsers = async () => {
-    try {
-      const response = await fetch("/api/user");
-      const data = await response.json();
-      setSeatsLeft(25-data.users.length)
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch agents");
-      }
-    } catch (error) {
-        console.error("Failed to fetch users")
-        setIsVisible(false)
-    } 
-  };
+  const { loading, userCount } = usePaidUsers();
 
   useEffect(() => {
-    fetchPaidUsers();
-  }, []);
+    if (!loading) {
+      setSeatsLeft(25-userCount);
+    }
+  }, [userCount, loading]);
 
   if (!isVisible) return null;
 
@@ -39,7 +29,7 @@ export default function LaunchBanner() {
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between">
         <div className="flex items-center mb-2 sm:mb-0">
           <span className="mr-2 text-primary">
-            <Wand2/>
+            <Wand2 />
           </span>
           <p className="text-sm sm:text-base text-primary">
             Founding-member price – first 25 seats only | Seats left:{" "}

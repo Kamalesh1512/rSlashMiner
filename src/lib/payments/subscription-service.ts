@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { dodoClient } from "./dodo-client";
 import { getPlanByDodoId, getPlanById } from "./subscription-plans";
 import { WebhookPayload } from "../constants/types";
@@ -39,7 +39,7 @@ export class SubscriptionService {
 
     // Create or get customer
     let customerId = user[0].dodoCustomerId as string | undefined;
-    
+
     if (!customerId) {
       const customer = await dodoClient.customers.create({
         email: user[0].email as string,
@@ -58,9 +58,18 @@ export class SubscriptionService {
     // Create checkout session
     const checkoutBaseUrl = process.env.DODO_PAYMENTS_CHECKOUT_URL;
 
+    const allPaidUsers = await db
+      .select()
+      .from(users)
+      .where(isNotNull(users.paidUserIndex));
 
+    let productId;
+    if (allPaidUsers.length < 25 && allPaidUsers) {
+      productId = plan.dodoPlanId[0];
+    } else {
+      productId = plan.dodoPlanId[1];
+    }
 
-    const productId = plan.dodoPlanId;
     const quantity = 1;
     const checkoutUrl = `${checkoutBaseUrl}/buy/${productId}?quantity=${quantity}&redirect_url=${process.env.NEXTAUTH_URL}/settings&email=${user[0].email}&disableEmail=true`;
 
@@ -100,38 +109,36 @@ export class SubscriptionService {
   /**
    * Cancel a subscription
    */
-    async cancelSubscription(userId: string, cancelAtPeriodEnd = true) {
-      // Get the user
-      const user = await db.select().from(users).where(eq(users.id, userId));
+  async cancelSubscription(userId: string, cancelAtPeriodEnd = true) {
+    // Get the user
+    const user = await db.select().from(users).where(eq(users.id, userId));
 
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`);
-      }
-
-      if (!user[0].dodoSubscriptionId) {
-        throw new Error("User does not have an active subscription");
-      }
-
-      // Cancel subscription with Dodo Payments
-      await dodoClient.subscriptions.update(user[0].dodoSubscriptionId,
-  {
-            status:'cancelled',
-        })
-
-      // Update user record
-      await db
-        .update(users)
-        .set({ cancelAtPeriodEnd })
-        .where(eq(users.id, userId));
-
-      return { success: true };
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
     }
+
+    if (!user[0].dodoSubscriptionId) {
+      throw new Error("User does not have an active subscription");
+    }
+
+    // Cancel subscription with Dodo Payments
+    await dodoClient.subscriptions.update(user[0].dodoSubscriptionId, {
+      status: "cancelled",
+    });
+
+    // Update user record
+    await db
+      .update(users)
+      .set({ cancelAtPeriodEnd })
+      .where(eq(users.id, userId));
+
+    return { success: true };
+  }
 
   /**
    * Update a user's subscription based on webhook event
    */
-  async handleSubscriptionUpdate(data:WebhookPayload['data']
-  ) {
+  async handleSubscriptionUpdate(data: WebhookPayload["data"]) {
     // Find user with this subscription
     const user = await db
       .select()
@@ -139,7 +146,9 @@ export class SubscriptionService {
       .where(eq(users.dodoSubscriptionId as any, data.subscription_id));
 
     if (!user) {
-      console.error(`No user found with subscription ID ${data.subscription_id}`);
+      console.error(
+        `No user found with subscription ID ${data.subscription_id}`
+      );
       return;
     }
 
@@ -165,8 +174,8 @@ export class SubscriptionService {
       .from(users)
       .where(eq(users.dodoSubscriptionId, data.subscription_id as string));
 
-      console.log("User found:",user)
-    if (user.length>0) {
+    console.log("User found:", user);
+    if (user.length > 0) {
       console.log(
         `user already exists with subscription ID:${data.subscription_id}`
       );
@@ -184,7 +193,9 @@ export class SubscriptionService {
     const planTier = plan?.id.startsWith("starter")
       ? "starter"
       : plan?.id.startsWith("growth")
-      ? "growth" : plan?.id.startsWith('enterprise')? "enterprise"
+      ? "growth"
+      : plan?.id.startsWith("enterprise")
+      ? "enterprise"
       : "free";
 
     // Update user subscription

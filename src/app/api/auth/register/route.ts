@@ -52,6 +52,10 @@ export async function POST(request: Request) {
           expires,
         })
     
+        /// create intial usage limit based on "free" subscription tier
+        await createUsageLimitForUser(newUser[0].id,'free')
+
+        
         // Send verification email
         await sendVerificationEmail({
           to: email,
@@ -59,8 +63,7 @@ export async function POST(request: Request) {
           username: name,
         })
 
-        /// create intial usage limit based on "free" subscription tier
-        await createUsageLimitForUser(newUser[0].id,'free')
+
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = newUser[0]

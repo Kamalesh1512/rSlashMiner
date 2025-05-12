@@ -7,6 +7,7 @@ import {
 } from "@/lib/payments/subscription-plans";
 import { SubscriptionCard } from "./subscription-card";
 import { useSession } from "next-auth/react";
+import { usePaidUsers } from "@/hooks/use-paidusers";
 
 const SubscriptionPlansDisplay = () => {
   // Get plans
@@ -19,24 +20,14 @@ const SubscriptionPlansDisplay = () => {
   const [offerAvailable, setOfferAvailable] = useState(false);
   const { data: session, status } = useSession();
 
-  const fetchPaidUsers = async () => {
-    try {
-      const response = await fetch("/api/user");
-      const data = await response.json();
-      const status = data.users.length < 25;
-      setOfferAvailable(status);
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch agents");
-      }
-    } catch (error) {
-      console.error("Failed to fetch users");
-    }
-  };
+  const { loading, userCount } = usePaidUsers();
 
   useEffect(() => {
-    fetchPaidUsers();
-  }, []);
+    if (!loading) {
+      const status = userCount < 25;
+      setOfferAvailable(status);
+    }
+  }, [loading, userCount]);
 
   return (
     <div className="container px-4 md:px-6 mx-auto mt-16">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -58,11 +58,21 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const [isActive, setIsActive] = useState(agent.isActive);
   const { agents, setAgents } = useAgentStore();
   const [isSaving, setIsSaving] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
 
-  const { scheduledRuns } = useScheduledRuns();
+  const { scheduledRuns,loading } = useScheduledRuns();
+  const { availableAlerts, selectOptions } = useAllowedNotifications(); 
 
-  const [isScheduled, setIsScheduled] = useState(scheduledRuns.enabled);
-  const { availableAlerts, selectOptions } = useAllowedNotifications();
+  
+
+useEffect(() => {
+  if (!loading) {
+    setIsScheduled(scheduledRuns.enabled);
+  }
+}, [scheduledRuns, loading]);
+
+  
+
 
   const router = useRouter();
 
