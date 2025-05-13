@@ -1,17 +1,27 @@
 import nodemailer from "nodemailer"
-// Configure email transporter
+import FormData from "form-data";
+import Mailgun from "mailgun.js"; 
 
-const isProduction = process.env.NODE_ENV === "production"
+// const isProduction = process.env.NODE_ENV === "production"
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-  secure: isProduction,
-})
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.gmail.com",
+//   port: 465,
+//   auth: {
+//     user: process.env.EMAIL_SERVER_USER,
+//     pass: process.env.EMAIL_SERVER_PASSWORD,
+//   },
+//   secure: isProduction,
+// })
+
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.MAILGUN_API_KEY!
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+
 
 interface SendVerificationEmailParams {
   to: string
@@ -23,7 +33,7 @@ export async function sendVerificationEmail({ to, token, username }: SendVerific
   const baseUrl = process.env.NEXTAUTH_URL
   const verificationUrl = `${baseUrl}/api/auth/verify/${token}`
 
-  await transporter.sendMail({
+  await mg.messages.create(process.env.MAILGUN_DOMAIN!,{
     from: process.env.EMAIL_SERVER_USER || 'skroub.official@gmail.com',
     to,
     subject: "Verify your email address",
@@ -59,7 +69,7 @@ export async function sendPasswordResetEmail({ to, token, username }: SendPasswo
   const baseUrl = process.env.NEXTAUTH_URL
   const resetUrl = `${baseUrl}/reset-password/${token}`
 
-  await transporter.sendMail({
+  await mg.messages.create(process.env.MAILGUN_DOMAIN!,{
     from: process.env.EMAIL_SERVER_USER || 'skroub.official@gmail.com',
     to,
     subject: "Reset your password",
@@ -98,7 +108,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     const { to, subject, text, html } = options
 
     // Send the email
-    await transporter.sendMail({
+    await mg.messages.create(process.env.MAILGUN_DOMAIN!,{
       from: process.env.EMAIL_FROM || '"Skroub" <noreply@skroub.com>', 
       to,
       subject,

@@ -50,6 +50,11 @@ interface AgentConfigTabProps {
   agent: Agent;
   subscription: string;
 }
+type ScheduledRuns = {
+  enabled: boolean;
+  interval: string | null;
+  type: string;
+};
 
 export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -59,20 +64,15 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
   const { agents, setAgents } = useAgentStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isScheduled, setIsScheduled] = useState(false);
+  const { availableAlerts, selectOptions } = useAllowedNotifications();
 
-  const { scheduledRuns,loading } = useScheduledRuns();
-  const { availableAlerts, selectOptions } = useAllowedNotifications(); 
+  const { scheduledRuns, loading } = useScheduledRuns();
 
-  
-
-useEffect(() => {
-  if (!loading) {
-    setIsScheduled(scheduledRuns.enabled);
-  }
-}, [scheduledRuns, loading]);
-
-  
-
+  useEffect(() => {
+    if (!loading && form.scheduleRuns.enabled) {
+      setIsScheduled(scheduledRuns.enabled);
+    }
+  }, [scheduledRuns, agent]);
 
   const router = useRouter();
 
@@ -132,6 +132,7 @@ useEffect(() => {
 
   const toggleScheduledStatus = (checked: boolean) => {
     setIsScheduled(checked);
+    setForm(prev => ({...prev,scheduleRuns: {...prev.scheduleRuns,enabled: checked}}))
   };
 
   const handleCancel = () => {
@@ -291,7 +292,7 @@ useEffect(() => {
                 </Label>
                 <Switch
                   id="schedule-status"
-                  checked={form.scheduleRuns.enabled}
+                  checked={isScheduled}
                   onCheckedChange={toggleScheduledStatus}
                   disabled={!isEditing}
                 />
@@ -313,8 +314,8 @@ useEffect(() => {
                     {" "}
                     <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
                       This agent is scheduled to run every{" "}
-                      <strong>{scheduledRuns.interval}</strong>
-                      based on your <strong>{scheduledRuns.type}</strong> plan.
+                      <strong className="mr-1">{scheduledRuns.interval}</strong>
+                      based on your plan
                     </div>
                     <div>
                       <Label htmlFor="scheduleTime">Start Time</Label>
@@ -324,7 +325,13 @@ useEffect(() => {
                           type="time"
                           value={form.scheduleRuns.scheduleTime}
                           onChange={(e) =>
-                            handleChange("scheduleTime", e.target.value)
+                            setForm((prev) => ({
+                              ...prev,
+                              scheduleRuns: {
+                                ...prev.scheduleRuns,
+                                scheduleTime: e.target.value,
+                              },
+                            }))
                           }
                         />
                       ) : (
