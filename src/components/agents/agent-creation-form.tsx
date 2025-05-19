@@ -300,12 +300,14 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           ...newMessages,
           {
             role: "assistant",
-            content: `Great! I've analyzed your request and created an agent to monitor discussions about ${chatInput}. Here's what I've set up:
-            1. **Suggested Keywords**:
-            ${suggestedKeywordList}${
-              suggestedKeywordList.length > 5 ? "..." : ""
-            }
-            Please Select from these above suggestions in the next step. Click Next!!`,
+            content: `Great! I've analyzed your request and created an agent to monitor discussions about **${chatInput}**. Here's what I've set up:
+
+**Suggested Keywords:**
+${suggestedKeywordList.slice(0, 5).map(k => `- ${k}`).join('\n')}
+${suggestedKeywordList.length > 5 ? '- ...' : ''}
+
+Please select from the suggestions above in the next step. Click **Next** to continue!
+`,
           },
         ];
       });
@@ -328,7 +330,13 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
   const nextStep = () => {
     if (currentStep === "describe") {
-      setCurrentStep("refine");
+      if (chatMessages.length == 1) {
+        toast.error("No Input", {
+          description: "Please ask skoub AI for Keywords Suggestions.",
+        });
+      } else {
+        setCurrentStep("refine");
+      }
     } else if (currentStep === "refine") {
       // if (formData.subreddits.length === 0) {
       //   toast.error("No subreddits added", {
@@ -492,27 +500,26 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                   ))}
                   <div ref={messagesEndRef} />
                 </div>
+                <form onSubmit={handleChatSubmit} className="flex gap-2">
+                  <Input
+                    placeholder="Describe what you want to monitor on Reddit..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    disabled={isGenerating}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isGenerating || !chatInput.trim()}
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
               </div>
-
-              <form onSubmit={handleChatSubmit} className="flex gap-2">
-                <Input
-                  placeholder="Describe what you want to monitor on Reddit..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  disabled={isGenerating}
-                  className="flex-1"
-                />
-                <Button
-                  type="submit"
-                  disabled={isGenerating || !chatInput.trim()}
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </form>
             </motion.div>
           )}
 
@@ -551,7 +558,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
 
                 <Tabs defaultValue="keywords" className="w-full">
                   <TabsList className="grid w-full grid-cols-1">
-                    <TabsTrigger value="keywords">Keywords</TabsTrigger>
+                    <div className="text-center font-semibold text-lg">
+                      Keywords
+                    </div>
                   </TabsList>
 
                   <TabsContent value="keywords" className="space-y-4 mt-4">
@@ -660,9 +669,9 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
             >
               <Tabs defaultValue="notifications" className="w-full">
                 <TabsList className="grid w-full grid-cols-1">
-                  <TabsTrigger value="notifications">
+                  <div className="text-center font-semibold text-lg">
                     Notification / Schedule Settings
-                  </TabsTrigger>
+                  </div>
                 </TabsList>
 
                 <TabsContent value="notifications" className="space-y-6 mt-4">
@@ -725,7 +734,10 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
                     <div className="space-y-2">
                       <Label>Schedule Settings</Label>
                       <div className="flex flex-row items-center justify-between gap-2">
-                        <Label htmlFor="schedule-status" className="text-sm text-muted-foreground">
+                        <Label
+                          htmlFor="schedule-status"
+                          className="text-sm text-muted-foreground"
+                        >
                           Scheduled Status: {isScheduled ? "On" : "Off"}
                         </Label>
                         <Switch

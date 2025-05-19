@@ -20,6 +20,34 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const SignupSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z
+      .string()
+      .email("Invalid email address")
+      .refine(
+        (email) => {
+          const validDomainRegex =
+            /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9-]+\.)+(com|net|org|edu|io|in|co)$/;
+          return validDomainRegex.test(email);
+        },
+        {
+          message:
+            "Please enter a valid email domain (e.g., Gmail, Outlook, etc.)",
+        }
+      ),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type SignupFormType = z.infer<typeof SignupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,17 +60,37 @@ export default function SignupPage() {
     confirmPassword: "",
   });
 
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof SignupFormType, string>>
+  >({});
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords don't match", {
-        description: "Please make sure your passwords match.",
+    // ✅ Validate form with Zod
+    const result = SignupSchema.safeParse(formData);
+
+    if (!result.success) {
+      const fieldErrors: typeof formErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof SignupFormType;
+        fieldErrors[field] = err.message;
+      });
+
+      setFormErrors(fieldErrors);
+
+      const errorMessages = result.error.errors
+        .map((err) => `${err.path[0]}: ${err.message}`)
+        .join("\n");
+
+      toast.error("Validation failed", {
+        description: errorMessages,
       });
       return;
     }
@@ -52,9 +100,7 @@ export default function SignupPage() {
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -84,7 +130,6 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
       <motion.div
@@ -124,7 +169,7 @@ export default function SignupPage() {
                 </div>
                 <h3 className="text-xl font-semibold">Check your email</h3>
                 <p className="text-center text-muted-foreground">
-                  We've sent a verification email link to {" "}
+                  We've sent a verification email link to{" "}
                   <span className="font-medium">{formData.email}</span>
                 </p>
                 <p className="text-center text-sm text-muted-foreground">

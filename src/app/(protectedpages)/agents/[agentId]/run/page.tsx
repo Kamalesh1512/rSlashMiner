@@ -294,7 +294,7 @@ export default function RunAgentPage() {
                   runResult &&
                   (runResult.success ? (
                     <Button asChild>
-                      <Link href={`/agents/${agentId}/results`}>View Results</Link>
+                      <Link href={`/results`}>View Results</Link>
                     </Button>
                   ) : (
                     <Button onClick={runAgent}>Try Again</Button>

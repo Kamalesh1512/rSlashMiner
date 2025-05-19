@@ -147,7 +147,7 @@ export async function GET(request: Request) {
           author: res.author,
           content: res.content,
           createdAt: res.createdAt,
-          processed: res.processed,
+          numComments: res.numComments as string,
           redditCommentId: res.redditCommentId as string,
           redditPostId: res.redditPostId as string,
           subreddit: res.subreddit as string,

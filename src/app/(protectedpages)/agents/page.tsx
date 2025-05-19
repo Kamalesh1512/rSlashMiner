@@ -20,12 +20,14 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
+import { QuickRunAgent } from "./[agentId]/_components/quick-agent-run";
 
 export default function AgentsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
-  const { agents, setAgents } = useAgentStore();
+  const { agents, setAgents, updateAgentById } = useAgentStore();
+  const [runningAgents, setRunningAgents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -66,6 +68,26 @@ export default function AgentsPage() {
     );
   }
 
+  const handleRunComplete = (
+    agentId: string,
+    success: boolean,
+    resultsCount: number
+  ) => {
+    // Update the agent's run count and last run time
+
+    const count = agents.find((agent) => agent.id === agentId)?.runCount;
+
+    updateAgentById(agentId, {
+      runCount: count && count + 1,
+    });
+    // Remove from running agents
+    setRunningAgents((prev) => {
+      const updated = new Set(prev);
+      updated.delete(agentId);
+      return updated;
+    });
+  };
+
   return (
     <div className="flex flex-col justify-center items-center">
       <motion.div
@@ -93,8 +115,7 @@ export default function AgentsPage() {
                 hassle.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-            </CardContent>
+            <CardContent></CardContent>
             <CardFooter className="flex justify-center">
               <Button asChild>
                 <Link href="/agents/create">
@@ -124,21 +145,6 @@ export default function AgentsPage() {
                 </CardHeader>
                 <CardContent className="pb-3">
                   <div className="space-y-4">
-                    {/* <div>
-                      <h4 className="text-sm font-medium mb-2">Monitoring</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {agent.subreddits.slice(0, 3).map((sub) => (
-                          <Badge key={sub.subredditName} variant="outline" className="text-xs">
-                            r/{sub.subredditName}
-                          </Badge>
-                        ))}
-                        {agent.subreddits.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{agent.subreddits.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div> */}
                     <div>
                       <h4 className="text-sm font-medium mb-2">
                         Tracking Keywords
@@ -178,7 +184,13 @@ export default function AgentsPage() {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="pt-3 flex justify-between">
+                <CardFooter className="pt-3 flex flex-row items-start justify-between space-x-3">
+                  <QuickRunAgent
+                    agentId={agent.id}
+                    onComplete={(success, resultsCount) =>
+                      handleRunComplete(agent.id, success, resultsCount)
+                    }
+                  />
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/agents/${agent.id}`}>View Agent</Link>
                   </Button>

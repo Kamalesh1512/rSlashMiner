@@ -16,6 +16,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
   Loader2,
   Settings,
   Play,
@@ -25,6 +30,14 @@ import {
   AlertCircle,
   Trash2,
   ExternalLink,
+  CalendarDays,
+  Clock,
+  Repeat,
+  TrendingUp,
+  Search,
+  Sparkles,
+  Percent,
+  MessageSquareMoreIcon,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -223,93 +236,93 @@ export default function AgentDetailPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="sm:text-sm sm:min-w-fit md:max-w-fit">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="runagent">Run Agent</TabsTrigger>
+          {/* <TabsTrigger value="runagent">Run Agent</TabsTrigger> */}
           <TabsTrigger value="results">Recent Results</TabsTrigger>
-          <TabsTrigger value="settings">Configuration/Settings</TabsTrigger>
+          <TabsTrigger value="settings">Agent Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+            {/* Agent Overview */}
+            <Card className="hover:shadow-md transition">
               <CardHeader>
                 <CardTitle>Agent Overview</CardTitle>
                 <CardDescription>
-                  An overview of the agent's core informations
+                  An overview of the agent's core information
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Created
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm md:text-2xl font-bold justify-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mt-2">
+                  <div className="flex items-start gap-3">
+                    <CalendarDays className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="text-muted-foreground">Created</div>
+                      <div className="font-semibold text-foreground">
                         {formatDate(new Date(agent.createdAt))}
                       </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Last Updated
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm md:text-2xl font-bold justify-center">
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="text-muted-foreground">Last Updated</div>
+                      <div className="font-semibold text-foreground">
                         {timeAgo(agent.updatedAt)}
                       </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Last Run
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm md:text-2xl font-bold justify-center">
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Repeat className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="text-muted-foreground">Last Run</div>
+                      <div className="font-semibold text-foreground">
                         {agent.lastRunAt ? timeAgo(agent.lastRunAt) : "Never"}
                       </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Total Runs
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm md:text-2xl font-bold justify-center">
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <TrendingUp className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="text-muted-foreground">Total Runs</div>
+                      <div className="font-semibold text-foreground">
                         {agent.runCount}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Tracked Keywords */}
+            <Card className="hover:shadow-md transition">
               <CardHeader>
                 <CardTitle>Tracked Keywords</CardTitle>
                 <CardDescription>
-                  Keywords and phrases this agent is looking for
+                  Keywords and phrases this agent is monitoring
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {agent.keywords.map((keyword) => (
-                    <Badge key={keyword.id} variant="outline">
-                      {keyword.keyword}
-                    </Badge>
-                  ))}
+                  {agent.keywords.length > 0 ? (
+                    agent.keywords.map((keyword) => (
+                      <Badge key={keyword.id} variant="outline">
+                        {keyword.keyword}
+                      </Badge>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground text-sm">
+                      No keywords tracked yet.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="md:col-span-2">
+            {/* Agent Performance */}
+            <Card className="md:col-span-2 hover:shadow-md transition">
               <CardHeader>
                 <CardTitle>Agent Performance</CardTitle>
                 <CardDescription>
@@ -317,33 +330,57 @@ export default function AgentDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border text-xs md:text-lg">
+                <div className="rounded-md border text-xs md:text-base">
                   <div className="grid grid-cols-4 gap-4 p-4 font-medium border-b">
                     <div>Metric</div>
                     <div>Last 24 Hours</div>
                     <div>Last 7 Days</div>
                     <div>Last 30 Days</div>
                   </div>
+
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
-                    <div>Runs Completed</div>
+                    <div className="flex items-center gap-1">
+                      <Repeat className="w-4 h-4 text-muted-foreground" />
+                      Runs Completed
+                    </div>
                     <div>{last24Days}</div>
                     <div>{last7Days}</div>
                     <div>{last30Days}</div>
                   </div>
+
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
-                    <div>Matches Found</div>
+                    <div className="flex items-center gap-1">
+                      <Search className="w-4 h-4 text-muted-foreground" />
+                      Matches Found
+                    </div>
                     <div>{last24hrsResults}</div>
                     <div>{last7DaysResults}</div>
                     <div>{last30DaysResults}</div>
                   </div>
+
                   <div className="grid grid-cols-4 gap-4 p-4 items-center border-b">
-                    <div>High Relevance Matches</div>
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="w-4 h-4 text-muted-foreground" />
+                      High Relevance
+                    </div>
                     <div>{last24HrsRelevance}</div>
                     <div>{last7DaysRelevance}</div>
                     <div>{last30DaysRelevance}</div>
                   </div>
+
                   <div className="grid grid-cols-4 gap-4 p-4 items-center">
-                    <div>Average Relevance</div>
+                    <div className="flex items-center gap-1">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1">
+                          <Percent className="w-4 h-4 text-muted-foreground" />
+                          Avg. Relevance
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Average score based on relevance rating of matches
+                          found.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <div>{last24HrsAvgRelevance}%</div>
                     <div>{last7DaysAvgRelevance}%</div>
                     <div>{last30DaysAvgRelevance}%</div>
@@ -354,9 +391,9 @@ export default function AgentDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="runagent">
+        {/* <TabsContent value="runagent">
           <RunAgent />
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="results">
           {agent.results && agent.results.length === 0 ? (
@@ -380,40 +417,13 @@ export default function AgentDetailPage() {
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            {/* <span>r/{result.subreddit}</span> */}
-                            <span>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                            <span>r/{result.subreddit}</span>
+                            <span>•</span>
+                            {/* <span>
                               {result.redditPostId ? "Post" : "Comment"}
                             </span>
-                            <span>•</span>
-                            <div
-                              className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
-                                result.relevanceScore >= 85
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                  : result.relevanceScore >= 70
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                              }`}
-                            >
-                              {result.relevanceScore}% Relevant
-                            </div>
-                            <span>•</span>
-                            <div
-                              className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
-                                result.sentimentScore >= 75
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                  : result.sentimentScore >= 50
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                              }`}
-                            >
-                              {result.sentimentScore >= 75
-                                ? "😊"
-                                : result.sentimentScore >= 50
-                                ? "😐"
-                                : "😠"}{" "}
-                              {result.sentimentScore}% Sentiment
-                            </div>
+                            <span>•</span> */}
                           </div>
                           <h3 className="text-lg font-medium mb-2">
                             "{`${result.content.slice(0, 75)}...`}"
@@ -421,29 +431,49 @@ export default function AgentDetailPage() {
                           <p className="text-sm mb-4">{result.author}</p>
 
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {result.matchedKeywords &&
-                              result.matchedKeywords.map((keyword, index) => (
-                                <span
-                                  key={index}
-                                  className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                                >
-                                  {keyword}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border ${
+                                  result.relevanceScore >= 85
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                    : result.relevanceScore >= 70
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                                    : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                                }`}
+                              >
+                                {result.relevanceScore}% Relevant
+                              </div>
+
+                              <div
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border flex items-center gap-1 ${
+                                  result.sentimentScore >= 75
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                    : result.sentimentScore >= 50
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                                    : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                                }`}
+                              >
+                                {result.sentimentScore >= 75
+                                  ? "😊"
+                                  : result.sentimentScore >= 50
+                                  ? "😐"
+                                  : "😠"}{" "}
+                                {result.sentimentScore}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-primary">
+                                <MessageSquareMoreIcon className="w-4 h-4" />
+                                <span>
+                                  {result.numComments === "1"
+                                    ? `${result.numComments} Comment`
+                                    : `${result.numComments} Comments`}
                                 </span>
-                              ))}
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-sm">
-                            <Link
-                              href={`/agents/${result.agentId}`}
-                              className="text-primary hover:underline text-xs md:text-lg font-medium"
-                            >
-                              <span className="text-muted-foreground text-sm md:text-lg mr-1">
-                                Agent:
-                              </span>
-                              {agent.name}
-                            </Link>
-                            <span className="text-muted-foreground text-xs lg:text-sm">
-                              ({formatDate(new Date(result.createdAt))})
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-xs">
+                            <span className="text-muted-foreground text-xs lg:text-xs">
+                              {formatDate(new Date(result.createdAt))}
                             </span>
                           </div>
                         </div>

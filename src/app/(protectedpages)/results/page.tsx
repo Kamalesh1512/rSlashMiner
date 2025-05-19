@@ -19,7 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, Download, ExternalLink } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Download,
+  ExternalLink,
+  MessageSquare,
+  MessageSquareDashed,
+  MessageSquareMoreIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
@@ -30,7 +38,7 @@ type Result = {
   author: string | null;
   content: string;
   createdAt: Date;
-  processed: boolean;
+  numComments: string;
   redditCommentId: string;
   redditPostId: string;
   subreddit: string;
@@ -248,13 +256,13 @@ export default function ResultsPage() {
             High Relevance (
             {filteredResults.filter((r) => r.relevanceScore >= 90).length})
           </TabsTrigger>
-          <TabsTrigger value="posts">
+          {/* <TabsTrigger value="posts">
             Posts ({filteredResults.filter((r) => r.redditPostId).length})
           </TabsTrigger>
           <TabsTrigger value="comments">
             Comments (
             {filteredResults.filter((r) => r.redditCommentId).length})
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -275,14 +283,19 @@ export default function ResultsPage() {
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        {/* <span>r/{result.subreddit}</span> */}
-
-                        {/* <span>u/{result.author}</span> */}
-                        <span>{result.redditPostId ? "Post" : "Comment"}</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                        <span>r/{result.subreddit}</span>
                         <span>•</span>
+                      </div>
+
+                      <h3 className="text-lg font-medium mb-2">
+                        "{`${result.content.slice(0, 75)}...`}"
+                      </h3>
+                      <p className="text-sm mb-4">{result.author}</p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
                         <div
-                          className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border ${
                             result.relevanceScore >= 85
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                               : result.relevanceScore >= 70
@@ -292,57 +305,35 @@ export default function ResultsPage() {
                         >
                           {result.relevanceScore}% Relevant
                         </div>
-                        <span>•</span>
+
                         <div
-                          className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border flex items-center gap-1 ${
                             result.sentimentScore >= 75
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                               : result.sentimentScore >= 50
                               ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
                               : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          }`
-                        }
+                          }`}
                         >
                           {result.sentimentScore >= 75
                             ? "😊"
                             : result.sentimentScore >= 50
                             ? "😐"
                             : "😠"}{" "}
-                          {result.sentimentScore}% Sentiment
+                          {result.sentimentScore}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-primary">
+                          <MessageSquareMoreIcon className="w-4 h-4" />
+                          <span>
+                            {result.numComments === "1"
+                              ? `${result.numComments} Comment`
+                              : `${result.numComments} Comments`}
+                          </span>
                         </div>
                       </div>
-
-                      <h3 className="text-lg font-medium mb-2">
-                        "{`${result.content.slice(0, 75)}...`}"
-                      </h3>
-                      <p className="text-sm mb-4">{result.author}</p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {result.matchedKeywords.map((keyword, index) => (
-                          <span
-                            key={index}
-                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-sm">
-                        <Link
-                          href={`/agents/${result.agentId}`}
-                          className="text-primary hover:underline text-xs md:text-lg font-medium"
-                        >
-                          <span className="text-muted-foreground text-sm md:text-lg mr-1">
-                            Agent:
-                          </span>
-                          {
-                            agentList.find((res) => res.id === result.agentId)
-                              ?.name
-                          }
-                        </Link>
-                        <span className="text-muted-foreground text-xs lg:text-sm">
-                          ({formatDate(new Date(result.createdAt))})
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-xs">
+                        <span className="text-muted-foreground text-xs lg:text-xs">
+                          {formatDate(new Date(result.createdAt))}
                         </span>
                       </div>
                     </div>
@@ -386,271 +377,81 @@ export default function ResultsPage() {
               .filter((r) => r.relevanceScore >= 90)
               .map((result) => (
                 <Card key={result.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        {/* <span>r/{result.subreddit}</span> */}
-
-                        {/* <span>u/{result.author}</span> */}
-                        <span>{result.redditPostId ? "Post" : "Comment"}</span>
-                        <span>•</span>
-                        <div
-                          className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                            result.relevanceScore >= 85
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                              : result.relevanceScore >= 70
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          }`}
-                        >
-                          {result.relevanceScore}% Relevant
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                          <span>r/{result.subreddit}</span>
+                          <span>•</span>
                         </div>
-                        <span>•</span>
-                        <div
-                          className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
-                            result.sentimentScore >= 75
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                              : result.sentimentScore >= 50
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          }`
-                        }
-                        >
-                          {result.sentimentScore >= 75
-                            ? "😊"
-                            : result.sentimentScore >= 50
-                            ? "😐"
-                            : "😠"}{" "}
-                          {result.sentimentScore}% Sentiment
-                        </div>
-                      </div>
 
-                      <h3 className="text-lg font-medium mb-2">
-                        "{`${result.content.slice(0, 75)}...`}"
-                      </h3>
-                      <p className="text-sm mb-4">{result.author}</p>
+                        <h3 className="text-lg font-medium mb-2">
+                          "{`${result.content.slice(0, 75)}...`}"
+                        </h3>
+                        <p className="text-sm mb-4">{result.author}</p>
 
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {result.matchedKeywords.map((keyword, index) => (
-                          <span
-                            key={index}
-                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <div
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border ${
+                              result.relevanceScore >= 85
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                : result.relevanceScore >= 70
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                            }`}
                           >
-                            {keyword}
+                            {result.relevanceScore}% Relevant
+                          </div>
+
+                          <div
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border flex items-center gap-1 ${
+                              result.sentimentScore >= 75
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                : result.sentimentScore >= 50
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                            }`}
+                          >
+                            {result.sentimentScore >= 75
+                              ? "😊"
+                              : result.sentimentScore >= 50
+                              ? "😐"
+                              : "😠"}{" "}
+                            {result.sentimentScore}
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MessageSquareDashed className="w-4 h-4" />
+                            <span>
+                              {result.numComments === "1"
+                                ? `${result.numComments} Comment`
+                                : `${result.numComments} Comments`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-xs">
+                          <span className="text-muted-foreground text-xs lg:text-xs">
+                            {formatDate(new Date(result.createdAt))}
                           </span>
-                        ))}
+                        </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-sm">
-                        <Link
-                          href={`/agents/${result.agentId}`}
-                          className="text-primary hover:underline text-xs md:text-lg font-medium"
-                        >
-                          <span className="text-muted-foreground text-sm md:text-lg mr-1">
-                            Agent:
-                          </span>
-                          {
-                            agentList.find((res) => res.id === result.agentId)
-                              ?.name
-                          }
-                        </Link>
-                        <span className="text-muted-foreground text-xs lg:text-sm">
-                          ({formatDate(new Date(result.createdAt))})
-                        </span>
+                      <div className="flex flex-col items-end gap-4">
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={result.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View on Reddit
+                          </a>
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex flex-col items-end gap-4">
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View on Reddit
-                        </a>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               ))
           )}
-        </TabsContent>
-
-        <TabsContent value="posts" className="space-y-4">
-          {filteredResults
-            .filter((r) => r.redditPostId)
-            .map((result) => (
-              <Card key={result.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      {/* <span>r/{result.subreddit}</span> */}
-
-                      {/* <span>u/{result.author}</span> */}
-                      <span>{result.redditPostId ? "Post" : "Comment"}</span>
-                      <span>•</span>
-                      <div
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                          result.relevanceScore >= 85
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.relevanceScore >= 70
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {result.relevanceScore}% Relevant
-                      </div>
-                      <span>•</span>
-                      <div
-                        className={`rounded-full px-3 py-1.5 text-sm sm:text-xs font-medium ${
-                          result.sentimentScore >= 75
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.sentimentScore >= 50
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`
-                      }
-                      >
-                        {result.sentimentScore >= 75
-                          ? "😊"
-                          : result.sentimentScore >= 50
-                          ? "😐"
-                          : "😠"}{" "}
-                        {result.sentimentScore}% Sentiment
-                      </div>
-                    </div>
-
-                    <h3 className="text-lg font-medium mb-2">
-                      "{`${result.content.slice(0, 75)}...`}"
-                    </h3>
-                    <p className="text-sm mb-4">{result.author}</p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {result.matchedKeywords.map((keyword, index) => (
-                        <span
-                          key={index}
-                          className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-2 text-sm">
-                      <Link
-                        href={`/agents/${result.agentId}`}
-                        className="text-primary hover:underline text-xs md:text-lg font-medium"
-                      >
-                        <span className="text-muted-foreground text-sm md:text-lg mr-1">
-                          Agent:
-                        </span>
-                        {
-                          agentList.find((res) => res.id === result.agentId)
-                            ?.name
-                        }
-                      </Link>
-                      <span className="text-muted-foreground text-xs lg:text-sm">
-                        ({formatDate(new Date(result.createdAt))})
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-4">
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        View on Reddit
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            ))}
-        </TabsContent>
-
-        <TabsContent value="comments" className="space-y-4">
-          {filteredResults
-            .filter((r) => r.type === "comment")
-            .map((result) => (
-              <Card key={result.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <span>r/{result.subreddit}</span>
-                        <span>•</span>
-                        <span>{formatDate(new Date(result.createdAt))}</span>
-                        <span>•</span>
-                        <span>u/{result.author}</span>
-                        <span>•</span>
-                        {/* <span>Comment</span> */}
-                      </div>
-
-                      <h3 className="text-lg font-medium mb-2">
-                        {result.author}
-                      </h3>
-                      <p className="text-sm mb-4">"{result.content}"</p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {result.matchedKeywords.map((keyword, index) => (
-                          <span
-                            key={index}
-                            className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">Found by:</span>
-                        <Link
-                          href={`/agents/${result.agentId}`}
-                          className="text-primary hover:underline"
-                        >
-                          {/* {result.agentName} */}
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-4">
-                      <div
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                          result.relevanceScore >= 90
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                            : result.relevanceScore >= 70
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}
-                      >
-                        {result.relevanceScore}% Relevant
-                      </div>
-
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View on Reddit
-                        </a>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
         </TabsContent>
       </Tabs>
     </div>

@@ -35,8 +35,7 @@ async function searchPosts(state: typeof StateAnnotation.State) {
 
   const result = await searchReddit.invoke({
     query: state.query,
-    timeframe: "month",
-    limit: 5,
+    timeframe: "all",
   });
 
   const posts = JSON.parse(result);
@@ -44,7 +43,7 @@ async function searchPosts(state: typeof StateAnnotation.State) {
   // Report progress if callback exists
   if (posts.length > 0) {
     state.onProgress?.(`Found ${posts.length} posts to analyze`);
-
+    console.log("============= Posts Recieved ============",posts.length)
     return { posts: posts, currentPostIndex: 0 };
   } else {
     state.onProgress?.("No relevant posts found in this subreddit");
@@ -61,6 +60,7 @@ async function pickPost(state: typeof StateAnnotation.State) {
     return { selectedPost: undefined };
   }
   const currentPost = state.posts[state.currentPostIndex];
+  console.log("================Current Posts Processing ============",currentPost.id)
   const newCurrentPostIndex = state.currentPostIndex + 1;
 
   state.onProgress?.(`Checking if post ID ${currentPost.id} already exists`);
@@ -88,7 +88,7 @@ async function pickPost(state: typeof StateAnnotation.State) {
 async function fetchComments(state: typeof StateAnnotation.State) {
   if (!state.selectedPost) {
     console.log(
-      "Post already exists skipping inside fecth comments",
+      "Post already exists or No Posts Found - Inside Fetch Comments",
       state.selectedPost
     );
 
@@ -152,6 +152,7 @@ ${state.comments?.[0]?.body ?? ""}`;
     state.onProgress?.(
       `Analysis complete: ${analysis.relevanceScore}% relevance score`
     );
+    console.log(`Analysis complete For ${state.selectedPost.postId}`,analysis)
     return { analysis };
   } else {
     state.onProgress?.("Could not parse analysis results");
@@ -191,8 +192,9 @@ async function storeToDB(state: typeof StateAnnotation.State) {
     subreddit: state.selectedPost.subreddit,
     url: state.selectedPost.url,
     score: state.selectedPost.score,
-    matchedKeywords: state.analysis.matchedKeywords,
+    postCreatedAt:state.selectedPost.created_utc,
     relevanceScore: state.analysis.relevanceScore,
+    comments:state.selectedPost.num_comments,
     sentimentScore: state.analysis.sentimentScore,
   });
 

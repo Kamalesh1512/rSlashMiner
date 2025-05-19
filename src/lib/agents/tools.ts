@@ -11,22 +11,18 @@ import { sendRunNotification } from "../notifications";
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
-    const { query, timeframe = "all", limit } = input;
-    // console.log("The subreddit", { subreddit, queries, timeframe });
-    // const posts = await redditService.searchPosts(subreddit, query, timeframe);
-    const posts = await redditService.searchPostsByKeyword(
+    const { query, timeframe="all"} = input;
+    console.log("==========The Keyword==========",query);
+    const posts = await redditService.searchTopExactMatchPosts(
       query,
       timeframe,
-      limit
     );
-
     return JSON.stringify(posts);
   },
   {
     name: "search_reddit",
     description: "Search for posts in a specific subreddit with a query.",
     schema: z.object({
-      limit: z.number().describe("The Limit to search top posts"),
       query: z.string().describe("The search query."),
       timeframe: z
         .enum(["hour", "day", "week", "month", "year", "all"])
@@ -51,75 +47,12 @@ export const getComments = tool(
   }
 );
 
-// export const analyzeContent = tool(
-//   async ({ content, businessInterests, businessDescription }) => {
-//     const prompt = `Analyze the following Reddit content and determine if it indicates a potential customer or business opportunity related to the described business.
-//                       Content: ${content}
-//                       Business Description: ${businessDescription}
-//                       Business Keywords: ${businessInterests.join(", ")}
-
-//                       Provide your analysis in JSON format with the following fields:
-//                       - relevanceScore: A number from 0-100 indicating how relevant this content is to the business
-//                       - matchedKeywords: An array of keywords from the business interests that match the content
-//                       - reasoning: A brief explanation (1-2 sentences) of why this content is or isn't relevant
-//                       - sentimentScore: A number from -100 to 100 indicating the sentiment (-100 very negative, 0 neutral, 100 very positive)
-//                       - potentialAction: A suggested action to take (e.g., "reach out", "monitor", "ignore")`;
-//     try {
-//       const response = await openai.chat.completions.create({
-//         model: "gpt-3.5-turbo",
-//         messages: [
-//           {
-//             role: "system",
-//             content: `You are an AI assistant that analyzes Reddit posts to determine their business relevance.
-//                 You MUST respond strictly in valid JSON with the following structure:
-//                 {
-//                 "relevanceScore": number (0-100),
-//                 "matchedKeywords": string[],
-//                 "reasoning": string,
-//                 "sentimentScore": number (-100 to 100),
-//                 "potentialAction": string ("reach out", "monitor", "ignore")
-//                 }.`,
-//           },
-//           {
-//             role: "user",
-//             content: prompt,
-//           },
-//         ],
-//         temperature: 0.2,
-//       });
-//       return response.choices[0].message.content;
-//     } catch (error) {
-//       console.error("Error analyzing content with OpenAI:", error);
-//       return JSON.stringify({
-//         relevanceScore: 50,
-//         matchedKeywords: [],
-//         reasoning: "Unable to perform detailed analysis due to API error",
-//         sentimentScore: 0,
-//         potentialAction: "review manually",
-//       });
-//     }
-//   },
-//   {
-//     name: "analyze_content",
-//     description: "Analyze Reddit content for relevance to business interests",
-//     schema: z.object({
-//       content: z.string().describe("The content to analyze"),
-//       businessInterests: z
-//         .array(z.string())
-//         .describe("Keywords related to business interests"),
-//       businessDescription: z
-//         .string()
-//         .describe("Description of the business or product"),
-//     }),
-//   }
-// );
-
 
 function escapeText(text: string) {
   return text.replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // remove non-printables
 }
 
-async function retryOpenAIRequest(payload:any, maxRetries = 3) {
+async function retryOpenAIRequest(payload: any, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await openai.chat.completions.create(payload);
@@ -137,32 +70,59 @@ export const analyzeContent = tool(
     const safeDescription = escapeText(businessDescription);
     const safeKeywords = businessInterests.map(escapeText).join(", ");
 
-    const prompt = `Analyze the following Reddit content for business relevance.
+    const user_prompt = JSON.stringify({
+      content: safeContent,
+      business: {
+        description: safeDescription,
+        keywords: safeKeywords,
+      },
+    });
 
-Content: ${safeContent}
+    const system_prompt = `You are OpportunityGPT, an expert business-signal classifier.
 
-Business Description: ${safeDescription}
-Business Keywords: ${safeKeywords}
+⚙ TASK  
+For one Reddit post or comment, decide whether it is a *commercial opportunity* for the company described below.
 
-Respond strictly with a JSON object:
+⚖ SCORING RULES  
+• relevanceScore:  
+  90-100 → clear buying intent  
+  70-89  → problem/pain where our product clearly fits  
+  40-69  → tangential discussion, might join for awareness  
+  10-39  → off-topic; vaguely related keyword only  
+  0-9    → no relation at all  
+
+• sentimentScore:  
+  -100 = hostile  
+     0 = neutral  
+  +100 = enthusiastic  
+  Use tone *about the topic*, not the user's mood.
+
+⚠ INPUT  
+You will receive a JSON object with:
+- content: the Reddit post/comment  
+- business: an object with description and keywords  
+
+⚠ OUTPUT  
+Return only valid **minified JSON** with the following two fields:
+
 {
-  "relevanceScore": number (0-100),
-  "matchedKeywords": string[],
-  "reasoning": string,
-  "sentimentScore": number (-100 to 100),
-  "potentialAction": string ("reach out", "monitor", "ignore")
-}`;
+  "relevanceScore": <integer between 0-100>,
+  "sentimentScore": <integer between -100 and 100>
+}
+
+Do not include any explanation or wrap in triple backticks.`;
 
     const payload = {
       model: "gpt-3.5-turbo",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are a business opportunity analyzer. Your job is to assess Reddit content for potential business interest relevance and return strictly valid JSON only.`,
+          content: system_prompt,
         },
         {
           role: "user",
-          content: prompt,
+          content: user_prompt,
         },
       ],
       temperature: 0.2,
@@ -182,10 +142,7 @@ Respond strictly with a JSON object:
       console.error("Error analyzing content with OpenAI:", error);
       return JSON.stringify({
         relevanceScore: 50,
-        matchedKeywords: [],
-        reasoning: "Unable to perform detailed analysis due to API error",
         sentimentScore: 0,
-        potentialAction: "review manually",
       });
     }
   },
@@ -214,8 +171,9 @@ export const storeResult = tool(
     subreddit,
     url,
     score,
-    matchedKeywords,
+    postCreatedAt,
     relevanceScore,
+    comments,
     sentimentScore,
   }) => {
     try {
@@ -233,10 +191,9 @@ export const storeResult = tool(
           subreddit,
           url,
           score: score ?? 0,
-          createdAt: new Date(),
-          matchedKeywords: JSON.stringify(matchedKeywords),
+          createdAt: postCreatedAt ? new Date(postCreatedAt* 1000) : new Date(),
           relevanceScore,
-          processed: false,
+          numComments: comments?.toString() ?? null,
           sentimentScore: sentimentScore ?? 0,
         })
         .onConflictDoNothing();
@@ -263,10 +220,9 @@ export const storeResult = tool(
         .describe("The subreddit where the content was found"),
       url: z.string().describe("The URL to the content"),
       score: z.number().optional().describe("The score/upvotes of the content"),
-      matchedKeywords: z
-        .array(z.string())
-        .describe("Keywords that matched in the content"),
+      postCreatedAt:z.number().optional().describe("Post created Date"),
       relevanceScore: z.number().describe("The relevance score from 0-100"),
+      comments:z.number().describe("The Number of comments for the post"),
       sentimentScore: z
         .number()
         .optional()
@@ -281,9 +237,9 @@ export const checkExistingPost = tool(
         .select()
         .from(monitoringResults)
         .where(eq(monitoringResults.redditPostId, postId));
-      if (existingRecord.length>0) {
+      if (existingRecord.length > 0) {
         return JSON.stringify({ success: true, postId });
-      }else{
+      } else {
         return JSON.stringify({ success: false, postId });
       }
     } catch (error) {
@@ -301,4 +257,10 @@ export const checkExistingPost = tool(
 );
 
 // Instantiate the tools
-const tools = [searchReddit, getComments, analyzeContent, storeResult,checkExistingPost];
+const tools = [
+  searchReddit,
+  getComments,
+  analyzeContent,
+  storeResult,
+  checkExistingPost,
+];

@@ -261,7 +261,7 @@ export interface Agent {
     author: string | null;
     content: string;
     createdAt: Date;
-    processed: boolean;
+    numComments: string;
     redditCommentId: string;
     redditPostId: string;
     subreddit: string;

@@ -204,7 +204,7 @@ export const monitoringResults = pgTable("monitoring_results", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   matchedKeywords: text("matched_keywords"), // Array of matched keywords
   relevanceScore: integer("relevance_score"), // AI-determined relevance score
-  processed: boolean("processed").default(false).notNull(),
+  numComments: varchar("num_comments"),
   sentimentScore: integer("sentiment_score"), // Sentiment analysis score
 })
 

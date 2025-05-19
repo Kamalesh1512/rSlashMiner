@@ -121,7 +121,7 @@ class RedditService {
       t: time,
       limit,
       restrict_sr: false,
-      include_over_18: false, // Optional: filter NSFW
+      include_over_18: false,
     });
   
     const posts = (data.data?.children || []).map((child: any) => {
@@ -148,6 +148,58 @@ class RedditService {
   
     return posts;
   }
+
+  async searchTopExactMatchPosts(
+  keyword: string,
+  time:Timeframe
+): Promise<RedditPost[]> {
+  const limit = 15;
+
+  // Step 1: Fetch up to 25 posts using search
+  const data = await this.fetchFromReddit(`/search`, {
+    q: keyword,
+    sort: "relevance",
+    t: time,
+    limit,
+    restrict_sr: false,
+    include_over_18: false,
+  });
+
+  // Step 2: Extract and normalize
+  const posts = (data.data?.children || []).map((child: any) => {
+    const post = child.data;
+    return {
+      id: post.id,
+      title: post.title,
+      selftext: post.selftext,
+      author: post.author,
+      subreddit: post.subreddit,
+      url: `https://www.reddit.com${post.permalink}`,
+      score: post.score,
+      created_utc: post.created_utc,
+      num_comments: post.num_comments ?? 0,
+    };
+  });
+
+  // Step 3: Filter for stronger keyword matches
+  // const keywordLower = keyword.toLowerCase();
+  // const filtered = posts.filter((post:any) => {
+  //   const content = (post.title + " " + post.selftext).toLowerCase();
+  //   return (
+  //     content.includes(keywordLower) ||
+  //     content.split(/\s+/).includes(keywordLower)
+  //   );
+  // });
+
+  // Step 3: Sort by relevance (score + comment count)
+  posts.sort((a:any, b:any) => {
+    const engagementA = a.score + (a.num_comments ?? 0);
+    const engagementB = b.score + (b.num_comments ?? 0);
+    return engagementB - engagementA;
+  });
+
+  return posts;
+}
   
 
   async searchPosts(
