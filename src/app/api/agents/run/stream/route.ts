@@ -191,7 +191,6 @@ async function processAgentRun(
           agentId,
           query: keyword,
           relevanceThreshold,
-          businessInterests: keywordList,
           businessDescription: agent[0].description as string,
           onProgress: (message: string) => {
             const skipMessages = [
@@ -214,7 +213,6 @@ async function processAgentRun(
             });
           },
         });
-
         // Complete this subreddit step
         if (result.storedResult && result.storedResult.success) {
           results.push({
@@ -322,13 +320,13 @@ async function processAgentRun(
     });
 
     // Send notification
-    await sendRunNotification({
-      agentId,
-      success: true,
-      message: summary,
-      resultsCount: storedResultIds.length,
-      processedKeywords: keywordList.length,
-    });
+    // await sendRunNotification({
+    //   agentId,
+    //   success: true,
+    //   message: summary,
+    //   resultsCount: storedResultIds.length,
+    //   processedKeywords: keywordList.length,
+    // });
 
     sendEvent({
       type: "step",

@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -303,8 +303,11 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
             content: `Great! I've analyzed your request and created an agent to monitor discussions about **${chatInput}**. Here's what I've set up:
 
 **Suggested Keywords:**
-${suggestedKeywordList.slice(0, 5).map(k => `- ${k}`).join('\n')}
-${suggestedKeywordList.length > 5 ? '- ...' : ''}
+${suggestedKeywordList
+  .slice(0, 5)
+  .map((k) => `- ${k}`)
+  .join("\n")}
+${suggestedKeywordList.length > 5 ? "- ..." : ""}
 
 Please select from the suggestions above in the next step. Click **Next** to continue!
 `,
@@ -770,7 +773,12 @@ Please select from the suggestions above in the next step. Click **Next** to con
                                   name="startTime"
                                   type="time"
                                   value={formData.scheduleTime}
-                                  onChange={handleInputChange}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      scheduleTime: e.target.value,
+                                    }))
+                                  }
                                   disabled={!scheduledRuns.enabled}
                                 />
                                 <p className="text-sm text-muted-foreground">
@@ -889,28 +897,40 @@ Please select from the suggestions above in the next step. Click **Next** to con
                           </div>
                         ) : (
                           <>
-                            <div>
-                              <span className="text-sm font-medium">Plan:</span>{" "}
-                              <span className="text-sm capitalize">
-                                {scheduledRuns.type}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium">
-                                Interval:
-                              </span>{" "}
-                              <span className="text-sm capitalize">
-                                Every {scheduledRuns.interval}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium">
-                                Start Time:
-                              </span>{" "}
-                              <span className="text-sm">
-                                {formData.scheduleTime}
-                              </span>
-                            </div>
+                            {isScheduled ? (
+                              <>
+                                <div>
+                                  <span className="text-sm font-medium">
+                                    Plan:
+                                  </span>{" "}
+                                  <span className="text-sm capitalize">
+                                    {scheduledRuns.type}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium">
+                                    Interval:
+                                  </span>{" "}
+                                  <span className="text-sm capitalize">
+                                    Every {scheduledRuns.interval}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium">
+                                    Start Time:
+                                  </span>{" "}
+                                  <span className="text-sm">
+                                    {formData.scheduleTime}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                                  Scheduling Agent Run is Off
+                                </div>
+                              </>
+                            )}
                           </>
                         )}
                       </div>

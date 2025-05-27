@@ -31,6 +31,8 @@ import {
 import Link from "next/link";
 import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type Result = {
   id: string;
@@ -59,7 +61,39 @@ export default function ResultsPage() {
   const [relevanceFilter, setRelevanceFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
-  const { agents } = useAgentStore();
+  const { agents, setAgents } = useAgentStore();
+  const router = useRouter();
+
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch("/api/agents");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch agents");
+      }
+      console.log("server response", data);
+      setAgents(data.agents);
+      console.log("Client-side", agents);
+    } catch (error) {
+      toast.error("Error", {
+        description:
+          error instanceof Error ? error.message : "Failed to fetch agents",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+
+    if (status === "authenticated") {
+      fetchAgents();
+    }
+  }, [status, router]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

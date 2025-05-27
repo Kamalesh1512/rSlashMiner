@@ -1,3 +1,4 @@
+import { suggestSubreddits } from "@/actions/text-generator";
 import { SubredditProps } from "@/lib/constants/types";
 import dotenv from "dotenv";
 
@@ -12,6 +13,7 @@ export type RedditPost = {
   url: string;
   score: number;
   created_utc: number;
+  num_comments: number;
 };
 
 export type RedditComment = {
@@ -52,14 +54,12 @@ class RedditService {
     });
 
     const data = await response.json();
-    // console.log("Token",data)
     if (!data.access_token) {
       throw new Error("Failed to authenticate with Reddit API");
     }
 
     this.accessToken = data.access_token;
     this.tokenExpiry = Date.now() + data.expires_in * 1000; // cache token
-    console.log("Access Token generated");
     return this.accessToken as string;
   }
 
@@ -113,7 +113,7 @@ class RedditService {
   async searchPostsByKeyword(
     keyword: string,
     time: Timeframe,
-    limit:number
+    limit: number
   ): Promise<RedditPost[]> {
     const data = await this.fetchFromReddit(`/search`, {
       q: keyword,
@@ -123,7 +123,7 @@ class RedditService {
       restrict_sr: false,
       include_over_18: false,
     });
-  
+
     const posts = (data.data?.children || []).map((child: any) => {
       const post = child.data;
       return {
@@ -138,116 +138,106 @@ class RedditService {
         num_comments: post.num_comments ?? 0,
       };
     });
-  
+
     // Engagement score = upvotes + comment count
-    posts.sort((a:any, b:any) => {
+    posts.sort((a: any, b: any) => {
       const engagementA = a.score + (a.num_comments ?? 0);
       const engagementB = b.score + (b.num_comments ?? 0);
       return engagementB - engagementA;
     });
-  
+
     return posts;
   }
 
-  async searchTopExactMatchPosts(
-  keyword: string,
-  time:Timeframe
-): Promise<RedditPost[]> {
-  const limit = 15;
-
-  // Step 1: Fetch up to 25 posts using search
-  const data = await this.fetchFromReddit(`/search`, {
-    q: keyword,
-    sort: "relevance",
-    t: time,
-    limit,
-    restrict_sr: false,
-    include_over_18: false,
-  });
-
-  // Step 2: Extract and normalize
-  const posts = (data.data?.children || []).map((child: any) => {
-    const post = child.data;
-    return {
-      id: post.id,
-      title: post.title,
-      selftext: post.selftext,
-      author: post.author,
-      subreddit: post.subreddit,
-      url: `https://www.reddit.com${post.permalink}`,
-      score: post.score,
-      created_utc: post.created_utc,
-      num_comments: post.num_comments ?? 0,
-    };
-  });
-
-  // Step 3: Filter for stronger keyword matches
-  // const keywordLower = keyword.toLowerCase();
-  // const filtered = posts.filter((post:any) => {
-  //   const content = (post.title + " " + post.selftext).toLowerCase();
-  //   return (
-  //     content.includes(keywordLower) ||
-  //     content.split(/\s+/).includes(keywordLower)
-  //   );
-  // });
-
-  // Step 3: Sort by relevance (score + comment count)
-  posts.sort((a:any, b:any) => {
-    const engagementA = a.score + (a.num_comments ?? 0);
-    const engagementB = b.score + (b.num_comments ?? 0);
-    return engagementB - engagementA;
-  });
-
-  return posts;
-}
-  
-
-  async searchPosts(
-    subreddit: string,
-    query: string,
-    time: Timeframe,
-    limit = 1
+  async searchRelevantPosts(
+    keyword: string,
+    time: Timeframe
   ): Promise<RedditPost[]> {
-    const data = await this.fetchFromReddit(`/r/${subreddit}/search`, {
-      q: query,
-      limit,
-      sort: "relevance", 
+    const subredditLimit = 5;
+    const postLimitPerSub = 10;
+    const postSampleSize = 50;
+
+    // STEP 1: Search globally across Reddit posts (not limited to a subreddit)
+    const globalResults = await this.fetchFromReddit(`/search`, {
+      q: keyword,
+      sort: "relevance",
       t: time,
-      restrict_sr: true,
+      limit: postSampleSize,
+      restrict_sr: false,
+      include_over_18: false,
     });
-    return (data.data?.children).map((child: any) => {
-      const post = child.data;
-      return {
-        id: post.id,
-        title: post.title,
-        selftext: post.selftext,
-        author: post.author,
-        subreddit: post.subreddit,
-        url: `https://www.reddit.com${post.permalink}`,
-        score: post.score,
-        created_utc: post.created_utc,
-      };
-    });
-  }
 
-  async searchMultipleRedditPosts(
-    subreddit: string,
-    queries: string[],
-    time: Timeframe,
-    limit = 1
-  ): Promise<RedditPost[]> {
-    function sleep(ms: number) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
+    const rawPosts = (globalResults.data?.children || []).map(
+      (child: any) => child.data
+    );
+
+    // STEP 2: Extract subreddits from global search posts
+    const subredditMap = new Map<string, number>();
+
+    for (const post of rawPosts) {
+      const subreddit = post.subreddit;
+      subredditMap.set(subreddit, (subredditMap.get(subreddit) || 0) + 1);
     }
+
+    // Sort subreddits by frequency and take top ones
+    const subredditNames = Array.from(subredditMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, subredditLimit)
+      .map(([sub]) => sub.toLowerCase());
+
+
     const allPosts: RedditPost[] = [];
 
-    for (const query of queries) {
-      const posts = await this.searchPosts(subreddit, query, time, limit);
+    // STEP 3: Search again inside these subreddits
+    for (const subreddit of subredditNames) {
+      const postData = await this.fetchFromReddit(`/r/${subreddit}/search`, {
+        q: keyword,
+        sort: "relevance",
+        t: time,
+        limit: postLimitPerSub,
+        restrict_sr: true,
+        include_over_18: false,
+      });
+
+      const posts = (postData.data?.children || []).map((child: any) => {
+        const post = child.data;
+        return {
+          id: post.id,
+          title: post.title,
+          selftext: post.selftext,
+          author: post.author,
+          subreddit: post.subreddit,
+          url: `https://www.reddit.com${post.permalink}`,
+          score: post.score,
+          created_utc: post.created_utc,
+          num_comments: post.num_comments ?? 0,
+        };
+      });
+
       allPosts.push(...posts);
-      await sleep(1000); // wait 1 second between requests
     }
 
-    return allPosts;
+    // STEP 4: Filter posts for actual keyword presence and recency
+    const now = Math.floor(Date.now() / 1000);
+    const sixMonthsAgo = now - 60 * 60 * 24 * 30 * 6;
+    const queryLower = keyword.toLowerCase();
+
+    console.log("Posts searched...",allPosts)
+    const filtered = allPosts
+      .filter((post) => {
+        const text = (post.title + " " + post.selftext).toLowerCase();
+        const isMatch =
+          text.includes(queryLower) || text.split(/\s+/).includes(queryLower);
+        const isRecent = post.created_utc >= sixMonthsAgo;
+        return isMatch && isRecent;
+      })
+      .sort((a, b) => {
+        const engagementA = a.score + (a.num_comments ?? 0);
+        const engagementB = b.score + (b.num_comments ?? 0);
+        return engagementB - engagementA;
+      });
+
+    return filtered;
   }
 
   async getSubredditPosts(
@@ -312,3 +302,4 @@ class RedditService {
 
 const redditService = new RedditService();
 export default redditService;
+

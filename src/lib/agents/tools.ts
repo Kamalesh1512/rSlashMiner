@@ -7,16 +7,14 @@ import { monitoringResults } from "@/lib/db/schema";
 import redditService from "@/lib/services/reddit";
 import { eq } from "drizzle-orm";
 import { sendRunNotification } from "../notifications";
+import { getAllRedditPosts } from "../services/redditScrapper";
 
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
-    const { query, timeframe="all"} = input;
-    console.log("==========The Keyword==========",query);
-    const posts = await redditService.searchTopExactMatchPosts(
-      query,
-      timeframe,
-    );
+    const { query, timeframe = "year" } = input;
+    console.log("==========The Keyword==========", query);
+    const posts = await getAllRedditPosts(query);
     return JSON.stringify(posts);
   },
   {
@@ -47,7 +45,6 @@ export const getComments = tool(
   }
 );
 
-
 function escapeText(text: string) {
   return text.replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // remove non-printables
 }
@@ -65,52 +62,48 @@ async function retryOpenAIRequest(payload: any, maxRetries = 3) {
 }
 
 export const analyzeContent = tool(
-  async ({ content, businessInterests, businessDescription }) => {
+  async ({ content, businessDescription }) => {
     const safeContent = escapeText(content);
     const safeDescription = escapeText(businessDescription);
-    const safeKeywords = businessInterests.map(escapeText).join(", ");
 
     const user_prompt = JSON.stringify({
       content: safeContent,
-      business: {
-        description: safeDescription,
-        keywords: safeKeywords,
-      },
+      business: safeDescription,
     });
 
-    const system_prompt = `You are OpportunityGPT, an expert business-signal classifier.
+    const system_prompt = `You are OpportunityGPT, an expert in identifying commercial intent and relevant problems from online discussions.
 
-⚙ TASK  
-For one Reddit post or comment, decide whether it is a *commercial opportunity* for the company described below.
+🎯 OBJECTIVE  
+Analyze one Reddit post or comment to determine if it presents a potential *commercial opportunity* based on the given business description.
 
-⚖ SCORING RULES  
-• relevanceScore:  
-  90-100 → clear buying intent  
-  70-89  → problem/pain where our product clearly fits  
-  40-69  → tangential discussion, might join for awareness  
-  10-39  → off-topic; vaguely related keyword only  
-  0-9    → no relation at all  
+⚖ SCORING CRITERIA  
 
-• sentimentScore:  
-  -100 = hostile  
-     0 = neutral  
-  +100 = enthusiastic  
-  Use tone *about the topic*, not the user's mood.
+• relevanceScore (0–100):  
+Score how relevant the content is as a potential lead for the business:
+  - 90–100 → User shows **explicit interest or buying intent** for a solution that matches the business  
+  - 70–89  → User describes a **clear problem or pain point** that the business directly solves  
+  - 40–69  → Content is **somewhat related**, could be useful for brand awareness or soft engagement  
+  - 10–39  → **Off-topic**, with only vague or superficial keyword overlap  
+  - 0–9    → **No connection** at all to the business or its value proposition
 
-⚠ INPUT  
-You will receive a JSON object with:
-- content: the Reddit post/comment  
-- business: an object with description and keywords  
+• sentimentScore (-100 to 100):  
+Score the tone of the content *toward the topic or problem*:
+  - +100 → Highly positive, enthusiastic  
+  -   0  → Neutral or factual  
+  - -100 → Strongly negative, dismissive, or hostile
 
-⚠ OUTPUT  
-Return only valid **minified JSON** with the following two fields:
+📥 INPUT  
+You’ll receive a JSON object:
+- **content**: a Reddit post or comment  
+- **business**: a brief description of what the company does or what problem it solves
+
+📤 OUTPUT  
+Return minified JSON in this format. No explanation, no extra text.
 
 {
-  "relevanceScore": <integer between 0-100>,
-  "sentimentScore": <integer between -100 and 100>
-}
-
-Do not include any explanation or wrap in triple backticks.`;
+  "relevanceScore": <integer from 0 to 100>,
+  "sentimentScore": <integer from -100 to 100>
+}`;
 
     const payload = {
       model: "gpt-3.5-turbo",
@@ -151,9 +144,6 @@ Do not include any explanation or wrap in triple backticks.`;
     description: "Analyze Reddit content for relevance to business interests",
     schema: z.object({
       content: z.string().describe("The content to analyze"),
-      businessInterests: z
-        .array(z.string())
-        .describe("Keywords related to business interests"),
       businessDescription: z
         .string()
         .describe("Description of the business or product"),
@@ -191,7 +181,9 @@ export const storeResult = tool(
           subreddit,
           url,
           score: score ?? 0,
-          createdAt: postCreatedAt ? new Date(postCreatedAt* 1000) : new Date(),
+          createdAt: postCreatedAt
+            ? new Date(postCreatedAt * 1000)
+            : new Date(),
           relevanceScore,
           numComments: comments?.toString() ?? null,
           sentimentScore: sentimentScore ?? 0,
@@ -220,9 +212,9 @@ export const storeResult = tool(
         .describe("The subreddit where the content was found"),
       url: z.string().describe("The URL to the content"),
       score: z.number().optional().describe("The score/upvotes of the content"),
-      postCreatedAt:z.number().optional().describe("Post created Date"),
+      postCreatedAt: z.number().optional().describe("Post created Date"),
       relevanceScore: z.number().describe("The relevance score from 0-100"),
-      comments:z.number().describe("The Number of comments for the post"),
+      comments: z.number().describe("The Number of comments for the post"),
       sentimentScore: z
         .number()
         .optional()

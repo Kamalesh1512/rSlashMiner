@@ -86,6 +86,8 @@ export default function AgentsPage() {
       updated.delete(agentId);
       return updated;
     });
+
+    router.refresh();
   };
 
   return (

@@ -23,19 +23,28 @@ export const generateKeywords = async (
   };
   error?: string;
 }> => {
-  const prompt = `Generate a list of 10-15 relevant keywords and phrases that potential customers might use on Reddit when looking for solutions related to the following business:
-    
-    Business Description: ${description}
-    
-    Focus on:
-    1. Problem statements (e.g., "how to solve X")
-    2. Need expressions (e.g., "looking for a tool that can Y")
-    3. Recommendation requests (e.g., "best solution for Z")
-    4. Pain points and frustrations
-    5. Industry-specific terminology
-    
-    Return ONLY a JSON array of strings with no explanation or additional text.
-    example: ["keyword 1", "keyword 2", "keyword 3"]`;
+  const prompt = `You are a keyword research assistant. Based on the business description below, generate a highly relevant list of 10-15 keywords or search phrases that potential customers might use on Reddit when searching for solutions.
+
+Business Description:
+${description}
+
+Guidelines:
+- Focus on what users would type or ask when experiencing a problem or seeking a solution.
+- DO NOT generate generic patterns like “how to solve X”; instead, infer actual user pain points, needs, and goals from the business context.
+- Think like a Reddit user posting in niche subreddits, communities, or discussion threads.
+- Use terminology and phrasing that reflects real-world concerns, frustrations, desires, or recommendations users might request.
+
+Types of keywords to include:
+1. Pain points or issues (e.g., "struggling with [problem]")
+2. Solution-seeking phrases (e.g., "tool for [task]")
+3. Requests for help or suggestions (e.g., "any alternatives to [product]")
+4. Industry-specific jargon or language
+5. Common Reddit-style phrasing (e.g., “what’s the best way to...”)
+
+Format:
+Return ONLY a JSON array of strings, with no explanations or extra text.
+Example: ["keyword 1", "keyword 2", "keyword 3"]
+`;
 
   try {
     const res = await openai.chat.completions.create({
@@ -44,14 +53,14 @@ export const generateKeywords = async (
         {
           role: "system",
           content:
-            "You are an AI assistant that generates keyword suggestions in JSON format.",
+            "You are an keyword research assistant that generates keyword suggestions in JSON format.",
         },
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.8,
+      temperature: 0.3,
     });
 
     const content = res.choices[0].message.content;
@@ -90,24 +99,35 @@ export const generateKeywords = async (
 
 // Ask OpenAI to suggest subreddits
 async function generateAISubreddits(description: string): Promise<string[]> {
-  const prompt = `Given the following topic or problem description, suggest the most relevant and active subreddits (maximum 10) where this topic could be discussed. Respond with only a comma-separated list of subreddit names, without the "r/" prefix. Description: "${description}"`;
+  const systemPrompt = `
+You are a helpful Reddit expert assistant. Your task is to suggest existing, relevant, and active subreddits where users typically discuss the given topic or problem.
+Only suggest real subreddit names without the "r/" prefix. Prioritize communities that are:
+- Highly active (daily discussions, recent posts)
+- Focused on the given topic
+- Helpful or insightful for the user
+
+Do not invent subreddit names. Respond only with a comma-separated list of subreddit names (maximum 10). No explanations or extra formatting.
+`;
+
+  const userPrompt = `Suggest the most relevant subreddits for this topic: "${description}"`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" if needed
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.8,
+    model: "gpt-3.5-turbo", // use "gpt-4" if available for better quality
+    messages: [
+      { role: "system", content: systemPrompt.trim() },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.3,
   });
 
   const raw = completion.choices[0].message.content || "";
-
-  console.log("AI suggested Subreddits", raw);
   return raw
     .split(",")
     .map((sub) => sub.trim().replace(/^r\//, "").toLowerCase())
     .filter(Boolean);
 }
 
-export const suggestSubreddits = async (
+export async function suggestSubreddits(
   description: string
 ): Promise<{
   status: number;
@@ -116,36 +136,41 @@ export const suggestSubreddits = async (
     suggestedSubreddits: string[];
   };
   error?: string;
-}> => {
+}> {
   try {
     const aiSuggested = await generateAISubreddits(description);
 
-    // const verifiedSubreddits = new Set<string>();
+    const verifiedSubreddits = new Map<string, SubredditProps>();
 
-    // for (const name of aiSuggested) {
-    //   const matches = await redditService.searchSubreddits(name, 1);
-    //   matches.forEach((sub: SubredditProps) =>
-    //     verifiedSubreddits.add(sub.name)
-    //   );
-    // }
+    const allMatches = await Promise.all(
+      aiSuggested.map((name) => redditService.searchSubreddits(name, 1))
+    );
 
-    // Array.from(verifiedSubreddits);
-    const finalList = aiSuggested
+    allMatches.flat().forEach((sub: SubredditProps) => {
+      if (!verifiedSubreddits.has(sub.name)) {
+        verifiedSubreddits.set(sub.name, sub);
+      }
+    });
 
-    console.log("Finaled subreddits", finalList);
+    const sorted = Array.from(verifiedSubreddits.values()).sort(
+      (a, b) => (b.subscribers ?? 0) - (a.subscribers ?? 0)
+    );
+
+    const top5 = sorted.slice(0, 5).map((s) => s.name);
+    const top15 = sorted.slice(0, 15).map((s) => s.name);
 
     return {
       status: 200,
       data: {
-        subreddits: finalList.slice(0, 5),
-        suggestedSubreddits: finalList.slice(0, 15),
+        subreddits: top5,
+        suggestedSubreddits: top15,
       },
     };
   } catch (error) {
     console.error("Subreddit suggestion error:", error);
     return { status: 400, error: "Failed to fetch AI-based subreddits" };
   }
-};
+}
 
 export async function validateBusinessInput(input: string) {
   const chat = await openai.chat.completions.create({

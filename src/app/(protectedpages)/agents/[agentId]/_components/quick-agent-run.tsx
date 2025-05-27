@@ -19,7 +19,7 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     success: boolean
     resultsCount: number
     error?: string
-  } | null>(null)
+  }|null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
 
   // Clean up event source on unmount
@@ -43,7 +43,7 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     }
 
     // Create a new EventSource connection
-    const eventSource = new EventSource(`/api/agents/run/stream?agentId=${agentId}`)
+    const eventSource = new EventSource( `/api/agents/run/stream?agentId=${agentId}`)
     eventSourceRef.current = eventSource
 
     eventSource.onmessage = (event) => {
@@ -61,6 +61,7 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
             success: true,
             resultsCount: data.resultsCount,
           })
+          console.log("Agent Run Results:",result)
           setProgress(100)
           setIsRunning(false)
 
