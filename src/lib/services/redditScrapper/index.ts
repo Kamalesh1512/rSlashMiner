@@ -1,4 +1,4 @@
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) IndieSaaSBot/1.0';
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) IndieSaaSBot/1.0;';
 
 interface RedditPost {
   id: string;

@@ -206,7 +206,6 @@ async function processPendingRuns() {
               agentId: run.agentId,
               query: keyword,
               relevanceThreshold,
-              businessInterests: keywordList,
               businessDescription: agent[0].description || "",
               onProgress: (message) => {
                 steps.push({
@@ -223,7 +222,7 @@ async function processPendingRuns() {
                 resultId: result.storedResult.resultId,
                 success: true,
               });
-              storedResultIds.push(result.storedResult.resultId);
+              storedResultIds.push(...result.storedResult.resultId);
             }
 
             steps.push({

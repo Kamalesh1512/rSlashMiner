@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Play, XCircle, CheckCircle, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface QuickRunAgentProps {
   agentId: string
@@ -21,6 +22,8 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     error?: string
   }|null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+
+  const router = useRouter()
 
   // Clean up event source on unmount
   useEffect(() => {
@@ -210,10 +213,12 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
                   <div className="flex items-center text-xs">
                     <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
                     <span>Found {result.resultsCount} results</span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={runAgent}>
-                    Run Again
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={()=>router.push('/results')}>
+                    View Results
                   </Button>
+                  </div>
+                  {/* <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={()=>}>
+                  </Button> */}
                 </>
               ) : (
                 <>

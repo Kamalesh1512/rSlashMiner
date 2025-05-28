@@ -159,7 +159,7 @@ async function processAgentRun(
 
     // Process each subreddit
     const results = [];
-    const storedResultIds = [];
+    let relevantResultCount = 0
     const totalkeywords = keywordList.length;
 
     for (let i = 0; i < keywordList.length; i++) {
@@ -214,14 +214,13 @@ async function processAgentRun(
           },
         });
         // Complete this subreddit step
-        if (result.storedResult && result.storedResult.success) {
+        if (result.storedResult.length > 0) {
           results.push({
             keyword,
             resultId: result.storedResult.resultId,
             success: true,
           });
-          storedResultIds.push(result.storedResult.resultId);
-
+          relevantResultCount = relevantResultCount + result.storedResult.length;
           sendEvent({
             type: "step",
             id: stepId,
@@ -242,6 +241,7 @@ async function processAgentRun(
             progress: progressEnd,
           });
         }
+
       } catch (error) {
         console.error(`Error processing keyword ${keyword}:`, error);
 
@@ -294,7 +294,7 @@ async function processAgentRun(
     // Generate a summary of the results
     let summary = "";
     let recentResults: any = [];
-    if (storedResultIds.length > 0) {
+    if (relevantResultCount > 0) {
       // Get the stored results from the database
       recentResults = await db
         .select()
@@ -302,7 +302,9 @@ async function processAgentRun(
         .where(eq(monitoringResults.agentId, agentId))
         .orderBy(monitoringResults.createdAt)
 
-      summary = `Found results from ${storedResultIds.length} keywords across ${keywordList.length} keywords.`;
+      summary = `Found results from ${relevantResultCount} keywords across ${keywordList.length} keywords.`;
+
+      console.log("Results Found:",relevantResultCount)
 
       if (recentResults.length > 0) {
         summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
@@ -341,7 +343,7 @@ async function processAgentRun(
       type: "complete",
       success: true,
       summary,
-      resultsCount: storedResultIds.length,
+      resultsCount: relevantResultCount,
       processedKeywords: keywordList.length,
       progress: 100,
       recentResults: recentResults,

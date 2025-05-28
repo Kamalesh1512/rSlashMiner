@@ -101,7 +101,7 @@
     "@types/simple-oauth2": "^5.0.7",
     "@types/snoowrap": "^1.16.1",
     "concurrently": "^9.1.2",
-    "drizzle-kit": "^0.18.1",
+    "drizzle-kit": "^0.31.1",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
     "postcss": "^8",

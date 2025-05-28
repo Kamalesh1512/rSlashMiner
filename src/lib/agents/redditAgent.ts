@@ -177,7 +177,9 @@ export async function runAgent(params: {
       storedResult: [], // 👈 initialize empty array
     });
 
-    return { storedResult: result.storedResult ?? [] ,analysis:result.analysis }; // 👈 return all stored results
+    // console.log("Agent Run :",result)
+
+    // return { storedResult: result.storedResult ?? [] ,analysis:result.analysis  }; // 👈 return all stored results
 
     return result;
   } catch (error) {
