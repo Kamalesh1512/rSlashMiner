@@ -159,7 +159,7 @@ async function processAgentRun(
 
     // Process each subreddit
     const results = [];
-    let relevantResultCount = 0
+    let relevantResultCount = 0;
     const totalkeywords = keywordList.length;
 
     for (let i = 0; i < keywordList.length; i++) {
@@ -220,7 +220,8 @@ async function processAgentRun(
             resultId: result.storedResult.resultId,
             success: true,
           });
-          relevantResultCount = relevantResultCount + result.storedResult.length;
+          relevantResultCount =
+            relevantResultCount + result.storedResult.length;
           sendEvent({
             type: "step",
             id: stepId,
@@ -241,7 +242,6 @@ async function processAgentRun(
             progress: progressEnd,
           });
         }
-
       } catch (error) {
         console.error(`Error processing keyword ${keyword}:`, error);
 
@@ -300,14 +300,31 @@ async function processAgentRun(
         .select()
         .from(monitoringResults)
         .where(eq(monitoringResults.agentId, agentId))
-        .orderBy(monitoringResults.createdAt)
+        .orderBy(monitoringResults.createdAt);
 
       summary = `Found results from ${relevantResultCount} keywords across ${keywordList.length} keywords.`;
 
-      console.log("Results Found:",relevantResultCount)
+      console.log("Results Found:", relevantResultCount);
 
       if (recentResults.length > 0) {
         summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
+
+        // Send notification
+        await sendRunNotification({
+          agentId,
+          success: true,
+          message: summary,
+          resultsCount: relevantResultCount,
+          processedKeywords: keywordList.length,
+        });
+
+        sendEvent({
+          type: "step",
+          id: "send-notification",
+          status: "completed",
+          message: "Notification sent to user",
+          progress: 99,
+        });
       }
     } else {
       summary = `No New relevant results found across ${keywordList.length} keywords.`;
@@ -319,23 +336,6 @@ async function processAgentRun(
       status: "running",
       message: "Sending final user notification...",
       progress: 98,
-    });
-
-    // Send notification
-    // await sendRunNotification({
-    //   agentId,
-    //   success: true,
-    //   message: summary,
-    //   resultsCount: storedResultIds.length,
-    //   processedKeywords: keywordList.length,
-    // });
-
-    sendEvent({
-      type: "step",
-      id: "send-notification",
-      status: "completed",
-      message: "Notification sent to user",
-      progress: 99,
     });
 
     // Send final completion event
