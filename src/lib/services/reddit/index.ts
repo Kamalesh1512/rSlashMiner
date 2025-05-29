@@ -90,6 +90,46 @@ class RedditService {
     return json;
   }
 
+  async getPostByUrl(postUrl: string): Promise<RedditPost | null> {
+    try {
+      // Extract post ID from URL (e.g., https://www.reddit.com/r/sub/comments/<postId>/...)
+      const match = postUrl.match(/\/comments\/([a-z0-9]+)\//i);
+      const postId = match?.[1];
+
+      if (!postId) {
+        throw new Error(`Invalid Reddit post URL: ${postUrl}`);
+      }
+
+      const data = await this.fetchFromReddit("/api/info", {
+        id: `t3_${postId}`,
+      });
+
+      const post = data?.data?.children?.[0]?.data;
+      if (!post) return null;
+
+      const now = Math.floor(Date.now() / 1000);
+      const sixMonthsAgo = now - 60 * 60 * 24 * 30 * 6;
+
+      const oneYearAgo = now - 60 * 60 * 24 * 365;
+      if (post.created_utc < oneYearAgo) return null;
+
+      return {
+        id: post.id,
+        title: post.title,
+        selftext: post.selftext,
+        author: post.author,
+        subreddit: post.subreddit,
+        url: `https://www.reddit.com${post.permalink}`,
+        score: post.score,
+        created_utc: post.created_utc,
+        num_comments: post.num_comments ?? 0,
+      };
+    } catch (err) {
+      console.error("Failed to fetch Reddit post by URL:", postUrl, err);
+      return null;
+    }
+  }
+
   async searchSubreddits(query: string, limit = 10): Promise<SubredditProps[]> {
     const data = await this.fetchFromReddit(`/subreddits/search`, {
       q: query,
@@ -185,7 +225,6 @@ class RedditService {
       .slice(0, subredditLimit)
       .map(([sub]) => sub.toLowerCase());
 
-
     const allPosts: RedditPost[] = [];
 
     // STEP 3: Search again inside these subreddits
@@ -222,7 +261,7 @@ class RedditService {
     const sixMonthsAgo = now - 60 * 60 * 24 * 30 * 6;
     const queryLower = keyword.toLowerCase();
 
-    console.log("Posts searched...",allPosts)
+    console.log("Posts searched...", allPosts);
     const filtered = allPosts
       .filter((post) => {
         const text = (post.title + " " + post.selftext).toLowerCase();
@@ -302,4 +341,3 @@ class RedditService {
 
 const redditService = new RedditService();
 export default redditService;
-
