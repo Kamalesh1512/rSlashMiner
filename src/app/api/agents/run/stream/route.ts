@@ -310,13 +310,13 @@ async function processAgentRun(
         summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
 
         // Send notification
-        // await sendRunNotification({
-        //   agentId,
-        //   success: true,
-        //   message: summary,
-        //   resultsCount: relevantResultCount,
-        //   processedKeywords: keywordList.length,
-        // });
+        await sendRunNotification({
+          agentId,
+          success: true,
+          message: summary,
+          resultsCount: relevantResultCount,
+          processedKeywords: keywordList.length,
+        });
 
         sendEvent({
           type: "step",
