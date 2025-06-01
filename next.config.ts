@@ -5,14 +5,13 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // Ignore ESLint errors during builds
   },
-  // transpilePackages: ["got-scraping", "@ulixee/undici"],
-  // webpack: (config) => {
-  //   config.module.rules.push({
-  //     test: /\.json$/,
-  //     type: "json",
-  //   });
-  //   return config;
-  // },
+
+  serverExternalPackages: [
+    "puppeteer-extra",
+    "puppeteer-extra-plugin-stealth",
+    "puppeteer-extra-plugin-recaptcha",
+  ],
+
   output: "standalone",
 };
 

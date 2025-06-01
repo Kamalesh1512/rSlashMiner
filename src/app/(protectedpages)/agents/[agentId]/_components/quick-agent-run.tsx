@@ -1,136 +1,138 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Play, XCircle, CheckCircle, AlertCircle } from "lucide-react"
-import { motion } from "framer-motion"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Play, XCircle, CheckCircle, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface QuickRunAgentProps {
-  agentId: string
-  onComplete?: (success: boolean, resultsCount: number) => void
+  agentId: string;
+  onComplete?: (success: boolean, resultsCount: number) => void;
 }
 
 export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
-  const [isRunning, setIsRunning] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{
-    success: boolean
-    resultsCount: number
-    error?: string
-  }|null>(null)
-  const eventSourceRef = useRef<EventSource | null>(null)
+    success: boolean;
+    resultsCount: number;
+    error?: string;
+  } | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
-  const router = useRouter()
+  const router = useRouter();
 
   // Clean up event source on unmount
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
-        eventSourceRef.current.close()
+        eventSourceRef.current.close();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const runAgent = async () => {
     // Reset state for new run
-    setIsRunning(true)
-    setProgress(0)
-    setResult(null)
+    setIsRunning(true);
+    setProgress(0);
+    setResult(null);
 
     // Close any existing connection
     if (eventSourceRef.current) {
-      eventSourceRef.current.close()
+      eventSourceRef.current.close();
     }
 
     // Create a new EventSource connection
-    const eventSource = new EventSource( `/api/agents/run/stream?agentId=${agentId}`)
-    eventSourceRef.current = eventSource
+    const eventSource = new EventSource(
+      `/api/agents/run/stream?agentId=${agentId}`
+    );
+    eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data)
+        const data = JSON.parse(event.data);
 
         if (data.type === "step") {
           // Update progress
           if (data.progress) {
-            setProgress(data.progress)
+            setProgress(data.progress);
           }
         } else if (data.type === "complete") {
           // Handle completion
           setResult({
             success: true,
             resultsCount: data.resultsCount,
-          })
-          console.log("Agent Run Results:",result)
-          setProgress(100)
-          setIsRunning(false)
+          });
+          console.log("Agent Run Results:", result);
+          setProgress(100);
+          setIsRunning(false);
 
-          toast.success("Agent run completed",{
+          toast.success("Agent run completed", {
             description: `Found ${data.resultsCount} relevant results.`,
-          })
+          });
 
           // Call onComplete callback if provided
           if (onComplete) {
-            onComplete(true, data.resultsCount)
+            onComplete(true, data.resultsCount);
           }
 
           // Close the connection
-          eventSource.close()
-          eventSourceRef.current = null
+          eventSource.close();
+          eventSourceRef.current = null;
         } else if (data.type === "error") {
           // Handle error
           setResult({
             success: false,
             resultsCount: 0,
             error: data.error,
-          })
-          setIsRunning(false)
+          });
+          setIsRunning(false);
 
-          toast.error("Agent run failed",{
+          toast.error("Agent run failed", {
             description: data.error,
-          })
+          });
 
           // Call onComplete callback if provided
           if (onComplete) {
-            onComplete(false, 0)
+            onComplete(false, 0);
           }
 
           // Close the connection
-          eventSource.close()
-          eventSourceRef.current = null
+          eventSource.close();
+          eventSourceRef.current = null;
         }
       } catch (error) {
-        console.error("Error parsing event data:", error)
+        console.error("Error parsing event data:", error);
       }
-    }
+    };
 
     eventSource.onerror = (error) => {
-      console.error("EventSource error:", error)
+      console.error("EventSource error:", error);
 
       setResult({
         success: false,
         resultsCount: 0,
         error: "Connection error. Please try again.",
-      })
-      setIsRunning(false)
+      });
+      setIsRunning(false);
 
-      toast.error( "Connection error",{
+      toast.error("Connection error", {
         description: "Lost connection to the server. Please try again.",
-      })
+      });
 
       // Call onComplete callback if provided
       if (onComplete) {
-        onComplete(false, 0)
+        onComplete(false, 0);
       }
 
       // Close the connection
-      eventSource.close()
-      eventSourceRef.current = null
-    }
-  }
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  };
 
   const cancelRun = () => {
     if (eventSourceRef.current) {
@@ -166,40 +168,54 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     //   });
     // }
 
-    setIsRunning(false)
+    setIsRunning(false);
     setResult({
       success: false,
       resultsCount: 0,
       error: "Agent run cancelled by user",
-    })
+    });
 
-    toast.error("Run cancelled",{
+    toast.error("Run cancelled", {
       description: "Agent run was cancelled",
-    })
+    });
 
     // Call onComplete callback if provided
     if (onComplete) {
-      onComplete(false, 0)
+      onComplete(false, 0);
     }
-  }
+  };
 
   return (
     <div className="w-full space-y-2">
       {!isRunning && !result ? (
-        <Button variant="default" size="sm" className="w-fit" onClick={runAgent}>
+        <Button
+          variant="default"
+          size="sm"
+          className="w-fit"
+          onClick={runAgent}
+        >
           <Play className="mr-2 h-3 w-3" />
           Run Agent
         </Button>
       ) : (
         <div className="space-y-2">
           {isRunning && (
-            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-2"
+            >
               <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <span>Running agent...</span>
                 <span>{progress}%</span>
               </div>
-              <Progress value={progress} className="h-1.5"/>
-              <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={cancelRun}>
+              <Progress value={progress} className="h-1.5" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full h-7 text-xs"
+                onClick={cancelRun}
+              >
                 <XCircle className="mr-1 h-3 w-3" />
                 Cancel
               </Button>
@@ -207,26 +223,52 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
           )}
 
           {!isRunning && result && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-between"
+            >
               {result.success ? (
                 <>
-                  <div className="flex items-center text-xs">
+                  <div className="flex flex-col items-center text-xs">
+                    <div className="flex flex-row items-center">
                     <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
                     <span>Found {result.resultsCount} results</span>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={()=>router.push('/results')}>
-                    View Results
-                  </Button>
+                    </div>
+                    <div className="flex flex-row justify-between items-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => router.push("/results")}
+                      >
+                        View Results
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={runAgent}
+                      >
+                        Run Again
+                      </Button>
+                    </div>
                   </div>
-                  {/* <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={()=>}>
-                  </Button> */}
                 </>
               ) : (
                 <>
                   <div className="flex items-center text-xs">
                     <AlertCircle className="mr-1 h-3 w-3 text-red-500" />
-                    <span className="truncate max-w-[120px]">{result.error || "Failed to run"}</span>
+                    <span className="truncate max-w-[120px]">
+                      {result.error || "Failed to run"}
+                    </span>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={runAgent}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={runAgent}
+                  >
                     Retry
                   </Button>
                 </>
@@ -236,5 +278,5 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

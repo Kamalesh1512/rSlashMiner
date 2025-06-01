@@ -5,26 +5,22 @@ services:
     container_name: skroub_web
     build:
       context: .
-      dockerfile: src/docker/web.Dockerfile
-    image: kamalesh1512/skroub:web
+      dockerfile: src/docker/Dockerfile
+    image: kamalesh1512/skroub:app
     ports:
       - '3000:3000'
     restart: always
     environment:
       NODE_ENV: production
-    depends_on:
-      - worker
     networks:
       - app-net
     env_file:
       - .env.production
+    command: ["npm", "run", "start"]
 
   worker:
     container_name: skroub_worker
-    build:
-      context: .
-      dockerfile: src/docker/worker.Dockerfile
-    image: kamalesh1512/skroub:worker
+    image: kamalesh1512/skroub:app
     restart: always
     environment:
       NODE_ENV: production
@@ -32,6 +28,7 @@ services:
       - .env.production
     networks:
       - app-net
+    command: ["tsx", "src/cron/scheduler.ts"]
 
 networks:
   app-net:
