@@ -6,15 +6,16 @@ import { db } from "@/lib/db";
 import { monitoringResults } from "@/lib/db/schema";
 import redditService from "@/lib/services/reddit";
 import { eq } from "drizzle-orm";
-import { sendRunNotification } from "../notifications";
-import { getAllRedditPosts } from "../services/redditScrapper";
+import { sendRunNotification } from "@/lib/notifications";
+import redditScrapper from "@/lib/services/scrapper/";
+import { googleSearchReddit } from "../services/search";
 
 // Define the tools
 export const searchReddit = tool(
   async (input) => {
     const { query, timeframe = "year" } = input;
     console.log("==========The Keyword==========", query);
-    const posts = await getAllRedditPosts(query);
+    const posts = await googleSearchReddit(query);
     return JSON.stringify(posts);
   },
   {

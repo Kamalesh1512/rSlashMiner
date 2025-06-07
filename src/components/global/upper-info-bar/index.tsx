@@ -62,10 +62,10 @@ const UpperInfoBar = ({ user }: UpperInfoBarProps) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative w-64 hidden md:block">
+        {/* <div className="relative w-64 hidden md:block">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search..." className="pl-8" />
-        </div>
+        </div> */}
 
         {pathname === "/agents" && (
           <Button asChild>

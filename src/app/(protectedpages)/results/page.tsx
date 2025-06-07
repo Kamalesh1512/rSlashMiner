@@ -121,10 +121,10 @@ export default function ResultsPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (result) =>
-          result.content.toLowerCase().includes(query) ||
-          result.matchedKeywords.some((keyword) =>
-            keyword.toLowerCase().includes(query)
-          )
+          result.content.toLowerCase().includes(query)
+          // result.matchedKeywords.some((keyword) =>
+          //   keyword.toLowerCase().includes(query)
+          // )
       );
     }
 
