@@ -68,7 +68,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="container max-w-6xl py-10">
+    <div className="py-10">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Subscription</h1>

@@ -155,7 +155,7 @@ export async function GET(request: Request) {
           score: res.score as number,
           sentimentScore: res.sentimentScore as number,
           url: res.url as string,
-          matchedKeywords: JSON.parse(res.matchedKeywords as string),
+          matchedKeywords: res.matchedKeywords as string,
         })),
     }));
 

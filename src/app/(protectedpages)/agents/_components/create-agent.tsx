@@ -107,7 +107,7 @@ export default function CreateAgentPage({
                   )}
                 </>
               )}
-              <div className="mt-4 sm:mt-6 space-y-4">
+              <div className="mt-4 sm:mt-6 space-y-4 items-center">
                 <p className="text-sm sm:text-base">
                   To create more agents, you can:
                 </p>
@@ -121,7 +121,7 @@ export default function CreateAgentPage({
                   >
                     View My Agents
                   </Button>
-                  <Button onClick={() => router.push("/settings")}>
+                  <Button onClick={() => router.push("/settings?tab=subscription")}>
                     Upgrade Plan
                   </Button>
                 </div>

@@ -48,7 +48,7 @@ type Result = {
   score: number;
   sentimentScore: number;
   url: string;
-  matchedKeywords: string[];
+  matchedKeywords: string;
   type?: "post" | "comment";
 };
 
@@ -320,12 +320,13 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                         <span>r/{result.subreddit}</span>
                         <span>•</span>
+                        <span className="bg-primary-foreground text-muted-foreground rounded-xl p-1">{result.matchedKeywords}</span>
                       </div>
 
                       <h3 className="text-lg font-medium mb-2">
                         "{`${result.content.slice(0, 75)}...`}"
                       </h3>
-                      <p className="text-sm mb-4">{result.author}</p>
+                      {/* <p className="text-sm mb-4">{result.author}</p> */}
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         <div
@@ -350,10 +351,10 @@ export default function ResultsPage() {
                           }`}
                         >
                           {result.sentimentScore >= 75
-                            ? "😊"
+                            ? "😊 Happy"
                             : result.sentimentScore >= 50
-                            ? "😐"
-                            : "😠"}{" "}
+                            ? "😐 Sad"
+                            : "😠 Angry"}{" "}
                           {result.sentimentScore}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-primary">
@@ -417,12 +418,14 @@ export default function ResultsPage() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                           <span>r/{result.subreddit}</span>
                           <span>•</span>
+                          <span className="bg-primary-foreground text-muted-foreground rounded-xl p-1">{result.matchedKeywords}</span>
+
                         </div>
 
                         <h3 className="text-lg font-medium mb-2">
                           "{`${result.content.slice(0, 75)}...`}"
                         </h3>
-                        <p className="text-sm mb-4">{result.author}</p>
+                        {/* <p className="text-sm mb-4">{result.author}</p> */}
 
                         <div className="flex flex-wrap gap-2 mb-4">
                           <div

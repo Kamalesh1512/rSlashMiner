@@ -97,7 +97,8 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
     {
       role: "assistant",
       content:
-        'Describe what you want to monitor on Reddit in a single sentence. For example: "I want to track discussions about my SaaS analytics tool for customer feedback."',
+        `Provide Business Description in the following format. 
+        For Example - Youform: A free alternative to Typeform, offering unlimited forms and responses...."`,
     },
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);

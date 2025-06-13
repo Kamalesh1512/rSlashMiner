@@ -1,13 +1,12 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
-import { openai } from "./genai";
+import { cosineSimilarity, getEmbedding, openai, smoothRelevance } from "./genai";
 import { db } from "@/lib/db";
 import { monitoringResults } from "@/lib/db/schema";
 import redditService from "@/lib/services/reddit";
 import { eq } from "drizzle-orm";
 import { sendRunNotification } from "@/lib/notifications";
-import redditScrapper from "@/lib/services/scrapper/";
 import { googleSearchReddit } from "../services/search";
 
 // Define the tools
@@ -62,78 +61,125 @@ async function retryOpenAIRequest(payload: any, maxRetries = 3) {
   }
 }
 
+// export const analyzeContent = tool(
+//   async ({ content, businessDescription }) => {
+//     const safeContent = escapeText(content);
+//     const safeDescription = escapeText(businessDescription);
+
+//     const user_prompt = JSON.stringify({
+//       content: safeContent,
+//       business: safeDescription,
+//     });
+
+//     const system_prompt = `You are OpportunityGPT, an expert in identifying commercial intent and relevant problems from online discussions.
+
+// 🎯 OBJECTIVE
+// Analyze one Reddit post or comment to determine if it presents a potential *commercial opportunity* based on the given business description.
+
+// ⚖ SCORING CRITERIA
+
+// • relevanceScore (0–100):
+// Score how relevant the content is as a potential lead for the business:
+//   - 90–100 → User shows **explicit interest or buying intent** for a solution that matches the business
+//   - 70–89  → User describes a **clear problem or pain point** that the business directly solves
+//   - 40–69  → Content is **somewhat related**, could be useful for brand awareness or soft engagement
+//   - 10–39  → **Off-topic**, with only vague or superficial keyword overlap
+//   - 0–9    → **No connection** at all to the business or its value proposition
+
+// • sentimentScore (-100 to 100):
+// Score the tone of the content *toward the topic or problem*:
+//   - +100 → Highly positive, enthusiastic
+//   -   0  → Neutral or factual
+//   - -100 → Strongly negative, dismissive, or hostile
+
+// 📥 INPUT
+// You’ll receive a JSON object:
+// - **content**: a Reddit post or comment
+// - **business**: a brief description of what the company does or what problem it solves
+
+// 📤 OUTPUT
+// Return minified JSON in this format. No explanation, no extra text.
+
+// {
+//   "relevanceScore": <integer from 0 to 100>,
+//   "sentimentScore": <integer from -100 to 100>
+// }`;
+
+//     const payload = {
+//       model: "gpt-3.5-turbo",
+//       response_format: { type: "json_object" },
+//       messages: [
+//         {
+//           role: "system",
+//           content: system_prompt,
+//         },
+//         {
+//           role: "user",
+//           content: user_prompt,
+//         },
+//       ],
+//       temperature: 0.2,
+//     };
+
+//     try {
+//       const response = await retryOpenAIRequest(payload);
+//       if (!response || !response.choices || !response.choices.length) {
+//         throw new Error("No response from OpenAI");
+//       }
+//       const raw = response.choices[0]?.message?.content ?? "";
+
+//       // Attempt to parse JSON if GPT adds extra explanation accidentally
+//       const firstJson = raw.match(/\{[\s\S]*\}/);
+//       return firstJson ? firstJson[0] : raw;
+//     } catch (error) {
+//       console.error("Error analyzing content with OpenAI:", error);
+//       return JSON.stringify({
+//         relevanceScore: 50,
+//         sentimentScore: 0,
+//       });
+//     }
+//   },
+//   {
+//     name: "analyze_content",
+//     description: "Analyze Reddit content for relevance to business interests",
+//     schema: z.object({
+//       content: z.string().describe("The content to analyze"),
+//       businessDescription: z
+//         .string()
+//         .describe("Description of the business or product"),
+//     }),
+//   }
+// );
+
 export const analyzeContent = tool(
   async ({ content, businessDescription }) => {
-    const safeContent = escapeText(content);
-    const safeDescription = escapeText(businessDescription);
-
-    const user_prompt = JSON.stringify({
-      content: safeContent,
-      business: safeDescription,
-    });
-
-    const system_prompt = `You are OpportunityGPT, an expert in identifying commercial intent and relevant problems from online discussions.
-
-🎯 OBJECTIVE  
-Analyze one Reddit post or comment to determine if it presents a potential *commercial opportunity* based on the given business description.
-
-⚖ SCORING CRITERIA  
-
-• relevanceScore (0–100):  
-Score how relevant the content is as a potential lead for the business:
-  - 90–100 → User shows **explicit interest or buying intent** for a solution that matches the business  
-  - 70–89  → User describes a **clear problem or pain point** that the business directly solves  
-  - 40–69  → Content is **somewhat related**, could be useful for brand awareness or soft engagement  
-  - 10–39  → **Off-topic**, with only vague or superficial keyword overlap  
-  - 0–9    → **No connection** at all to the business or its value proposition
-
-• sentimentScore (-100 to 100):  
-Score the tone of the content *toward the topic or problem*:
-  - +100 → Highly positive, enthusiastic  
-  -   0  → Neutral or factual  
-  - -100 → Strongly negative, dismissive, or hostile
-
-📥 INPUT  
-You’ll receive a JSON object:
-- **content**: a Reddit post or comment  
-- **business**: a brief description of what the company does or what problem it solves
-
-📤 OUTPUT  
-Return minified JSON in this format. No explanation, no extra text.
-
-{
-  "relevanceScore": <integer from 0 to 100>,
-  "sentimentScore": <integer from -100 to 100>
-}`;
-
-    const payload = {
-      model: "gpt-3.5-turbo",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: system_prompt,
-        },
-        {
-          role: "user",
-          content: user_prompt,
-        },
-      ],
-      temperature: 0.2,
-    };
-
     try {
-      const response = await retryOpenAIRequest(payload);
-      if (!response || !response.choices || !response.choices.length) {
-        throw new Error("No response from OpenAI");
-      }
-      const raw = response.choices[0]?.message?.content ?? "";
+      const [contentEmbedding, businessEmbedding] = await Promise.all([
+        getEmbedding(content),
+        getEmbedding(businessDescription),
+      ]);
 
-      // Attempt to parse JSON if GPT adds extra explanation accidentally
-      const firstJson = raw.match(/\{[\s\S]*\}/);
-      return firstJson ? firstJson[0] : raw;
-    } catch (error) {
-      console.error("Error analyzing content with OpenAI:", error);
+      const similarity = cosineSimilarity(contentEmbedding, businessEmbedding);
+      console.log("Similarity Found",similarity)
+
+      let relevanceScore = smoothRelevance(similarity); // sigmoid-like smoothness
+
+      // Adjust based on threshold rules
+      if (similarity >= 0.85) relevanceScore = Math.max(relevanceScore, 90);
+      else if (similarity >= 0.75)
+        relevanceScore = Math.max(relevanceScore, 70);
+      else if (similarity >= 0.5) relevanceScore = Math.max(relevanceScore, 40);
+      else if (similarity >= 0.3) relevanceScore = Math.max(relevanceScore, 10);
+      else relevanceScore = 0;
+
+      // const sentimentScore = await analyzeSentiment(content); // GPT call
+
+      return JSON.stringify({
+        relevanceScore,
+        sentimentScore: 0,
+      });
+    } catch (err) {
+      console.error("Error in analyzeContent:", err);
       return JSON.stringify({
         relevanceScore: 50,
         sentimentScore: 0,
@@ -151,7 +197,6 @@ Return minified JSON in this format. No explanation, no extra text.
     }),
   }
 );
-
 export const storeResult = tool(
   async ({
     agentId,
@@ -166,6 +211,7 @@ export const storeResult = tool(
     relevanceScore,
     comments,
     sentimentScore,
+    keyword,
   }) => {
     try {
       const resultId = createId();
@@ -188,6 +234,7 @@ export const storeResult = tool(
           relevanceScore,
           numComments: comments?.toString() ?? null,
           sentimentScore: sentimentScore ?? 0,
+          matchedKeywords: keyword,
         })
         .onConflictDoNothing();
 
@@ -220,6 +267,7 @@ export const storeResult = tool(
         .number()
         .optional()
         .describe("The sentiment score from -100 to 100"),
+      keyword: z.string().describe("Matched Keyword"),
     }),
   }
 );

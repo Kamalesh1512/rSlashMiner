@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,9 +25,11 @@ const fadeIn = {
 export default function SettingsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState("profile");
-  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionstatusProps['creationLimit']>();
-
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "profile";
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [subscriptionDetails, setSubscriptionDetails] =
+    useState<SubscriptionstatusProps["creationLimit"]>();
 
   const fetchSubscriptionLimit = async () => {
     try {
@@ -36,7 +38,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const response = await res.json();
         setSubscriptionDetails(response.data);
-      } 
+      }
     } catch (error) {
       console.error("Error fetching subscription details:", error);
     }
@@ -51,8 +53,10 @@ export default function SettingsPage() {
     }
   }, [status, router]);
 
-
-
+  // useEffect(() => {
+  //   const hash = window.location.hash.replace("#", "");
+  //   setTab(hash || "profile");
+  // }, []);
 
   if (status === "loading") {
     return (
@@ -60,7 +64,6 @@ export default function SettingsPage() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  
   }
 
   return (
@@ -86,6 +89,7 @@ export default function SettingsPage() {
         </div>
 
         <Tabs
+          defaultValue={activeTab}
           value={activeTab}
           onValueChange={setActiveTab}
           className=""
@@ -115,7 +119,7 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
           <TabsContent value="subscription" className="space-y-6">
-              <SubscriptionPage/>
+            <SubscriptionPage />
           </TabsContent>
         </Tabs>
       </motion.div>

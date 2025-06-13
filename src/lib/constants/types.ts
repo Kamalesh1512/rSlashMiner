@@ -269,7 +269,7 @@ export interface Agent {
     score: number;
     sentimentScore: number;
     url: string;
-    matchedKeywords: string[];
+    matchedKeywords: string;
     type?: "post" | "comment";
   }[];
 }

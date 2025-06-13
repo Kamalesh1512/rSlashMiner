@@ -99,6 +99,7 @@ async function processNextPost(state: typeof StateAnnotation.State) {
   }
 
   state.analysis = analysis;
+  console.log("Analysis Done:",analysis)
   state.onProgress?.(
     `Analysis complete: ${analysis.relevanceScore}% relevance score`
   );
@@ -117,6 +118,7 @@ async function processNextPost(state: typeof StateAnnotation.State) {
       relevanceScore: analysis.relevanceScore,
       comments: currentPost.num_comments,
       sentimentScore: analysis.sentimentScore,
+      keyword:state.query,
     });
 
     const stored = JSON.parse(storeRaw);
@@ -177,13 +179,9 @@ export async function runAgent(params: {
       storedResult: [], // 👈 initialize empty array
     });
 
-    // console.log("Agent Run :",result)
-
-    // return { storedResult: result.storedResult ?? [] ,analysis:result.analysis  }; // 👈 return all stored results
-
     return result;
   } catch (error) {
-    console.error(`Error running agent for subreddit ${params.query}:`, error);
+    console.error(`Error running agent for keyword ${params.query}:`, error);
     throw error;
   }
 }
