@@ -37,7 +37,7 @@ export async function GET() {
 
   const planResult = await getUserPlan();
   if (!planResult) {
-    return false;
+    return NextResponse.json({ error: "Unable to fetch User Plan" }, { status: 404 });
   }
 
   const canRun = limit.manualRunCount < planResult.plan.manualRuns.runCount;
