@@ -341,7 +341,7 @@ export default function ResultsPage() {
                           {result.relevanceScore}% Relevant
                         </div>
 
-                        <div
+                        {/* <div
                           className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border flex items-center gap-1 ${
                             result.sentimentScore >= 75
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
@@ -356,7 +356,7 @@ export default function ResultsPage() {
                             ? "😐 Sad"
                             : "😠 Angry"}{" "}
                           {result.sentimentScore}
-                        </div>
+                        </div> */}
                         <div className="flex items-center gap-1 text-sm text-primary">
                           <MessageSquareMoreIcon className="w-4 h-4" />
                           <span>
@@ -440,7 +440,7 @@ export default function ResultsPage() {
                             {result.relevanceScore}% Relevant
                           </div>
 
-                          <div
+                          {/* <div
                             className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm border flex items-center gap-1 ${
                               result.sentimentScore >= 75
                                 ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
@@ -455,7 +455,7 @@ export default function ResultsPage() {
                               ? "😐"
                               : "😠"}{" "}
                             {result.sentimentScore}
-                          </div>
+                          </div> */}
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <MessageSquareDashed className="w-4 h-4" />
                             <span>

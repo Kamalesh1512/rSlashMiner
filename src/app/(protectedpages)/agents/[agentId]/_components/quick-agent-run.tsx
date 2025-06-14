@@ -16,6 +16,13 @@ interface QuickRunAgentProps {
 export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [liveMessage, setLiveMessage] = useState<string | null>(null);
+  const [manualRun, setManualRun] = useState<{
+    canRun: boolean;
+    runCount: number;
+    interval: string;
+    type: string;
+  } | null>(null);
   const [result, setResult] = useState<{
     success: boolean;
     resultsCount: number;
@@ -33,7 +40,6 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
       }
     };
   }, []);
-
   const runAgent = async () => {
     // Reset state for new run
     setIsRunning(true);
@@ -54,6 +60,9 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.message) {
+          setLiveMessage(data.message);
+        }
 
         if (data.type === "step") {
           // Update progress
@@ -141,34 +150,6 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
     }
 
     setIsRunning(false);
-    // setRunResult({
-    //   success: false,
-    //   summary: "",
-    //   resultsCount: 0,
-    //   error: "Agent run cancelled by user",
-    // });
-
-    // Update run history
-    // if (currentRunIdRef.current) {
-    //   setRunHistory((prevHistory) => {
-    //     const currentRunIndex = prevHistory.findIndex(
-    //       (run) => run.id === currentRunIdRef.current
-    //     );
-    //     if (currentRunIndex >= 0) {
-    //       const updatedHistory = [...prevHistory];
-    //       updatedHistory[currentRunIndex] = {
-    //         ...updatedHistory[currentRunIndex],
-    //         completedAt: new Date(),
-    //         success: false,
-    //         error: "Agent run cancelled by user",
-    //       };
-    //       return updatedHistory;
-    //     }
-    //     return prevHistory;
-    //   });
-    // }
-
-    setIsRunning(false);
     setResult({
       success: false,
       resultsCount: 0,
@@ -184,15 +165,43 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
       onComplete(false, 0);
     }
   };
+  const handleRunAgent = async () => {
+    try {
+      const response = await fetch("/api/usage-limits/manual-run");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch run limits");
+      }
+
+      setManualRun(data.manualRun);
+
+
+      if (data.manualRun?.canRun) {
+        runAgent(); // ✅ Proceed if allowed
+      } else {
+        toast.error("Manual run limit reached", {
+          description: `You’ve used all ${data.manualRun?.runCount} manual runs. Resets ${data.manualRun?.interval}.`,
+        });
+      }
+    } catch (error) {
+      toast.error("Error checking usage", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to check manual run availability",
+      });
+    }
+  };
 
   return (
     <div className="w-full space-y-2">
-      {!isRunning && !result ? (
+      {!isRunning && !result? (
         <Button
           variant="default"
           size="sm"
           className="w-fit"
-          onClick={runAgent}
+          onClick={handleRunAgent}
         >
           <Play className="mr-2 h-3 w-3" />
           Run Agent
@@ -206,7 +215,7 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
               className="space-y-2"
             >
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span>Running agent...</span>
+                <span>{liveMessage ?? "Running agent..."}</span>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} className="h-1.5" />
@@ -232,8 +241,8 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
                 <>
                   <div className="flex flex-col items-center text-xs">
                     <div className="flex flex-row items-center">
-                    <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
-                    <span>Found {result.resultsCount} results</span>
+                      <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
+                      <span>Found {result.resultsCount} results</span>
                     </div>
                     <div className="flex flex-row justify-between items-center">
                       <Button
@@ -248,7 +257,7 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
                         variant="ghost"
                         size="sm"
                         className="h-7 text-xs"
-                        onClick={runAgent}
+                        onClick={handleRunAgent}
                       >
                         Run Again
                       </Button>
@@ -278,5 +287,105 @@ export function QuickRunAgent({ agentId, onComplete }: QuickRunAgentProps) {
         </div>
       )}
     </div>
+    //   <div className="w-full space-y-2">
+    //   {!isRunning && !result ? (
+    //     manualRun?.canRun ? (
+    //       <Button
+    //         variant="default"
+    //         size="sm"
+    //         className="w-fit"
+    //         onClick={handleRunAgent}
+    //       >
+    //         <Play className="mr-2 h-3 w-3" />
+    //         Run Agent
+    //       </Button>
+    //     ) : (
+    //       <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+    //         You’ve reached the manual run limit
+    //         {<strong>{manualRun?.runCount}</strong>}. Resets every{" "}
+    //         {<strong>{manualRun?.interval}</strong>}. Upgrade your plan to increase usage.
+    //       </div>
+    //     )
+    //   ) : (
+    //     <div className="space-y-2">
+    //       {isRunning && (
+    //         <motion.div
+    //           initial={{ opacity: 0, y: 5 }}
+    //           animate={{ opacity: 1, y: 0 }}
+    //           className="space-y-2"
+    //         >
+    //           <div className="flex justify-between items-center text-xs text-muted-foreground">
+    //             <span>{liveMessage ?? "Running agent..."}</span>
+    //             <span>{progress}%</span>
+    //           </div>
+    //           <Progress value={progress} className="h-1.5" />
+    //           <Button
+    //             variant="ghost"
+    //             size="sm"
+    //             className="w-full h-7 text-xs"
+    //             onClick={cancelRun}
+    //           >
+    //             <XCircle className="mr-1 h-3 w-3" />
+    //             Cancel
+    //           </Button>
+    //         </motion.div>
+    //       )}
+
+    //       {!isRunning && result && (
+    //         <motion.div
+    //           initial={{ opacity: 0 }}
+    //           animate={{ opacity: 1 }}
+    //           className="flex items-center justify-between"
+    //         >
+    //           {result.success ? (
+    //             <div className="flex flex-col items-center text-xs">
+    //               <div className="flex flex-row items-center">
+    //                 <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
+    //                 <span>Found {result.resultsCount} results</span>
+    //               </div>
+    //               <div className="flex flex-row justify-between items-center">
+    //                 <Button
+    //                   variant="ghost"
+    //                   size="sm"
+    //                   className="h-7 text-xs"
+    //                   onClick={() => router.push("/results")}
+    //                 >
+    //                   View Results
+    //                 </Button>
+    //                 <Button
+    //                   variant="ghost"
+    //                   size="sm"
+    //                   className="h-7 text-xs"
+    //                   onClick={runAgent}
+    //                   disabled={!manualRun?.canRun}
+    //                 >
+    //                   Run Again
+    //                 </Button>
+    //               </div>
+    //             </div>
+    //           ) : (
+    //             <>
+    //               <div className="flex items-center text-xs">
+    //                 <AlertCircle className="mr-1 h-3 w-3 text-red-500" />
+    //                 <span className="truncate max-w-[120px]">
+    //                   {result.error || "Failed to run"}
+    //                 </span>
+    //               </div>
+    //               <Button
+    //                 variant="ghost"
+    //                 size="sm"
+    //                 className="h-7 text-xs"
+    //                 onClick={runAgent}
+    //                 disabled={!manualRun?.canRun}
+    //               >
+    //                 Retry
+    //               </Button>
+    //             </>
+    //           )}
+    //         </motion.div>
+    //       )}
+    //     </div>
+    //   )}
+    // </div>
   );
 }

@@ -15,7 +15,10 @@ export async function getUserPlan() {
     return "";
   }
 
-  const user = await db.select().from(users).where(eq(users.id,session.user.id))
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.user.id));
 
   const planTier = user[0].subscriptionTier;
 
@@ -28,7 +31,6 @@ export async function createUsageLimitForUser(
   userId: string,
   plan: keyof typeof planLimits
 ) {
-
   const existingUsageLimit = await db
     .select()
     .from(usageLimits)
@@ -100,33 +102,47 @@ export async function canCreateAgent(userId: string): Promise<boolean> {
     .from(usageLimits)
     .where(eq(usageLimits.userId, userId));
 
-  const isVerified = await db.select().from(users).where(and(eq(users.id,userId),isNotNull(users.emailVerified))).limit(1)
+  const isVerified = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, userId), isNotNull(users.emailVerified)))
+    .limit(1);
 
-  if (isVerified.length>0) {
+  if (isVerified.length > 0) {
     return usage.agentCreationCount < planResult.plan.agent;
   }
-  return false
-  
+  return false;
 }
 
 export async function isEmailVerified(userId: string): Promise<boolean> {
-  
-  const isVerified = await db.select().from(users).where(and(eq(users.id,userId),isNotNull(users.emailVerified))).limit(1)
+  const isVerified = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, userId), isNotNull(users.emailVerified)))
+    .limit(1);
 
-  if (isVerified.length>0) {
-    return true
+  if (isVerified.length > 0) {
+    return true;
   }
-  return false
-  
+  return false;
 }
 
 export async function incrementAgentCount(userId: string) {
   await resetUsageIfNeeded(userId);
 
+  // Fetch the current usage record
+  const [record] = await db
+    .select({ agentCreationCount: usageLimits.agentCreationCount })
+    .from(usageLimits)
+    .where(eq(usageLimits.userId, userId));
+
+  const currentCount = Number(record?.agentCreationCount ?? 0);
+
+  // Update with incremented value
   await db
     .update(usageLimits)
     .set({
-      agentCreationCount: sql`${usageLimits.agentCreationCount} + 1`,
+      agentCreationCount: currentCount + 1,
     })
     .where(eq(usageLimits.userId, userId));
 }
@@ -161,7 +177,7 @@ export async function incrementKeywordCount(userId: string, count: number) {
 }
 
 /**
- * Checks if a user can manually run agent based on subscription tier
+ * Checks if a user can manually run agent based on subscription tier - Currently not in use
  */
 export async function canRunManually(userId: string): Promise<boolean> {
   await resetUsageIfNeeded(userId);
@@ -178,12 +194,20 @@ export async function canRunManually(userId: string): Promise<boolean> {
   return usage.manualRunCount < planResult.plan.manualRuns.runCount;
 }
 
-export async function incrementManualRun(userId: string, count: number) {
+export async function incrementManualRun(userId: string) {
   await resetUsageIfNeeded(userId);
+
+  // Fetch the current usage record
+  const [record] = await db
+    .select({ agentManualRunCount: usageLimits.manualRunCount })
+    .from(usageLimits)
+    .where(eq(usageLimits.userId, userId));
+
+  const currentCount = Number(record?.agentManualRunCount ?? 0);
 
   await db
     .update(usageLimits)
-    .set({ manualRunCount: sql`${usageLimits.manualRunCount} + ${count}` })
+    .set({ manualRunCount: currentCount + 1})
     .where(eq(usageLimits.userId, userId));
 }
 

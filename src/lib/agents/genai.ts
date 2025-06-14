@@ -25,11 +25,12 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 export function smoothRelevance(similarity: number): number {
-  // Center sigmoid around 0.65 to keep 80+ relevance scores stricter
-  let smoothed = 100 / (1 + Math.exp(-10 * (similarity - 0.6)));
+  let smoothed = 100 / (1 + Math.exp(-5 * (similarity - 0.35)));
 
-  // Optional mild adjustment for borderline cases
-  if (similarity > 0.5 && similarity <= 0.7) {
+  // Boost mid-high relevance
+  if (similarity > 0.5 && similarity < 0.7) {
+    smoothed += 5;
+  } else if (similarity >= 0.7) {
     smoothed += 5;
   }
 

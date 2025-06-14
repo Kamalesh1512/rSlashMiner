@@ -597,7 +597,7 @@ export const planLimits = {
     keywords: 5,
     manualRuns: {
       runCount: 1,
-      interval: "weekly",
+      interval: "daily",
       type: "manual",
     },
     scheduledRuns: {

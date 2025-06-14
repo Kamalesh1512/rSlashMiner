@@ -132,7 +132,10 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
 
   const toggleScheduledStatus = (checked: boolean) => {
     setIsScheduled(checked);
-    setForm(prev => ({...prev,scheduleRuns: {...prev.scheduleRuns,enabled: checked}}))
+    setForm((prev) => ({
+      ...prev,
+      scheduleRuns: { ...prev.scheduleRuns, enabled: checked },
+    }));
   };
 
   const handleCancel = () => {
@@ -149,6 +152,7 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
           agentId: agent.id,
         }),
       });
+      console.log("Delete API Response", response);
       if (response.ok) {
         const updatedAgents = agents.filter((res) => res.id !== agent.id);
         setAgents(updatedAgents);
@@ -177,41 +181,17 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
           <Button onClick={toggleEdit}>Edit Settings</Button>
         )}
       </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Basic Configuration */}
+      <div className="w-full">
         <Card>
           <CardHeader>
-            <CardTitle>Basic Configuration</CardTitle>
-            <CardDescription>General settings for this agent</CardDescription>
+            <CardTitle>Agent Configuration</CardTitle>
+            <CardDescription>
+              Manage Agent settings
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Relevance Threshold</Label>
-              {isEditing ? (
-                <>
-                  <Slider
-                    value={[form.relevanceThreshold || 0]}
-                    min={0}
-                    max={100}
-                    step={5}
-                    onValueChange={(e) =>
-                      handleChange("relevanceThreshold", Number(e[0]))
-                    }
-                  />
-                  <span className="text-sm">{form.relevanceThreshold}%</span>
-                </>
-              ) : (
-                <>
-                  <p>{form.relevanceThreshold}%</p>
-                  <p className="text-sm text-muted-foreground">
-                    Only notify you when the AI determines the content is at
-                    least this relevant to your business.
-                  </p>
-                </>
-              )}
-            </div>
 
+          <CardContent className="space-y-6">
+            {/* Agent Status */}
             <div className="flex items-center justify-between">
               <Label>Agent Status</Label>
               <div className="flex items-center gap-2">
@@ -226,18 +206,8 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification Settings</CardTitle>
-            <CardDescription>
-              How you'll be notified about new matches
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            {/* Notification Settings */}
             <div>
               <Label>Notification Method</Label>
               {isEditing ? (
@@ -268,7 +238,7 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
 
               {(form.notificationMethod === "slack" ||
                 form.notificationMethod === "both") && (
-                <div className="mt-3 flex flex-col items-start justify-between gap-2">
+                <div className="mt-3 flex flex-col items-start gap-2">
                   <Label htmlFor="SlackNotification">Slack Notification</Label>
                   <SlackConnect />
                   <p className="text-sm text-muted-foreground">
@@ -277,132 +247,114 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Schedule Settings */}
+            {/* Schedule Settings */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Scheduled Run</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="schedule-status">
+                    {isScheduled ? "On" : "Off"}
+                  </Label>
+                  <Switch
+                    id="schedule-status"
+                    checked={isScheduled}
+                    onCheckedChange={toggleScheduledStatus}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Schedule Settings
-              <div className="flex items-center gap-2">
-                <Label htmlFor="schedule-status">
-                  {isScheduled ? "On" : "Off"}
-                </Label>
-                <Switch
-                  id="schedule-status"
-                  checked={isScheduled}
-                  onCheckedChange={toggleScheduledStatus}
-                  disabled={!isEditing}
-                />
-              </div>
-            </CardTitle>
-            <CardDescription>
-              Configure when this agent should start running.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!scheduledRuns.enabled ? (
-              <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                Scheduling Agent Run is not available on your current plan.
-              </div>
-            ) : (
-              <>
-                {isScheduled ? (
-                  <>
-                    {" "}
-                    <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
-                      This agent is scheduled to run every{" "}
-                      <strong className="mr-1">{scheduledRuns.interval}</strong>
-                      based on your plan
-                    </div>
-                    <div>
-                      <Label htmlFor="scheduleTime">Start Time</Label>
-                      {isEditing ? (
-                        <Input
-                          id="scheduleTime"
-                          type="time"
-                          value={form.scheduleRuns.scheduleTime}
-                          onChange={(e) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              scheduleRuns: {
-                                ...prev.scheduleRuns,
-                                scheduleTime: e.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {form.scheduleRuns.scheduleTime}
-                        </p>
-                      )}
-                      <p className="text-sm text-muted-foreground mt-1">
-                        The agent will start at this time every{" "}
-                        {scheduledRuns.interval}.
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                    Scheduling Agent Run is Off.
+              {!scheduledRuns.enabled ? (
+                <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                  Scheduling Agent Run is not available on your current plan.
+                </div>
+              ) : isScheduled ? (
+                <>
+                  <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
+                    This agent is scheduled to run every{" "}
+                    <strong className="mr-1">{scheduledRuns.interval}</strong>{" "}
+                    based on your plan.
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="mt-2">
+                    <Label htmlFor="scheduleTime">Start Time</Label>
+                    {isEditing ? (
+                      <Input
+                        id="scheduleTime"
+                        type="time"
+                        value={form.scheduleRuns.scheduleTime}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            scheduleRuns: {
+                              ...prev.scheduleRuns,
+                              scheduleTime: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {form.scheduleRuns.scheduleTime}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-1">
+                      The agent will start at this time every{" "}
+                      {scheduledRuns.interval}.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
+                  Scheduling Agent Run is Off.
+                </div>
+              )}
+            </div>
 
-        {/* Danger Zone */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Danger Zone</CardTitle>
-            <CardDescription>
-              Destructive actions for this agent
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isFree ? (
-              <span className="text-sm text-muted-foreground">
-                Free Tier Do not have option to delete agent
-              </span>
-            ) : (
-              <></>
-            )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  disabled={isFree}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Agent
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    the agent "{agent.name}" and all of its monitoring history.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      handleDeleteAgent();
-                    }}
-                    className="bg-destructive text-destructive-foreground"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {/* Danger Zone */}
+            <div>
+              <Label className="text-destructive">Danger Zone</Label>
+              <div className="mt-2 space-y-2">
+                {isFree ? (
+                  <p className="text-sm text-muted-foreground">
+                    Free Tier does not allow agent deletion.
+                  </p>
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-auto"
+                        disabled={isFree}
+                      >
+                        <Trash2 className="mr-2 h-4 w-full lg:w-fit" />
+                        Delete Agent
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete the agent "{agent.name}" and results associated to it.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAgent}
+                          className="bg-destructive text-destructive-foreground"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

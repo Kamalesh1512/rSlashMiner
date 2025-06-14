@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { agents, usageLimits } from "@/lib/db/schema";
 
-
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -19,9 +18,15 @@ export async function POST(req: NextRequest) {
 
     await db.delete(agents).where(eq(agents.id, agentId));
 
-    await db.update(usageLimits).set({
-      agentCreationCount: Number(usageLimits.agentCreationCount) - 1
-    }).where(eq(usageLimits.userId,session.user.id))
+    const currentCount = Number(usageLimits.agentCreationCount);
+    const newCount = isNaN(currentCount) ? 0 : Math.max(0, currentCount - 1);
+
+    await db
+      .update(usageLimits)
+      .set({
+        agentCreationCount:newCount,
+      })
+      .where(eq(usageLimits.userId, session.user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -160,21 +160,12 @@ export const analyzeContent = tool(
       ]);
 
       const similarity = cosineSimilarity(contentEmbedding, businessEmbedding);
-      console.log("Similarity Found",similarity)
-
-      let relevanceScore = smoothRelevance(similarity); // sigmoid-like smoothness
-
-      // Adjust based on threshold rules
-      if (similarity >= 0.85) relevanceScore = Math.max(relevanceScore, 90);
-      else if (similarity >= 0.75)
-        relevanceScore = Math.max(relevanceScore, 70);
-      else if (similarity >= 0.5) relevanceScore = Math.max(relevanceScore, 40);
-      else if (similarity >= 0.3) relevanceScore = Math.max(relevanceScore, 10);
-      else relevanceScore = 0;
-
+      const relevanceScore = smoothRelevance(similarity); // sigmoid-like smoothness
+      
       // const sentimentScore = await analyzeSentiment(content); // GPT call
 
       return JSON.stringify({
+        similarity,
         relevanceScore,
         sentimentScore: 0,
       });

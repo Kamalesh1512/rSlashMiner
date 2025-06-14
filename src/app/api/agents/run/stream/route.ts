@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { runAgent } from "@/lib/agents/redditAgent";
 import { sendRunNotification } from "@/lib/notifications";
+import { incrementManualRun } from "@/lib/payments/check-subscriptions/subscriptions";
 
 // Helper function to create a readable stream
 function createStream() {
@@ -209,7 +210,7 @@ async function processAgentRun(
               status: isSkipped ? "skipped" : "completed", // ✅ Mark as completed if skipped
               message: `Tracking Keyword ${keyword}`,
               details: message,
-              progress: progressBase + (progressEnd - progressBase) * 0.5,
+              progress: Math.round(progressBase + (progressEnd - progressBase) * 0.5),
             });
           },
         });
@@ -242,6 +243,7 @@ async function processAgentRun(
             progress: progressEnd,
           });
         }
+        
       } catch (error) {
         console.error(`Error processing keyword ${keyword}:`, error);
 
@@ -281,6 +283,8 @@ async function processAgentRun(
         runCount: agent[0].runCount + 1,
       })
       .where(eq(agents.id, agentId));
+
+    await incrementManualRun(userId);
 
     // Update stats step to completed
     sendEvent({
