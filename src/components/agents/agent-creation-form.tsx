@@ -305,14 +305,12 @@ export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
           {
             role: "assistant",
             content: `Great! I've analyzed your request and created an agent to monitor discussions about **${chatInput}**. Here's what I've set up:
-
 **Suggested Keywords:**
 ${suggestedKeywordList
   .slice(0, 5)
   .map((k) => `- ${k}`)
   .join("\n")}
 ${suggestedKeywordList.length > 5 ? "- ..." : ""}
-
 Please select from the suggestions above in the next step. Click **Next** to continue!
 `,
           },

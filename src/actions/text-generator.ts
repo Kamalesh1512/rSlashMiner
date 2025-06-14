@@ -178,8 +178,12 @@ export async function validateBusinessInput(input: string) {
     messages: [
       {
         role: "system",
-        content:
-          "Determine whether the user's input is a business idea, a problem statement, or a request for help with a business concept. Respond with 'Yes' if it is. Otherwise, say 'No'.",
+        content:`You're a business idea validator. Determine whether the user's input is a valid business idea or a business description. 
+A valid input typically includes:
+- What the product or service does
+- Who it is for (the target audience)
+- What makes it unique or different
+Respond with 'Yes' if the input clearly describes a business, product, or service, whether it's a new idea or an existing one. Respond with 'No' if the input is too vague, off-topic, or doesn't describe any product, service, or business.`,
       },
       {
         role: "user",
