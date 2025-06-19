@@ -43,7 +43,7 @@ export interface SubscriptionPlan {
       features: [
         "2 AI Agents",
         "Track up to 10 Keywords",
-        "Daily 3 Runs Per Agent",
+        "Up to 3 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
       ],
       dodoPlanId: ["pdt_IrnUHW4QWCZRDDrKyJeeA","pdt_ufj9873AJ8ZKmmnr8KOze"],
@@ -60,7 +60,7 @@ export interface SubscriptionPlan {
       features: [
         "2 AI Agents",
         "Track up to 10 Keywords",
-        "Daily 3 Runs Per Agent",
+        "Up to 3 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
       ],
       dodoPlanId: ["pdt_mPYyCxbiyAVuXrnYBJg0A","pdt_uDbl0jjVTAku6JPWovLbP"],
@@ -77,7 +77,7 @@ export interface SubscriptionPlan {
       features: [
         "5 AI Agents",
         "Track up to 25 Keywords",
-        "Daily 5 Runs Per Agent",
+        "Up to 5 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
@@ -94,7 +94,7 @@ export interface SubscriptionPlan {
       features: [
         "5 AI Agents",
         "Track up to 25 Keywords",
-        "Daily 5 Runs Per Agent",
+        "Up to 5 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
@@ -111,7 +111,7 @@ export interface SubscriptionPlan {
       features: [
         "Unlimited AI Agents",
         "Track up to 100 Keywords",
-        "Daily 12 Runs Per Agent",
+        "Up to 12 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],
@@ -128,7 +128,7 @@ export interface SubscriptionPlan {
       features: [
         "Unlimited AI Agents",
         "Track up to 100 Keywords",
-        "Daily 12 Runs Per Agent",
+        "Up to 12 Daily Auto-Runs (Scheduled) per Agent",
         "Email & Slack Alerts",
         "Auto-Reply System (Coming Soon)",
       ],

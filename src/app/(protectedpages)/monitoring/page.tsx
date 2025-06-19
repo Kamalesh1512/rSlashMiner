@@ -43,22 +43,17 @@ import { formatDistanceToNow } from "date-fns";
 import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
 import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
+import { Darumadrop_One } from "next/font/google";
 
 interface ScheduledRun {
   id: string;
   agentId: string;
   scheduledFor: string;
   status: "pending" | "processing" | "completed" | "failed";
+  createdAt: string;
   startedAt?: string;
   completedAt?: string;
-  result?: {
-    success: boolean;
-    resultsCount?: number;
-    processedKeywords?: number;
-    summary?: string;
-    error?: string;
-  };
-  createdAt: string;
+  result?: string;
 }
 
 // Animation variants for Framer Motion
@@ -247,7 +242,8 @@ export default function MonitoringPage() {
                 "Unlock more power — Upgrade your plan to go beyond limits!!"
               </h3>
               <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                Monitoring Scheduled Agent Run is not available on your current plan.
+                Monitoring Scheduled Agent Run is not available on your current
+                plan.
               </div>
               <Button size="sm" asChild>
                 <Link href="/settings">Upgrade Plan</Link>
@@ -593,17 +589,17 @@ export default function MonitoringPage() {
                         <div className="col-span-3">
                           {run.status === "completed" && run.result ? (
                             <div>
-                              <div className="text-sm">
+                              {/* <div className="text-sm">
                                 {run.result.resultsCount} results from{" "}
                                 {run.result.processedKeywords} keywords
-                              </div>
+                              </div> */}
                               <div className="text-xs text-muted-foreground line-clamp-1">
-                                {run.result.summary}
+                                {run.result}
                               </div>
                             </div>
                           ) : run.status === "failed" && run.result ? (
                             <div className="text-xs text-red-500 line-clamp-1">
-                              {run.result.error}
+                              {run.result}
                             </div>
                           ) : run.status === "processing" ? (
                             <div className="text-xs text-muted-foreground">

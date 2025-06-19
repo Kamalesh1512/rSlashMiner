@@ -13,11 +13,22 @@ export async function GET() {
     // get scheduled Runs
     const runs = await db.select().from(scheduledRuns);
 
-    if (runs.length == 0) {
+
+    const formattedRuns = runs.map((run) => ({
+      id: run.id,
+      agentId: run.agentId,
+      scheduledFor: run.scheduledFor.toISOString(),
+      status: run.status,
+      createdAt: run.createdAt.toISOString(),
+      startedAt: run.startedAt ? run.startedAt.toISOString() : undefined,
+      completedAt: run.completedAt ? run.completedAt.toISOString() : undefined,
+      result: run.result ? JSON.parse(run.result).summary : undefined,
+    }));
+        if (runs.length == 0 && formattedRuns.length==0 ) {
       return NextResponse.json({ runs: [] }, { status: 200 });
     }
 
-    return NextResponse.json({ runs: runs }, { status: 200 });
+    return NextResponse.json({ runs: formattedRuns }, { status: 200 });
   } catch (error) {
     console.error("Error fetching agents scheduled runs:", error);
     return NextResponse.json(

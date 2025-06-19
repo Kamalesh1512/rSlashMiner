@@ -208,7 +208,7 @@ async function processAgentRun(
               type: "step",
               id: `${stepId}-progress`,
               status: isSkipped ? "skipped" : "completed", // ✅ Mark as completed if skipped
-              message: `Tracking Keyword ${keyword}`,
+              message: `🤖 Crunching data for: ${keyword}`,
               details: message,
               progress: Math.round(progressBase + (progressEnd - progressBase) * 0.5),
             });

@@ -61,6 +61,7 @@ import {
 } from "@/lib/utils";
 import { AgentConfigTab } from "./_components/agent-config-tab";
 import RunAgent from "./_components/run-agent";
+import Image from "next/image";
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -418,12 +419,18 @@ export default function AgentDetailPage() {
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                            <Image
+                              src="/redditIcon.png" // or /reddit-icon.svg if you have it
+                              alt="Reddit"
+                              width={35}
+                              height={35}
+                              className="inline-block"
+                            />
                             <span>r/{result.subreddit}</span>
                             <span>•</span>
-                            {/* <span>
-                              {result.redditPostId ? "Post" : "Comment"}
+                            <span className="bg-primary-foreground text-muted-foreground rounded-xl px-2 py-0.5">
+                              {result.matchedKeywords}
                             </span>
-                            <span>•</span> */}
                           </div>
                           <h3 className="text-lg font-medium mb-2">
                             "{`${result.content.slice(0, 75)}...`}"

@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   password: text("password"),
   image: text("image"),
-  subscriptionTier: text("subscription_tier").default("free").notNull(), // free, pro, premium
+  subscriptionTier: text("subscription_tier").default("free").notNull(), // free, starter, growth
   subscriptionExpiresAt: timestamp("subscription_expires_at", { mode: "date" }),
   dodoCustomerId:text('dodo_customer_id'),
   dodoSubscriptionId:text('dodo_subscription_id'),

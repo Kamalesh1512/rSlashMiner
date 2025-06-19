@@ -33,6 +33,7 @@ import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Result = {
   id: string;
@@ -120,11 +121,10 @@ export default function ResultsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (result) =>
-          result.content.toLowerCase().includes(query)
-          // result.matchedKeywords.some((keyword) =>
-          //   keyword.toLowerCase().includes(query)
-          // )
+        (result) => result.content.toLowerCase().includes(query)
+        // result.matchedKeywords.some((keyword) =>
+        //   keyword.toLowerCase().includes(query)
+        // )
       );
     }
 
@@ -318,9 +318,18 @@ export default function ResultsPage() {
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                        <Image
+                          src="/redditIcon.png" // or /reddit-icon.svg if you have it
+                          alt="Reddit"
+                          width={35}
+                          height={35}
+                          className="inline-block"
+                        />
                         <span>r/{result.subreddit}</span>
                         <span>•</span>
-                        <span className="bg-primary-foreground text-muted-foreground rounded-xl p-1">{result.matchedKeywords}</span>
+                        <span className="bg-primary-foreground text-muted-foreground rounded-xl px-2 py-0.5">
+                          {result.matchedKeywords}
+                        </span>
                       </div>
 
                       <h3 className="text-lg font-medium mb-2">
@@ -418,8 +427,9 @@ export default function ResultsPage() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                           <span>r/{result.subreddit}</span>
                           <span>•</span>
-                          <span className="bg-primary-foreground text-muted-foreground rounded-xl p-1">{result.matchedKeywords}</span>
-
+                          <span className="bg-primary-foreground text-muted-foreground rounded-xl p-1">
+                            {result.matchedKeywords}
+                          </span>
                         </div>
 
                         <h3 className="text-lg font-medium mb-2">

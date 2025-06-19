@@ -299,7 +299,7 @@ export function AgentConfigTab({ agent, subscription }: AgentConfigTabProps) {
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground mt-1">
-                      The agent will start at this time every{" "}
+                      The agent auto-run will start at this time and repeats every{" "}
                       {scheduledRuns.interval}.
                     </p>
                   </div>

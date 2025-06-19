@@ -76,10 +76,12 @@ const SubscriptionPlansDisplay = () => {
                 plan={plan}
                 isCurrentPlan={
                   session?.user?.subscriptionTier ===
-                  (plan.id === "pro_yearly"
-                    ? "pro"
-                    : plan.id === "business_yearly"
-                    ? "premium"
+                  (plan.id === "starter_monthly"
+                    ? "starter"
+                    : plan.id === "growth_monthly"
+                    ? "growth"
+                    : plan.id === "enterprise_monthly"
+                    ? "enterprise"
                     : "free")
                 }
                 signedIn={status === "unauthenticated" ? false : true}

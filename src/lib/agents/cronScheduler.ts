@@ -1,6 +1,13 @@
-import {schedule, ScheduledTask} from "node-cron";
+import { schedule, ScheduledTask } from "node-cron";
 import { db } from "@/lib/db";
-import { agents, scheduledRuns, runHistory, keywords } from "@/lib/db/schema";
+import {
+  agents,
+  scheduledRuns,
+  runHistory,
+  keywords,
+  users,
+  monitoringResults,
+} from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { runAgent } from "@/lib/agents/redditAgent";
@@ -8,14 +15,16 @@ import { sendRunNotification } from "@/lib/notifications";
 
 // Initialize the scheduler
 let initialized = false;
-const scheduledTasks: Record<string,ScheduledTask> = {};
+const scheduledTasks: Record<string, ScheduledTask> = {};
 
 /**
  * Initialize the scheduler
  */
 export function initializeScheduler() {
-  if (initialized) return;
-
+  if (initialized) {
+    // console.log("⚠️ Already initialized, skipping setup.");
+    return;
+  }
   console.log("Initializing agent scheduler...");
 
   // Schedule job to check for agents that need to run every minute
@@ -44,47 +53,72 @@ export function initializeScheduler() {
  */
 async function scheduleAgentRuns() {
   try {
+    const now = new Date();
+
     // Get all active agents
     const activeAgents = await db
-      .select()
+      .select({
+        agent: agents,
+        user: users,
+      })
       .from(agents)
+      .leftJoin(users, eq(agents.userId, users.id))
       .where(eq(agents.isActive, true));
 
-    const now = new Date();
-    const currentMinute = now.getMinutes();
-    const currentHour = now.getHours();
-
-    for (const agent of activeAgents) {
-      const config = agent.configuration as any;
-
-      // Skip if agent doesn't have schedule configuration
+    for (const { agent, user } of activeAgents) {
+      const config = JSON.parse(agent.configuration) as any;
+      const userPlan = user?.subscriptionTier as
+        | "starter"
+        | "growth"
+        | "enterprise";
       if (!config.scheduleRuns || !config.scheduleRuns.enabled) {
+        console.log("⚠️ Scheduled runs not found skipping.");
         continue;
       }
 
-      let shouldRun = false;
+      // Get the plan interval in hours
+      const planIntervals: Record<string, number> = {
+        starter: 8,
+        growth: 5,
+        enterprise: 2,
+      };
+      const intervalHours = planIntervals[userPlan];
+      if (!intervalHours) continue;
 
-      // Parse the scheduleTime to get the start time (e.g., "9:00AM" => 9:00)
-      const scheduleTimeParts = config.scheduleRuns.scheduleTime.split(':');
-      const scheduleStartHour = parseInt(scheduleTimeParts[0], 10);
-      const scheduleStartMinute = parseInt(scheduleTimeParts[1], 10);
+      // Parse schedule start time (format: "HH:mm")
+      const scheduleTimeStr = config.scheduleRuns.scheduleTime || "00:00";
+      const [startHour, startMinute] = scheduleTimeStr.split(":").map(Number);
+      // Step 2: Create a date object for today in IST
+      const istNow = new Date(now);
+      istNow.setHours(startHour, startMinute, 0, 0);
 
-      // Check if the current time is after or equal to the scheduled time
-      if (currentHour > scheduleStartHour || (currentHour === scheduleStartHour && currentMinute >= scheduleStartMinute)) {
-        // Determine if the agent should run based on the interval
-        if (config.scheduleRuns.interval === "15-min") {
-          shouldRun = currentMinute % 15 === 0;
-        } else if (config.scheduleRuns.interval === "30-min") {
-          shouldRun = currentMinute % 30 === 0;
-        } else if (config.scheduleRuns.interval === "Hour") {
-          shouldRun = currentMinute === 0;
-        } else if (config.scheduleRuns.interval === "every 2 hrs") {
-          shouldRun = currentMinute === 0 && currentHour % 2 === 0;
-        }
+      // Step 3: Subtract 5 hours 30 minutes to convert IST to UTC
+      const utcTimeMs = istNow.getTime() - 5.5 * 60 * 60 * 1000;
+      const scheduleStartUTC = new Date(utcTimeMs);
+
+      // If scheduleStart is in the future (today), shift it to the past
+      if (scheduleStartUTC > now) {
+        scheduleStartUTC.setDate(scheduleStartUTC.getDate() - 1);
       }
 
+      const msSinceStart = now.getTime() - scheduleStartUTC.getTime();
+      const hoursSinceStart = msSinceStart / (1000 * 60 * 60);
+
+      const shouldRun =
+        now.getMinutes() === startMinute &&
+        Math.abs(hoursSinceStart % intervalHours) < 0.01;
+
+      console.log("Status", {
+        now: now.toISOString(),
+        scheduleStart: scheduleStartUTC.toISOString(),
+        msSinceStart,
+        hoursSinceStart,
+        remainder: hoursSinceStart % intervalHours,
+        runStatus: shouldRun,
+      });
+
       if (shouldRun) {
-        // Check if there's already a pending run for this agent
+        // Check if a run already scheduled in this minute
         const existingRun = await db
           .select()
           .from(scheduledRuns)
@@ -94,18 +128,17 @@ async function scheduleAgentRuns() {
               eq(scheduledRuns.status, "pending"),
               gte(
                 scheduledRuns.scheduledFor,
-                new Date(now.setMinutes(currentMinute, 0, 0))
-              ),
+                new Date(now.getTime() - 1000 * 60)
+              ), // 1 minute buffer
               lte(
                 scheduledRuns.scheduledFor,
-                new Date(now.setMinutes(currentMinute, 59, 999))
+                new Date(now.getTime() + 1000 * 60)
               )
             )
           )
           .limit(1);
 
         if (existingRun.length === 0) {
-          // Schedule a new run
           await db.insert(scheduledRuns).values({
             id: createId(),
             agentId: agent.id,
@@ -114,7 +147,11 @@ async function scheduleAgentRuns() {
             createdAt: new Date(),
           });
 
-          console.log(`Scheduled run for agent ${agent.name} (${agent.id})`);
+          console.log(
+            `✅ Scheduled run for agent ${agent.name} (${
+              agent.id
+            }) at ${now.toISOString()}`
+          );
         }
       }
     }
@@ -122,7 +159,6 @@ async function scheduleAgentRuns() {
     console.error("Error scheduling agent runs:", error);
   }
 }
-
 
 /**
  * Process pending scheduled runs
@@ -187,11 +223,12 @@ async function processPendingRuns() {
 
         // Track results
         const results = [];
-        const storedResultIds = [];
+        let relevantResultCount = 0;
+        const totalkeywords = keywordList.length;
         const steps = [];
         const relevanceThreshold = JSON.parse(
           agent[0].configuration
-        ).relevanceThreshold
+        ).relevanceThreshold;
 
         // Process each keyword
         for (const keyword of keywordList) {
@@ -216,13 +253,14 @@ async function processPendingRuns() {
               },
             });
 
-            if (result.storedResult && result.storedResult.success) {
+            if (result.storedResult.length > 0) {
               results.push({
                 keyword,
                 resultId: result.storedResult.resultId,
                 success: true,
               });
-              storedResultIds.push(...result.storedResult.resultId);
+              relevantResultCount =
+                relevantResultCount + result.storedResult.length;
             }
 
             steps.push({
@@ -245,27 +283,6 @@ async function processPendingRuns() {
           }
         }
 
-        // Generate summary
-        let summary = "";
-        if (storedResultIds.length > 0) {
-          summary = `Found ${storedResultIds.length} relevant results across ${keywordList.length} keywords.`;
-        } else {
-          summary = `No relevant results found across ${keywordList.length} keywords.`;
-        }
-
-        // Update run history
-        await db
-          .update(runHistory)
-          .set({
-            completedAt: new Date(),
-            success: true,
-            resultsCount: storedResultIds.length,
-            processedKeywords: keywordList.length,
-            summary,
-            steps: JSON.stringify(steps),
-          })
-          .where(eq(runHistory.id, runHistoryId));
-
         // Update agent stats
         await db
           .update(agents)
@@ -275,6 +292,49 @@ async function processPendingRuns() {
           })
           .where(eq(agents.id, run.agentId));
 
+        let summary = "";
+        let recentResults: any = [];
+        if (relevantResultCount > 0) {
+          // Get the stored results from the database
+          recentResults = await db
+            .select()
+            .from(monitoringResults)
+            .where(eq(monitoringResults.agentId, run.agentId))
+            .orderBy(monitoringResults.createdAt);
+
+          summary = `Found results from ${relevantResultCount} keywords`;
+
+          console.log("Results Found:", relevantResultCount);
+
+          if (recentResults.length > 0) {
+            summary += `Most recent results include content from r/${recentResults[0].subreddit} with ${recentResults[0].relevanceScore}% relevance.`;
+
+            // Send notification
+            await sendRunNotification({
+              agentId: run.agentId,
+              success: true,
+              message: summary,
+              resultsCount: relevantResultCount,
+              processedKeywords: keywordList.length,
+            });
+          }
+        } else {
+          summary = `No New relevant results found across ${keywordList.length} keywords.`;
+        }
+
+        // Update run history
+        // await db
+        //   .update(runHistory)
+        //   .set({
+        //     completedAt: new Date(),
+        //     success: true,
+        //     resultsCount: storedResultIds.length,
+        //     processedKeywords: keywordList.length,
+        //     summary,
+        //     steps: JSON.stringify(steps),
+        //   })
+        //   .where(eq(runHistory.id, runHistoryId));
+
         // Mark scheduled run as completed
         await db
           .update(scheduledRuns)
@@ -283,21 +343,12 @@ async function processPendingRuns() {
             completedAt: new Date(),
             result: JSON.stringify({
               success: true,
-              resultsCount: storedResultIds.length,
+              resultsCount: relevantResultCount,
               processedKeywords: keywordList.length,
               summary,
             }),
           })
           .where(eq(scheduledRuns.id, run.id));
-
-        // Send notification
-        await sendRunNotification({
-          agentId: run.agentId,
-          success: true,
-          message: summary,
-          resultsCount: storedResultIds.length,
-          processedKeywords: keywordList.length,
-        });
       } catch (error) {
         console.error(`Error processing scheduled run ${run.id}:`, error);
 

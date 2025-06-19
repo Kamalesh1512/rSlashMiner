@@ -619,7 +619,7 @@ export const planLimits = {
     },
     scheduledRuns: {
       enabled: true,
-      interval: "Hour",
+      interval: "8 Hour",
       type: "scheduled",
     },
     alerts: ["email", "slack"],
@@ -636,7 +636,7 @@ export const planLimits = {
     },
     scheduledRuns: {
       enabled: true,
-      interval: "30 mins",
+      interval: "5 Hour",
       type: "scheduled",
     },
     alerts: ["email", "slack"],
@@ -653,7 +653,7 @@ export const planLimits = {
     },
     scheduledRuns: {
       enabled: true,
-      interval: "15 mins",
+      interval: "2 Hour",
       type: "scheduled",
     },
     alerts: ["email", "slack"],
