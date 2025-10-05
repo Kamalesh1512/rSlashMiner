@@ -8,7 +8,6 @@ import BackgroundGradient from "./bg-gradient";
 import Link from "next/link";
 import Slideshow from "./slide-show";
 import { useRouter } from "next/navigation";
-import { WaitlistForm } from "@/components/global/waitlist/waitlist-form";
 import LaunchBanner from "./launch-banner";
 
 const staggerContainer = {

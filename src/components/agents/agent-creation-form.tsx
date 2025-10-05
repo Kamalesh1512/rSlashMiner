@@ -1,9 +1,7 @@
+// Agent creation front end - client side
 "use client";
-
 import React from "react";
-
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
@@ -14,21 +12,25 @@ import {
   Check,
   Send,
   Bot,
+  Globe,
+  MessageSquare,
+  Users,
+  Briefcase,
+  Hash,
+  Settings,
+  Bell,
+  ChevronUp,
+  ChevronDown,
+  AlertCircle,
+  Info,
+  ExternalLink,
+  Save,
+  BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -37,955 +39,1058 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import ChatMessage from "../chat/chat-messages";
-import { Message } from "@/lib/constants/types";
 import {
-  generateKeywords,
-  suggestSubreddits,
-  validateBusinessInput,
-} from "@/actions/text-generator";
-import { useFeedback } from "@/hooks/use-feedback";
-import { useKeywordLimit } from "@/hooks/usage-limits/use-keyword-limit";
-import { useAllowedNotifications } from "@/hooks/usage-limits/use-allowed-notifications";
-import { useScheduledRuns } from "@/hooks/usage-limits/use-scheduledruns";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
+import { Agent, planLimits } from "@/lib/constants/types";
+import Image from "next/image";
 import { SlackConnect } from "../slack/slack-connect";
 
-interface AgentCreationFormProps {
+interface AgentFormProps {
   userId: string;
+  mode: "create" | "edit";
+  agent?: Agent; // Required when mode is 'edit'
+  onClose?: () => void;
+  onSuccess?: (agentId: string) => void;
 }
 
-type FormStep = "describe" | "refine" | "configure" | "review";
+// Platform configuration interfaces
+interface PlatformConfig {
+  reddit?: {
+    subreddits: string[];
+    searchPosts: boolean;
+    searchComments: boolean;
+    includeNSFW: boolean;
+    minScore: number;
+  };
+  x?: {
+    searchTweets: boolean;
+    searchReplies: boolean;
+    minEngagement: number;
+  };
+  linkedin?: {
+    searchPosts: boolean;
+    searchArticles: boolean;
+    companies: string[];
+  };
+  bluesky?: {
+    searchPosts: boolean;
+    searchReplies: boolean;
+  };
+}
 
 interface FormData {
   name: string;
-  description: string;
-  subreddits: string[];
-  suggestedSubreddits: string[];
   keywords: string[];
-  suggestedKeywords: string[];
-  initialSuggestedSubreddits: string[];
-  notificationMethod: "email" | "slack" | "both";
-  notificationFrequency: "realtime" | "hourly" | "daily" | "weekly";
-  relevanceThreshold: number;
-  whatsappNumber: string;
-  scheduleType: "always" | "specific";
-  scheduleDays: {
-    monday: boolean;
-    tuesday: boolean;
-    wednesday: boolean;
-    thursday: boolean;
-    friday: boolean;
-    saturday: boolean;
-    sunday: boolean;
+  excludedKeywords: string[];
+  platforms: {
+    reddit: boolean;
+    bluesky: boolean;
+    linkedin: boolean;
+    x: boolean;
+    hackernews: boolean;
   };
-  scheduleTime: string;
+  redditSettings: {
+    includedSubreddits: string[];
+    excludedSubreddits: string[];
+    searchPosts: boolean;
+    searchComments: boolean;
+    includeNSFW: boolean;
+  };
+  notificationFrequency: string;
+  notificationsEnabled?: boolean;
+  notificationChannels?: {
+    email: boolean;
+    slack: boolean;
+  };
+  slackConnected?: boolean;
+  color: string;
 }
 
-export default function AgentCreationForm({ userId }: AgentCreationFormProps) {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<FormStep>("describe");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [newSubreddit, setNewSubreddit] = useState("");
-  const [newKeyword, setNewKeyword] = useState("");
-  const [chatInput, setChatInput] = useState("");
-  const { triggerAgentCreatedFeedback } = useFeedback();
-  const [chatMessages, setChatMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: `👋 Hi there! Let's get started.Tell me about your business idea in 1-2 lines. Try to include:
-                    - What your product or service does
-                    - Who it's for
-                    - What's unique about it
-                    **Example:** Notion — An all-in-one workspace to write, plan, collaborate, and get organized. Millions use it for notes, docs, wikis, and project management.
-                    Go ahead and start typing👇`,
-    },
-  ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+// Platform options with icons and descriptions
+const PLATFORM_OPTIONS = [
+  {
+    id: "reddit",
+    name: "Reddit",
+    logo: "/platform_logos/redditIcon.png",
+    description: "Monitor subreddits for discussions and questions",
+    color: "bg-red-50 border-red-200 text-red-800",
+  },
+  {
+    id: "x",
+    name: "Twitter/X",
+    logo: "/platform_logos/twitter.png",
+    description: "Track tweets and conversations",
+    color: "bg-blue-50 border-blue-200 text-blue-800",
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    logo: "/platform_logos/linkedin.png",
+    description: "Find professional discussions and opportunities",
+    color: "bg-indigo-50 border-indigo-200 text-indigo-800",
+  },
+  {
+    id: "bluesky",
+    name: "Bluesky",
+    logo: "/platform_logos/BlueskyIcon.png",
+    description: "Monitor emerging social conversations",
+    color: "bg-sky-50 border-sky-200 text-sky-800",
+  },
+];
 
-  const [formData, setFormData] = useState<FormData>({
+const COLOR_OPTIONS = [
+  { name: "Mystic Amethyst", value: "purple" },
+  { name: "Deep Sea Horizon", value: "blue" },
+  { name: "Emerald Grove", value: "green" },
+  { name: "Solar Ember", value: "orange" },
+  { name: "Crimson Blaze", value: "red" },
+  { name: "Lunar Frost", value: "grey" },
+  { name: "Aurora Glow", value: "teal" },
+  { name: "Neon Pulse", value: "pink" },
+  { name: "Celestial Gold", value: "amber" },
+];
+
+// Helper function to convert platforms array to platforms object
+const platformsArrayToObject = (platformsArray: string[]) => {
+  return {
+    reddit: platformsArray.includes("reddit"),
+    bluesky: platformsArray.includes("bluesky"),
+    linkedin: platformsArray.includes("linkedin"),
+    x: platformsArray.includes("x"),
+    hackernews: platformsArray.includes("hackernews"),
+  };
+};
+
+// Helper function to get initial form data
+const getInitialFormData = (
+  mode: "create" | "edit",
+  agent?: Agent
+): FormData => {
+  if (mode === "edit" && agent) {
+    return {
+      name: agent.name,
+      keywords: agent.keywords,
+      excludedKeywords: agent.excludedKeywords || [],
+      platforms: platformsArrayToObject(agent.platforms),
+      redditSettings: {
+        includedSubreddits:
+          agent.platformConfigs?.reddit?.config?.subreddits || [],
+        excludedSubreddits:
+          agent.platformConfigs?.reddit?.config?.excludedSubreddits || [],
+        searchPosts: agent.platformConfigs?.reddit?.config?.searchPosts ?? true,
+        searchComments:
+          agent.platformConfigs?.reddit?.config?.searchComments ?? true,
+        includeNSFW:
+          agent.platformConfigs?.reddit?.config?.includeNSFW ?? false,
+      },
+      // Notifications
+      notificationsEnabled: agent.notificationsEnabled ?? true,
+      notificationChannels: {
+        email: agent.notificationChannels?.email ?? true,
+        slack: agent.notificationChannels?.slack ?? false,
+      },
+      slackConnected: false,
+      notificationFrequency: agent.notificationFrequency ?? "daily",
+      color: agent.color || '',
+    };
+  }
+
+  // Default form data for create mode
+  return {
     name: "",
-    description: "",
-    subreddits: [],
-    suggestedSubreddits: [],
-    initialSuggestedSubreddits: [],
     keywords: [],
-    suggestedKeywords: [],
-    notificationMethod: "email",
-    notificationFrequency: "daily",
-    relevanceThreshold: 65,
-    whatsappNumber: "",
-    scheduleType: "always",
-    scheduleDays: {
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: true,
-      sunday: true,
+    excludedKeywords: [],
+    platforms: {
+      reddit: false,
+      bluesky: false,
+      linkedin: false,
+      x: false,
+      hackernews: false,
     },
-    scheduleTime: "09:00",
+    redditSettings: {
+      includedSubreddits: [],
+      excludedSubreddits: [],
+      searchPosts: true,
+      searchComments: true,
+      includeNSFW: false,
+    },
+    notificationsEnabled: false,
+    notificationChannels: {
+      email: false,
+      slack: false,
+    },
+    slackConnected: false,
+    notificationFrequency: "daily",
+    color: "purple",
+  };
+};
+
+export default function AgentForm({
+  userId,
+  mode,
+  agent,
+  onClose,
+  onSuccess,
+}: AgentFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [userPlan, setUserPlan] = useState<any>(planLimits.free);
+  const [currentAgentCount, setCurrentAgentCount] = useState(0);
+  const [currentKeywordCount, setCurrentKeywordCount] = useState(0);
+  const [currentMonthlyLeadsUsed, setCurrentMonthlyLeadsUsed] = useState(0);
+  const [redditSettingsOpen, setRedditSettingsOpen] = useState(false);
+
+  const [planStatus, setPlanStatus] = useState<{
+    loading: boolean;
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  }>({ loading: true, valid: false, errors: [], warnings: [] });
+
+  const [formData, setFormData] = useState<FormData>(() =>
+    getInitialFormData(mode, agent)
+  );
+
+  // Validation for edit mode should exclude current agent from limits
+  const isEditMode = mode === "edit";
+  const currentAgentKeywordCount =
+    isEditMode && agent ? agent.keywords.length : 0;
+
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
+    async function runValidation() {
+      // map platforms object to string[]
+      const selectedPlatforms = Object.entries(formData.platforms)
+        .filter(([_, v]) => v)
+        .map(([k]) => k);
+
+      try {
+        const payload = {
+          name: formData.name ?? "",
+          keywords: Array.isArray(formData.keywords) ? formData.keywords : [],
+          platforms: Array.isArray(selectedPlatforms) ? selectedPlatforms : [],
+          notificationFrequency: formData.notificationFrequency ?? "daily",
+          isEdit: Boolean(isEditMode),
+          agentId: agent?.id ?? null,
+        };
+        const res = await fetch("/api/usage-limits/validate-agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        if (!mounted) return;
+        if (!res.ok) {
+          setPlanStatus({
+            loading: false,
+            valid: false,
+            errors: ["Validation failed"],
+            warnings: [],
+          });
+          return;
+        }
+        const data = await res.json();
+        setPlanStatus({
+          loading: false,
+          valid: !!data.isValid,
+          errors: data.errors || [],
+          warnings: data.warnings || [],
+        });
+      } catch (err) {
+        if (!mounted) return;
+        console.error(err);
+        setPlanStatus({
+          loading: false,
+          valid: false,
+          errors: ["Unable to validate plan. Try again."],
+          warnings: [],
+        });
+      }
+    }
+
+    // Debounce a little to avoid many calls when user types
+    const id = setTimeout(() => runValidation(), 350);
+    return () => {
+      mounted = false;
+      controller.abort();
+      clearTimeout(id);
+    };
+  }, [
+    formData.name,
+    formData.keywords,
+    JSON.stringify(formData.platforms),
+    formData.notificationFrequency,
+    isEditMode,
+    agent?.id,
+  ]);
+
+  const [tempInputs, setTempInputs] = useState({
+    keyword: "",
+    excludedKeyword: "",
+    includedAuthor: "",
+    excludedAuthor: "",
+    includedSubreddit: "",
+    excludedSubreddit: "",
   });
 
-  const { canAddMore, increment, decrement, remaining, loading, maxKeywords } =
-    useKeywordLimit();
+  const canCreateAgent = () => isEditMode || currentAgentCount < userPlan.agent;
+  const canAddKeyword = () => {
+    const maxKeywords = userPlan.keywords;
+    const currentUsed = isEditMode
+      ? formData.keywords.length
+      : formData.keywords.length;
+    return currentUsed < maxKeywords;
+  };
+  const hasMonthlyLeadsLeft = () =>
+    currentMonthlyLeadsUsed < userPlan.monthlyLeads;
 
-  const { availableAlerts, selectOptions } = useAllowedNotifications();
-  const { scheduledRuns } = useScheduledRuns();
+  const addItem = (type: keyof typeof tempInputs, arrayKey: keyof FormData) => {
+    const value = tempInputs[type].trim();
+    if (!value) return;
 
-  const [isScheduled, setIsScheduled] = useState(scheduledRuns.enabled);
+    if (type === "keyword" && !canAddKeyword()) {
+      toast.error("Keyword limit reached", {
+        description: `Your plan allows only ${userPlan.keywords} keywords per agent.`,
+      });
+      return;
+    }
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+    const currentArray = formData[arrayKey] as string[];
+    if (currentArray.includes(value)) {
+      toast.error("Already added", {
+        description: `"${value}" is already in the list.`,
+      });
+      return;
+    }
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [arrayKey]: [...currentArray, value],
+    }));
+
+    setTempInputs((prev) => ({
+      ...prev,
+      [type]: "",
+    }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const removeItem = (arrayKey: keyof FormData, item: string) => {
+    const currentArray = formData[arrayKey] as string[];
+    setFormData((prev) => ({
+      ...prev,
+      [arrayKey]: currentArray.filter((i) => i !== item),
+    }));
   };
 
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const handleScheduleDayChange = (
-    day: keyof FormData["scheduleDays"],
+  const handlePlatformChange = (
+    platform: keyof FormData["platforms"],
     checked: boolean
   ) => {
     setFormData((prev) => ({
       ...prev,
-      scheduleDays: {
-        ...prev.scheduleDays,
-        [day]: checked,
+      platforms: {
+        ...prev.platforms,
+        [platform]: checked,
       },
     }));
   };
 
-  const handleSliderChange = (value: number[]) => {
-    setFormData((prev) => ({ ...prev, relevanceThreshold: value[0] }));
-  };
-
-  const addKeyword = () => {
-    if (!newKeyword.trim()) return;
-
-    if (formData.keywords.includes(newKeyword.trim())) {
-      toast.error("Duplicate keyword", {
-        description: "This keyword is already in your list.",
-      });
-      return;
-    }
-
-    if (!canAddMore) {
-      toast.error("Limit reached", {
-        description: "You've reached the keyword tracking limit for your plan.",
-      });
-      return;
-    }
-
+  const handleRedditSettingChange = (
+    setting: keyof FormData["redditSettings"],
+    value: any
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      keywords: [...prev.keywords, newKeyword.trim()],
+      redditSettings: {
+        ...prev.redditSettings,
+        [setting]: value,
+      },
     }));
-    increment();
-    setNewKeyword("");
-  };
-
-  const removeKeyword = (keyword: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      keywords: prev.keywords.filter((k) => k !== keyword),
-      suggestedKeywords: [...prev.suggestedKeywords, keyword],
-    }));
-    decrement();
-  };
-
-  const addSuggestedKeyword = (keyword: string) => {
-    if (formData.keywords.includes(keyword)) {
-      toast.error("Duplicate keyword", {
-        description: "This keyword is already in your list.",
-      });
-      return;
-    }
-
-    if (!canAddMore) {
-      toast.error("Limit reached", {
-        description: "You've reached the keyword tracking limit for your plan.",
-      });
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      keywords: [...prev.keywords, keyword],
-      suggestedKeywords: prev.suggestedKeywords.filter((k) => k !== keyword),
-    }));
-    increment();
-  };
-
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!chatInput.trim()) return;
-
-    // Add user message to chat
-    setChatMessages((prev) => [...prev, { role: "user", content: chatInput }]);
-
-    // Clear input
-    setChatInput("");
-
-    // Set loading state
-    setIsGenerating(true);
-
-    // Add thinking message
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: "Analyzing your request..." },
-    ]);
-
-    try {
-      //check the chat input is business related
-      const response = await validateBusinessInput(chatInput);
-
-      if (!response.isValid) {
-        setChatMessages((prev) => [
-          ...prev.slice(0, -1),
-          {
-            role: "assistant",
-            content:
-              "🤔 Hmm, it looks like your input doesn't seem like a business idea or problem. Try describing what you're building, the problem you're solving, or a business idea you're exploring.",
-          },
-        ]);
-        return;
-      }
-
-      const keywordsResponse = await generateKeywords(chatInput);
-
-      if (keywordsResponse.status !== 200 || !keywordsResponse.data) {
-        setChatMessages((prev) => [
-          ...prev.slice(0, -1), // remove "thinking..." message
-          {
-            role: "assistant",
-            content:
-              "⚠️ Oops! Something went wrong while analyzing your input. Please try again later.",
-          },
-        ]);
-        return;
-      }
-
-      const suggestedKeywordList = keywordsResponse.data?.suggestedKeywords;
-
-      // Update form data with generated values
-      setFormData((prev) => ({
-        ...prev,
-        description: chatInput,
-        suggestedKeywords: suggestedKeywordList,
-      }));
-
-      // Update chat with response
-      setChatMessages((prev) => {
-        // Remove the "thinking" message
-        const newMessages = prev.slice(0, -1);
-
-        // Add the response
-        return [
-          ...newMessages,
-          {
-            role: "assistant",
-            content: `Great! I've analyzed your request and created an agent to monitor discussions about **${chatInput}**. Here's what I've set up:
-**Suggested Keywords:**
-${suggestedKeywordList
-  .slice(0, 5)
-  .map((k) => `- ${k}`)
-  .join("\n")}
-${suggestedKeywordList.length > 5 ? "- ..." : ""}
-Please select from the suggestions above in the next step. Click **Next** to continue!
-`,
-          },
-        ];
-      });
-
-      // Move to next step after a short delay
-      setTimeout(() => {
-        setCurrentStep("refine");
-      }, 1000);
-    } catch (error) {
-      toast.error("Error", {
-        description: "Failed to process your request. Please try again.",
-      });
-
-      // Remove the "thinking" message
-      setChatMessages((prev) => prev.slice(0, -1));
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const nextStep = () => {
-    if (currentStep === "describe") {
-      if (chatMessages.length == 1) {
-        toast.error("No Input", {
-          description: "Please ask skoub AI for Keywords Suggestions.",
-        });
-      } else {
-        setCurrentStep("refine");
-      }
-    } else if (currentStep === "refine") {
-      // if (formData.subreddits.length === 0) {
-      //   toast.error("No subreddits added", {
-      //     description: "Please add at least one subreddit to monitor.",
-      //   });
-      //   return;
-      // }
-      if (formData.keywords.length === 0) {
-        toast.error("No keywords added", {
-          description: "Please add at least one keyword to track.",
-        });
-        return;
-      }
-      if (!formData.name.trim()) {
-        toast.error("Agent Name Required", {
-          description: "Please add Agent Name.",
-        });
-        return;
-      }
-      setCurrentStep("configure");
-    } else if (currentStep === "configure") {
-      if (
-        formData.notificationMethod === "slack" ||
-        formData.notificationMethod === "both"
-      ) {
-        // if (!formData.whatsappNumber) {
-        //   toast.error("WhatsApp number required", {
-        //     description: "Please provide a WhatsApp number for notifications.",
-        //   });
-        //   return;
-        // }
-      }
-
-      if (
-        formData.scheduleType === "specific" &&
-        !Object.values(formData.scheduleDays).some(Boolean)
-      ) {
-        toast.error("Schedule days required", {
-          description: "Please select at least one day for the agent to run.",
-        });
-        return;
-      }
-
-      setCurrentStep("review");
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep === "refine") setCurrentStep("describe");
-    else if (currentStep === "configure") setCurrentStep("refine");
-    else if (currentStep === "review") setCurrentStep("configure");
-  };
-
-  const toggleScheduledStatus = (checked: boolean) => {
-    setIsScheduled(checked);
   };
 
   const handleSubmit = async () => {
+    // Validation
+    if (!formData.name.trim()) {
+      toast.error("Agent name is required");
+      return;
+    }
+
+    if (formData.keywords.length === 0) {
+      toast.error("At least one keyword is required");
+      return;
+    }
+
+    if (!Object.values(formData.platforms).some(Boolean)) {
+      toast.error("At least one platform must be selected");
+      return;
+    }
+
+    if (!isEditMode && !canCreateAgent()) {
+      toast.error("Agent limit reached", {
+        description: `Your plan allows only ${userPlan.agent} agents.`,
+      });
+      return;
+    }
+
+    if (!hasMonthlyLeadsLeft()) {
+      toast.error("Monthly lead limit reached", {
+        description: "Upgrade your plan to track more leads this month.",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/agents", {
-        method: "POST",
+      // Prepare data for API
+      const selectedPlatforms = Object.entries(formData.platforms)
+        .filter(([_, enabled]) => enabled)
+        .map(([platform, _]) => platform);
+
+      const platformConfigs: any = {};
+
+      // Add Reddit config if selected
+      if (formData.platforms.reddit) {
+        platformConfigs.reddit = {
+          subreddits: formData.redditSettings.includedSubreddits,
+          excludedSubreddits: formData.redditSettings.excludedSubreddits,
+          searchPosts: formData.redditSettings.searchPosts,
+          searchComments: formData.redditSettings.searchComments,
+          includeNSFW: formData.redditSettings.includeNSFW,
+          minScore: 1,
+        };
+      }
+
+      const agentData = {
+        userId,
+        name: formData.name,
+        description: `Monitoring ${selectedPlatforms.join(
+          ", "
+        )} for keywords: ${formData.keywords.join(", ")}`,
+        platforms: selectedPlatforms,
+        keywords: formData.keywords,
+        excludedKeywords: formData.excludedKeywords,
+        platformConfigs,
+        notificationsEnabled: formData.notificationsEnabled, // new field
+        notificationFrequency: formData.notificationFrequency,
+        notificationChannels: {
+          email:
+            formData.notificationChannels &&
+            formData.notificationChannels.email,
+          slack:
+            formData.notificationChannels &&
+            formData.notificationChannels.slack &&
+            formData.slackConnected,
+        },
+        slackConnected: formData.slackConnected,
+        color: formData.color,
+        ...(isEditMode && agent?.id ? { id: agent.id } : {}),
+      };
+
+      // Simulated API call
+      const endpoint = "/api/agents";
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userId,
-          name: formData.name,
-          description: formData.description,
-          configuration: {
-            notificationMethod: formData.notificationMethod,
-            relevanceThreshold: 55,
-            scheduleRuns: {
-              enabled: isScheduled,
-              interval: scheduledRuns.interval,
-              scheduleTime: formData.scheduleTime,
-            },
-          },
-          keywords: formData.keywords,
-        }),
+        body: JSON.stringify(agentData),
       });
-
-      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create agent");
+        throw new Error("API request failed");
       }
 
-      toast.success("Agent created", {
-        description:
-          "Your Reddit monitoring agent has been created successfully.",
+      const successMessage = isEditMode
+        ? "Agent updated successfully!"
+        : "Agent created successfully!";
+
+      const successDescription = isEditMode
+        ? "Your agent settings have been updated."
+        : "Your new monitoring agent is now active.";
+
+      toast.success(successMessage, {
+        description: successDescription,
       });
 
-      router.push("/agents");
-
-      triggerAgentCreatedFeedback(data.id);
+      onSuccess?.(agent?.id || "mock-agent-id");
     } catch (error) {
-      toast.error("Error", {
-        description:
-          error instanceof Error ? error.message : "Failed to create agent",
+      const errorMessage = isEditMode
+        ? "Failed to update agent"
+        : "Failed to create agent";
+
+      toast.error(errorMessage, {
+        description: "Please try again or contact support.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const steps = [
-    { id: "describe", label: "Describe", number: 1 },
-    { id: "refine", label: "Refine", number: 2 },
-    { id: "configure", label: "Configure", number: 3 },
-    { id: "review", label: "Review", number: 4 },
-  ];
+  const headerTitle = isEditMode ? "Edit Agent" : "Create a New Agent";
+  const headerDescription = isEditMode
+    ? "Update your Agent settings"
+    : "Create a new Agent to monitor Potential Leads";
 
-  const current = steps.find((step) => step.id === currentStep);
+  const submitButtonText = isEditMode ? "Update" : "Create";
+  const submitLoadingText = isEditMode ? "Updating..." : "Creating...";
+  const submitIcon = isEditMode ? Save : Check;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Create Reddit Monitoring Agent</CardTitle>
-        <CardDescription>
-          Set up an AI agent to monitor Reddit for potential customers
-          interested in your business.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-8">
-          {current && (
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
-                {current.number}
-              </div>
-              <span className="font-medium">{current.label}</span>
-            </div>
-          )}
+    <div className="flex flex-col h-full bg-background rounded-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b">
+        <div>
+          <h2 className="text-xl font-semibold">{headerTitle}</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {headerDescription}
+          </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2">
+            AI Relevance Settings
+          </Button>
+        </div>
+      </div>
 
-        <AnimatePresence mode="wait">
-          {currentStep === "describe" && (
-            <motion.div
-              key="describe"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <div className="border rounded-lg p-4 max-h-[400px] overflow-y-auto">
-                <div className="space-y-4">
-                  {chatMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${
-                        message.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <ChatMessage message={message} />
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-                <form onSubmit={handleChatSubmit} className="flex gap-2">
-                  <Input
-                    placeholder="Describe here..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    disabled={isGenerating}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={isGenerating || !chatInput.trim()}
+      {/* Content */}
+      <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        {/* Name */}
+        <div>
+          <Label htmlFor="agent-name" className="font-medium mb-3 block">
+            Name
+          </Label>
+          <Input
+            id="agent-name"
+            placeholder="Name your Agent"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left Column */}
+          <div className="space-y-6">
+            {/* Keywords Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Label className="font-medium">Keywords (required)</Label>
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <Button
+                  variant="link"
+                  className="text-blue-500 p-0 h-auto text-sm"
+                >
+                  How to choose keywords
+                </Button>
+                <ExternalLink />
+              </div>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="Type keyword and hit enter"
+                  value={tempInputs.keyword}
+                  onChange={(e) =>
+                    setTempInputs((prev) => ({
+                      ...prev,
+                      keyword: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    (e.preventDefault(), addItem("keyword", "keywords"))
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem("keyword", "keywords")}
+                  disabled={!canAddKeyword() || !tempInputs.keyword.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Keywords Display */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.keywords.map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="premium"
+                    className="flex items-center gap-1"
                   >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {keyword}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => removeItem("keywords", keyword)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                {formData.keywords.length}/{userPlan.keywords} keywords used
+              </div>
+
+              {/* Plan Limit Warning */}
+              {formData.keywords.length >= userPlan.keywords && (
+                <div className="flex items-center gap-2 p-2 bg-orange-50 border border-orange-200 rounded text-sm text-orange-700">
+                  <AlertCircle className="h-4 w-4" />
+                  Keyword limit reached. Upgrade to add more keywords.
+                </div>
+              )}
+            </div>
+
+            {/* Exclude Keywords */}
+            <div>
+              <Label className="font-medium mb-3 block">
+                Exclude these words
+              </Label>
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="Type keyword and hit enter"
+                  value={tempInputs.excludedKeyword}
+                  onChange={(e) =>
+                    setTempInputs((prev) => ({
+                      ...prev,
+                      excludedKeyword: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    (e.preventDefault(),
+                    addItem("excludedKeyword", "excludedKeywords"))
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem("excludedKeyword", "excludedKeywords")}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.excludedKeywords.map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    {keyword}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => removeItem("excludedKeywords", keyword)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Platforms */}
+            <div>
+              <Label className="font-medium mb-3 block">Platforms</Label>
+              <div className="space-y-3">
+                {PLATFORM_OPTIONS.map((platform) => (
+                  <div
+                    key={platform.id}
+                    className="flex items-center space-x-3"
+                  >
+                    <Checkbox
+                      id={platform.id}
+                      checked={
+                        formData.platforms[
+                          platform.id as keyof typeof formData.platforms
+                        ]
+                      }
+                      onCheckedChange={(checked) =>
+                        handlePlatformChange(
+                          platform.id as keyof FormData["platforms"],
+                          !!checked
+                        )
+                      }
+                    />
+                    <div className="flex items-center gap-2">
+                      <Image
+                        alt="reddit-icon"
+                        src={platform.logo}
+                        width={20}
+                        height={20}
+                      />
+                      <Label htmlFor={platform.id} className="font-medium">
+                        {platform.name}
+                      </Label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reddit Settings */}
+            {formData.platforms.reddit && (
+              <Collapsible
+                open={redditSettingsOpen}
+                onOpenChange={setRedditSettingsOpen}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 p-0"
+                  >
+                    <Image
+                      alt="reddit-icon"
+                      src={"/platform_logos/redditIcon.png"}
+                      width={24}
+                      height={24}
+                    />
+                    <span className="font-medium">Reddit Settings</span>
+                    {redditSettingsOpen ? (
+                      <ChevronUp className="h-4 w-4" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4" />
                     )}
                   </Button>
-                </form>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "refine" && (
-            <motion.div
-              key="refine"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Agent Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="E.g., My SaaS Product Monitor"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Business Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    placeholder="Describe your business, product, or service in detail..."
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                  />
-                </div>
-
-                <Tabs defaultValue="keywords" className="w-full">
-                  <TabsList className="grid w-full grid-cols-1">
-                    <div className="text-center font-semibold text-lg">
-                      Keywords
-                    </div>
-                  </TabsList>
-
-                  <TabsContent value="keywords" className="space-y-4 mt-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter keyword or phrase"
-                        value={newKeyword}
-                        onChange={(e) => setNewKeyword(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-
-                            if (canAddMore) {
-                              addKeyword();
-                            } else {
-                              toast.error("Keyword limit reached", {
-                                description:
-                                  "You cannot add more keywords to your tracking list.",
-                              });
-                            }
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4 space-y-4 pl-6">
+                  {/* Subreddits */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm mb-2 block">
+                        Only these subreddits
+                      </Label>
+                      <div className="flex gap-2 mb-2">
+                        <Input
+                          placeholder="Type subreddit name and hit enter"
+                          value={tempInputs.includedSubreddit}
+                          onChange={(e) =>
+                            setTempInputs((prev) => ({
+                              ...prev,
+                              includedSubreddit: e.target.value,
+                            }))
                           }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        onClick={addKeyword}
-                        disabled={!newKeyword.trim() || !canAddMore}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Your Selected Keywords</Label>
-                      {formData.keywords.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {formData.keywords.map((keyword) => (
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const value = tempInputs.includedSubreddit.trim();
+                              if (value) {
+                                handleRedditSettingChange(
+                                  "includedSubreddits",
+                                  [
+                                    ...formData.redditSettings
+                                      .includedSubreddits,
+                                    value,
+                                  ]
+                                );
+                                setTempInputs((prev) => ({
+                                  ...prev,
+                                  includedSubreddit: "",
+                                }));
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {formData.redditSettings.includedSubreddits.map(
+                          (sub) => (
                             <Badge
-                              key={keyword}
+                              key={sub}
                               variant="secondary"
-                              className="flex items-center gap-1"
+                              className="text-xs flex items-center gap-1"
                             >
-                              {keyword}
+                              r/{sub}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-4 w-4 p-0 ml-1"
-                                onClick={() => removeKeyword(keyword)}
+                                className="h-3 w-3 p-0 ml-1"
+                                onClick={() => {
+                                  handleRedditSettingChange(
+                                    "includedSubreddits",
+                                    formData.redditSettings.includedSubreddits.filter(
+                                      (s) => s !== sub
+                                    )
+                                  );
+                                }}
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-2 w-2" />
                               </Button>
                             </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          No keywords added yet.
-                        </p>
-                      )}
+                          )
+                        )}
+                      </div>
                     </div>
 
-                    {formData.suggestedKeywords.length > 0 && (
-                      <div className="space-y-2 mt-6">
-                        <Label>Suggested Keywords</Label>
-
-                        <p className="text-sm text-muted-foreground">
-                          Click on a keyword to add it to your tracking list.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {formData.suggestedKeywords.map((keyword) => (
-                            <Badge
-                              key={keyword}
-                              variant="outline"
-                              className="cursor-pointer hover:bg-secondary"
-                              onClick={() => {
-                                if (canAddMore) {
-                                  addSuggestedKeyword(keyword);
-                                } else {
-                                  toast.error("Keyword limit reached", {
-                                    description:
-                                      "You cannot add more keywords to your tracking list.",
-                                  });
-                                }
-                              }}
-                            >
-                              {keyword}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p className="text-sm p-2 rounded-md text-primary bg-amber-300 w-fit">
-                          <span className="text-red-500">Note:</span>These keywords were generated by AI based on your
-                          business description. Choose Wisely
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "configure" && (
-            <motion.div
-              key="configure"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <Tabs defaultValue="notifications" className="w-full">
-                <TabsList className="grid w-full grid-cols-1">
-                  <div className="text-center font-semibold text-lg">
-                    Notification / Schedule Settings
-                  </div>
-                </TabsList>
-
-                <TabsContent value="notifications" className="space-y-6 mt-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Notification Method</Label>
-                      <Select
-                        value={formData.notificationMethod}
-                        onValueChange={(value) =>
-                          handleSelectChange("notificationMethod", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select notification method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {(formData.notificationMethod === "slack" ||
-                      formData.notificationMethod === "both") && (
-                      <div className="mt-3 flex flex-col items-start justify-between gap-2">
-                        <Label htmlFor="SlackNotification">
-                          Slack Notification
-                        </Label>
-                        <SlackConnect />
-                        <p className="text-sm text-muted-foreground">
-                          You’ll receive alerts via Slack.
-                        </p>
-                      </div>
-                    )}
-                    {/* <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Relevance Threshold</Label>
-                        <span className="text-sm">
-                          {formData.relevanceThreshold}%
-                        </span>
-                      </div>
-                      <Slider
-                        value={[formData.relevanceThreshold]}
-                        min={0}
-                        max={100}
-                        step={5}
-                        onValueChange={handleSliderChange}
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Only notify you when the AI determines the content is at
-                        least this relevant to your business.
-                      </p>
-                    </div> */}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Schedule Settings</Label>
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <Label
-                          htmlFor="schedule-status"
-                          className="text-sm text-muted-foreground"
-                        >
-                          Scheduled Status: {isScheduled ? "On" : "Off"}
-                        </Label>
-                        <Switch
-                          id="schedule-status"
-                          checked={isScheduled}
-                          onCheckedChange={toggleScheduledStatus}
-                          disabled={!scheduledRuns.enabled}
+                    <div>
+                      <Label className="text-sm mb-2 block">
+                        Exclude these subreddits
+                      </Label>
+                      <div className="flex gap-2 mb-2">
+                        <Input
+                          placeholder="Type subreddit and hit enter"
+                          value={tempInputs.excludedSubreddit}
+                          onChange={(e) =>
+                            setTempInputs((prev) => ({
+                              ...prev,
+                              excludedSubreddit: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const value = tempInputs.excludedSubreddit.trim();
+                              if (value) {
+                                handleRedditSettingChange(
+                                  "excludedSubreddits",
+                                  [
+                                    ...formData.redditSettings
+                                      .excludedSubreddits,
+                                    value,
+                                  ]
+                                );
+                                setTempInputs((prev) => ({
+                                  ...prev,
+                                  excludedSubreddit: "",
+                                }));
+                              }
+                            }
+                          }}
                         />
                       </div>
-                      {!scheduledRuns.enabled ? (
-                        <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                          Scheduling Agent Run is not available on your current
-                          plan.
-                        </div>
-                      ) : (
-                        <>
-                          {isScheduled ? (
-                            <>
-                              <div className="text-sm text-muted-foreground border p-3 rounded-md bg-muted">
-                                Scheduled runs are available every{" "}
-                                <strong>{scheduledRuns.interval}</strong> based
-                                on your <strong>{scheduledRuns.type}</strong>{" "}
-                                plan.
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="startTime">Start Time</Label>
-                                <Input
-                                  id="startTime"
-                                  name="startTime"
-                                  type="time"
-                                  value={formData.scheduleTime}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      scheduleTime: e.target.value,
-                                    }))
-                                  }
-                                  disabled={!scheduledRuns.enabled}
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                  The agent will start at this time every{" "}
-                                  {scheduledRuns.interval}.
-                                </p>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                              Scheduling Agent Run is Off.
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </motion.div>
-          )}
-
-          {currentStep === "review" && (
-            <motion.div
-              key="review"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  Review Your Agent Configuration
-                </h3>
-                <p className="text-muted-foreground">
-                  Please review the details below before creating your Reddit
-                  monitoring agent.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium">Business Details</h4>
-                      <div className="mt-2 space-y-2">
-                        <div>
-                          <span className="text-sm font-medium">Name:</span>{" "}
-                          <span className="text-sm">{formData.name}</span>
-                        </div>
-                        {/* <div>
-                          <span className="text-sm font-medium">Industry:</span>{" "}
-                          <span className="text-sm">{formData.industry}</span>
-                        </div> */}
-                        <div>
-                          <span className="text-sm font-medium">
-                            Description:
-                          </span>{" "}
-                          <p className="text-sm mt-1">{formData.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">Keywords to Track</h4>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {formData.keywords.map((keyword) => (
-                          <Badge key={keyword} variant="secondary">
-                            {keyword}
-                          </Badge>
-                        ))}
+                      <div className="flex flex-wrap gap-1">
+                        {formData.redditSettings.excludedSubreddits.map(
+                          (sub) => (
+                            <Badge
+                              key={sub}
+                              variant="outline"
+                              className="text-xs flex items-center gap-1"
+                            >
+                              r/{sub}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-3 w-3 p-0 ml-1"
+                                onClick={() => {
+                                  handleRedditSettingChange(
+                                    "excludedSubreddits",
+                                    formData.redditSettings.excludedSubreddits.filter(
+                                      (s) => s !== sub
+                                    )
+                                  );
+                                }}
+                              >
+                                <X className="h-2 w-2" />
+                              </Button>
+                            </Badge>
+                          )
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium">
-                        Notification Settings
-                      </h4>
-                      <div className="mt-2 space-y-2">
-                        <div>
-                          <span className="text-sm font-medium">Method:</span>{" "}
-                          <span className="text-sm">
-                            {formData.notificationMethod === "email"
-                              ? "Email Only"
-                              : formData.notificationMethod === "slack"
-                              ? "Slack Only"
-                              : "Email and Slack"}
-                          </span>
-                        </div>
-                        {(formData.notificationMethod === "slack" ||
-                          formData.notificationMethod === "both") && (
-                          <div>
-                            <span className="text-sm font-medium"></span>{" "}
-                            <p className="text-sm text-muted-foreground">
-                              You’ll receive alerts via Email & Slack.
-                            </p>
-                          </div>
-                        )}
-                        {/* <div>
-                          <span className="text-sm font-medium">
-                            Relevance Threshold:
-                          </span>{" "}
-                          <span className="text-sm">
-                            {formData.relevanceThreshold}%
-                          </span>
-                        </div> */}
-                      </div>
+                  {/* Reddit Options */}
+                  <div className="flex gap-6">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="search-posts"
+                        checked={formData.redditSettings.searchPosts}
+                        onCheckedChange={(checked) =>
+                          handleRedditSettingChange("searchPosts", !!checked)
+                        }
+                      />
+                      <Label htmlFor="search-posts" className="text-sm">
+                        Search Posts
+                      </Label>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-medium">Schedule Settings</h4>
-                      <div className="mt-2 space-y-2">
-                        {!scheduledRuns.enabled ? (
-                          <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                            Scheduling Agent Run is not available on your
-                            current plan.
-                          </div>
-                        ) : (
-                          <>
-                            {isScheduled ? (
-                              <>
-                                <div>
-                                  <span className="text-sm font-medium">
-                                    Plan:
-                                  </span>{" "}
-                                  <span className="text-sm capitalize">
-                                    {scheduledRuns.type}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium">
-                                    Interval:
-                                  </span>{" "}
-                                  <span className="text-sm capitalize">
-                                    Every {scheduledRuns.interval}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium">
-                                    Start Time:
-                                  </span>{" "}
-                                  <span className="text-sm">
-                                    {formData.scheduleTime}
-                                  </span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="p-4 border rounded-md bg-muted text-muted-foreground text-sm">
-                                  Scheduling Agent Run is Off
-                                </div>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="search-comments"
+                        checked={formData.redditSettings.searchComments}
+                        onCheckedChange={(checked) =>
+                          handleRedditSettingChange("searchComments", !!checked)
+                        }
+                      />
+                      <Label htmlFor="search-comments" className="text-sm">
+                        Search Comments
+                      </Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-nsfw"
+                        checked={formData.redditSettings.includeNSFW}
+                        onCheckedChange={(checked) =>
+                          handleRedditSettingChange("includeNSFW", !!checked)
+                        }
+                      />
+                      <Label htmlFor="include-nsfw" className="text-sm">
+                        Include NSFW Results
+                      </Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {/* Agent Color */}
+            <div>
+              <Label className="font-medium mb-3 block">Agent Color</Label>
+              <Select
+                value={formData.color}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, color: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOR_OPTIONS.map((color) => (
+                    <SelectItem key={color.value} value={color.value}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-3 h-3 rounded-full bg-${color.value}-500`}
+                        />
+                        {color.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Notification Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium mb-0">Notifications</Label>
+                <Switch
+                  checked={formData.notificationsEnabled ?? true}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      notificationsEnabled: checked,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Channels Dropdown - show only when notifications are enabled */}
+              {formData.notificationsEnabled && (
+                <div className="mt-2 space-y-2 border p-3 rounded-md">
+                  {/* Email Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span>Email</span>
+                    <Switch
+                      checked={formData.notificationChannels?.email ?? true}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          notificationChannels: {
+                            ...prev.notificationChannels!,
+                            email: checked,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  {/* Slack Toggle + Slack Connect */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span>Slack</span>
+                      <Switch
+                        checked={formData.notificationChannels?.slack ?? false}
+                        onCheckedChange={(checked) => {
+                          if (!formData.slackConnected) {
+                            toast.error("Connect Slack first!");
+                            return;
+                          }
+                          setFormData((prev) => ({
+                            ...prev,
+                            notificationChannels: {
+                              ...prev.notificationChannels!,
+                              slack: checked,
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
+                    {/* Slack Connect Component */}
+                    <SlackConnect />
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        {currentStep !== "describe" ? (
-          <Button type="button" variant="outline" onClick={prevStep}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/agents")}
-          >
-            Cancel
-          </Button>
-        )}
+              )}
+            </div>
 
-        {currentStep !== "review" ? (
-          <Button type="button" onClick={nextStep}>
-            Next
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        ) : (
-          <Button type="button" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Create Agent
-              </>
-            )}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+            {/* Notification Frequency */}
+            <div>
+              <Label className="font-medium mb-3 block">
+                Notification Frequency
+              </Label>
+              <Select
+                value={formData.notificationFrequency}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    notificationFrequency: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {userPlan.notificationFrequency.map((freq: string) => (
+                    <SelectItem key={freq} value={freq}>
+                      {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-between items-center p-6 border-t bg-background">
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={
+            isLoading || !formData.name.trim() || formData.keywords.length === 0
+          }
+          className="min-w-[100px]"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              {submitLoadingText}
+            </>
+          ) : (
+            <>{submitButtonText}</>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }

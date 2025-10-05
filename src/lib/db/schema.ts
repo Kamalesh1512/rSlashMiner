@@ -12,11 +12,41 @@ import {
   real,
   primaryKey,
   unique,
+  uniqueIndex,
+  index,
+  pgEnum,
+  vector,
 } from "drizzle-orm/pg-core";
-
 import { createId } from "@paralleldrive/cuid2";
 
-// Users table
+// Enums for better type safety
+export const platformEnum = pgEnum("platform", [
+  "reddit",
+  "x",
+  "bluesky",
+  "linkedin",
+  "hackernews",
+]);
+export const agentStatusEnum = pgEnum("agent_status", [
+  "active",
+  "paused",
+  "stopped",
+  "error",
+]);
+export const notificationFrequencyEnum = pgEnum("notification_frequency", [
+  "immediate",
+  "hourly",
+  "daily",
+  "weekly",
+]);
+export const subscriptionTierEnum = pgEnum("subscription_tier", [
+  "free",
+  "starter",
+  "growth",
+  "enterprise",
+]);
+
+// Users table - Enhanced with lead limits
 export const users = pgTable("users", {
   id: varchar("id", { length: 128 })
     .primaryKey()
@@ -26,24 +56,350 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   password: text("password"),
   image: text("image"),
-  subscriptionTier: text("subscription_tier").default("free").notNull(), // free, starter, growth
+  subscriptionTier: subscriptionTierEnum("subscription_tier")
+    .default("free")
+    .notNull(),
   subscriptionExpiresAt: timestamp("subscription_expires_at", { mode: "date" }),
-  dodoCustomerId:text('dodo_customer_id'),
-  dodoSubscriptionId:text('dodo_subscription_id'),
-  cancelAtPeriodEnd:boolean('cancel_at_period_end').default(false),
-  paidUserIndex:integer('paid_user_index'),
-  slackUserId:text('slack_user_id'),
-  slackAccessToken:text('slack_access_token'),
-  teamId:text('team_id'),
-  slackDmChannelId:text('slack_dm_channel_id'),
+  dodoCustomerId: text("dodo_customer_id"),
+  dodoSubscriptionId: text("dodo_subscription_id"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  paidUserIndex: integer("paid_user_index"),
+
+  // Plan limits (monthly)
+  monthlyLeadLimit: integer("monthly_lead_limit").default(50).notNull(),
+  monthlyLeadsUsed: integer("monthly_leads_used").default(0).notNull(),
+  maxAgents: integer("max_agents").default(1).notNull(),
+  lastResetAt: timestamp("last_reset_at", { mode: "date" }).defaultNow(),
+
+  // Slack/notification settings
+  slackUserId: text("slack_user_id"),
+  slackAccessToken: text("slack_access_token"),
+  slackDmChannelId: text("slack_dm_channel_id"),
+
+  // slackConnected: boolean("slack_connected").default(false).notNull(),
+
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
 
-// User relations
-export const usersRelations = relations(users, ({ many }) => ({
-  accounts: many(accounts),
-  sessions: many(sessions),
-  agents: many(agents),
-}));
+// Enhanced agents table with automatic execution
+export const agents = pgTable(
+  "agents",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: varchar("user_id", { length: 128 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Basic info
+    name: text("name").notNull(),
+    description: text("description"),
+    // Status and control
+    status: agentStatusEnum("status").default("active").notNull(),
+    isAutoRun: boolean("is_auto_run").default(true).notNull(),
+
+    // Platform configuration
+    platforms: json("platforms").$type<string[]>().default([]).notNull(),
+
+    // Notification settings
+    notificationsEnabled: boolean("notifications_enabled")
+      .default(true)
+      .notNull(),
+    notificationFrequency: notificationFrequencyEnum("notification_frequency")
+      .default("daily")
+      .notNull(),
+    notificationChannels: json("notification_channels")
+      .$type<{
+        email: boolean;
+        slack: boolean;
+        webhook?: string;
+      }>()
+      .default({ email: true, slack: false })
+      .notNull(),
+
+    // Execution tracking
+    lastExecutedAt: timestamp("last_executed_at", { mode: "date" }),
+    nextExecutionAt: timestamp("next_execution_at", { mode: "date" }),
+    executionCount: integer("execution_count").default(0).notNull(),
+
+    // Performance metrics
+    totalLeadsGenerated: integer("total_leads_generated").default(0).notNull(),
+    averageRelevanceScore: real("average_relevance_score").default(0),
+
+    // Unique color tag
+    color: varchar("color", { length: 32 }).notNull(),
+
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("agents_user_id_idx").on(table.userId),
+    statusIdx: index("agents_status_idx").on(table.status),
+    nextExecutionIdx: index("agents_next_execution_idx").on(
+      table.nextExecutionAt
+    ),
+    autoRunIdx: index("agents_auto_run_idx").on(table.isAutoRun),
+  })
+);
+
+// Agent keywords - separate table for better querying
+export const agentKeywords = pgTable(
+  "agent_keywords",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    agentId: varchar("agent_id", { length: 128 })
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    keyword: text("keyword").notNull(),
+    excludedKeywords: text("excluded_keywords"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => ({
+    agentKeywordIdx: uniqueIndex("agent_keyword_unique").on(
+      table.agentId,
+      table.keyword
+    ),
+    agentIdIdx: index("agent_keywords_agent_id_idx").on(table.agentId),
+  })
+);
+
+// Platform-specific configurations
+export const agentPlatformConfigs = pgTable(
+  "agent_platform_configs",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    agentId: varchar("agent_id", { length: 128 })
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    platform: platformEnum("platform").notNull(),
+    config: json("config")
+      .$type<{
+        subreddits?: string[];
+        twitterLists?: string[];
+        linkedinCompanies?: string[];
+        includeNSFW?: boolean;
+        searchPosts?: boolean;
+        searchComments?: boolean;
+        minScore?: number;
+        maxAge?: string; // "1d", "1w", etc.
+      }>()
+      .default({})
+      .notNull(),
+    isEnabled: boolean("is_enabled").default(true).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => ({
+    agentPlatformIdx: uniqueIndex("agent_platform_unique").on(
+      table.agentId,
+      table.platform
+    ),
+  })
+);
+
+// Enhanced monitoring results (leads)
+export const monitoringResults = pgTable(
+  "monitoring_results",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    agentId: varchar("agent_id", { length: 128 })
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 128 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Platform data
+    platform: platformEnum("platform").notNull(),
+    platformPostId: text("platform_post_id"),
+    platformCommentId: text("platform_comment_id"),
+
+    // Content
+    title: text("title"),
+    content: text("content").notNull(),
+    url: text("url").notNull(),
+
+    // Author info
+    author: text("author"),
+    authorHandle: text("author_handle"),
+    // authorKarma: integer("author_karma"),
+
+    // Community/context
+    community: text("community"),
+    parentPost: text("parent_post_id"),
+
+    // AI analysis
+    relevanceScore: integer("relevance_score").notNull(),
+    sentimentScore: integer("sentiment_score").default(0),
+    // confidenceScore: real("confidence_score").default(0),
+    matchedKeywords: text("matched_keywords"),
+    // keywordMatches: integer("keyword_matches").default(0),
+
+    // Semantic analysis
+    semanticScore: real("semantic_score"),
+    topicCategories: json("topic_categories").$type<string[]>().default([]),
+
+    // Lead qualification
+    isQualifiedLead: boolean("is_qualified_lead").default(false),
+    leadScore: integer("lead_score").default(0), // 0-100
+    buyingIntent: real("buying_intent").default(0), // 0-1
+
+    // Notification status
+    isNotified: boolean("is_notified").default(false),
+    notificationSentAt: timestamp("notification_sent_at", { mode: "date" }),
+
+    // Timestamps
+    postCreatedAt: timestamp("post_created_at", { mode: "date" }),
+    discoveredAt: timestamp("discovered_at", { mode: "date" })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+
+    // Platform-specific metadata - engagement metrics and other details
+    metadata: json("metadata").default({}),
+    isArchived: boolean("is_archived").default(false).notNull(),
+    archivedAt: timestamp("archived_at"),
+  },
+  (table) => ({
+    // Prevent duplicates
+    uniqueAgentUrl: uniqueIndex("unique_agent_url_monitoring").on(
+      table.agentId,
+      table.url
+    ),
+
+    // Performance indexes
+    agentIdIdx: index("monitoring_results_agent_id_idx").on(table.agentId),
+    userIdIdx: index("monitoring_results_user_id_idx").on(table.userId),
+    platformIdx: index("monitoring_results_platform_idx").on(table.platform),
+    relevanceScoreIdx: index("monitoring_results_relevance_score_idx").on(
+      table.relevanceScore
+    ),
+    qualifiedLeadIdx: index("monitoring_results_qualified_lead_idx").on(
+      table.isQualifiedLead
+    ),
+    discoveredAtIdx: index("monitoring_results_discovered_at_idx").on(
+      table.discoveredAt
+    ),
+    notificationIdx: index("monitoring_results_notification_idx").on(
+      table.isNotified
+    ),
+  })
+);
+
+// Agent execution history
+export const agentExecutions = pgTable(
+  "agent_executions",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    agentId: varchar("agent_id", { length: 128 })
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 128 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Execution info
+    executionType: varchar("execution_type", { length: 20 }).notNull(), // 'auto', 'manual', 'scheduled'
+    status: varchar("status", { length: 20 }).notNull(), // 'running', 'completed', 'failed', 'cancelled'
+
+    // Results
+    leadsGenerated: integer("leads_generated").default(0),
+    postsAnalyzed: integer("posts_analyzed").default(0),
+    platformsSearched: json("platforms_searched").$type<string[]>().default([]),
+
+    // Performance
+    executionTimeMs: integer("execution_time_ms"),
+    averageRelevanceScore: real("average_relevance_score"),
+
+    // Error handling
+    error: text("error"),
+    errorCode: varchar("error_code", { length: 50 }),
+
+    // Timestamps
+    startedAt: timestamp("started_at", { mode: "date" }).notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => ({
+    agentIdIdx: index("agent_executions_agent_id_idx").on(table.agentId),
+    statusIdx: index("agent_executions_status_idx").on(table.status),
+    startedAtIdx: index("agent_executions_started_at_idx").on(table.startedAt),
+  })
+);
+
+// Notification queue and history
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: varchar("id", { length: 128 })
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: varchar("user_id", { length: 128 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: varchar("agent_id", { length: 128 }).references(() => agents.id, {
+      onDelete: "set null",
+    }),
+
+    // Notification details
+    type: varchar("type", { length: 20 }).notNull(), // 'lead', 'digest', 'system'
+    channel: varchar("channel", { length: 20 }).notNull(), // 'email', 'slack', 'webhook'
+
+    // Content
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    metadata: json("metadata").default({}),
+
+    // Lead references
+    leadIds: json("lead_ids").$type<string[]>().default([]),
+    leadCount: integer("lead_count").default(0),
+
+    // Delivery
+    status: varchar("status", { length: 20 }).default("pending"), // 'pending', 'sent', 'delivered', 'failed'
+    sentAt: timestamp("sent_at", { mode: "date" }),
+    deliveredAt: timestamp("delivered_at", { mode: "date" }),
+
+    // Scheduling
+    scheduledFor: timestamp("scheduled_for", { mode: "date" }),
+    priority: integer("priority").default(5), // 1-10, higher = more urgent
+
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("notifications_user_id_idx").on(table.userId),
+    statusIdx: index("notifications_status_idx").on(table.status),
+    scheduledForIdx: index("notifications_scheduled_for_idx").on(
+      table.scheduledFor
+    ),
+    priorityIdx: index("notifications_priority_idx").on(table.priority),
+  })
+);
+
+//Embeddings
+export const embeddings = pgTable(
+  "embeddings",
+  {
+    postId: text("post_id").notNull(),
+    platform: text("platform").notNull(), // reddit, twitter, etc.
+    content: text("content").notNull(), // raw text
+    vector: vector("vector", { dimensions: 768 }).notNull(), // depends on model
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.postId, t.platform] }),
+  })
+);
 
 // Accounts table (for OAuth providers)
 export const accounts = pgTable(
@@ -67,20 +423,12 @@ export const accounts = pgTable(
     session_state: text("session_state"),
   },
   (table) => [
-      unique(
-        "provider_provider_account_id_unique"
-      ).on(table.provider, table.providerAccountId),
-    
-    ]
+    unique("provider_provider_account_id_unique").on(
+      table.provider,
+      table.providerAccountId
+    ),
+  ]
 );
-
-// Account relations
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, {
-    fields: [accounts.userId],
-    references: [users.id],
-  }),
-}));
 
 // Sessions table
 export const sessions = pgTable("sessions", {
@@ -94,14 +442,6 @@ export const sessions = pgTable("sessions", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
-// Session relations
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));
-
 // Verification tokens table
 export const verificationTokens = pgTable(
   "verification_tokens",
@@ -110,261 +450,17 @@ export const verificationTokens = pgTable(
     token: text("token").notNull(),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (table) => [
-   primaryKey({ columns: [table.identifier, table.token] }),
-    
-  ]
+  (table) => [primaryKey({ columns: [table.identifier, table.token] })]
 );
-
-// Agents table - for AI agent configurations
-export const agents = pgTable("agents", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  name: text("name").notNull(),
-  description: text("description"),
-  userId: varchar("user_id", { length: 128 })
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  configuration: text("configuration").notNull(), // Stores agent configuration as JSON
-  lastRunAt: timestamp("last_run_at", { mode: "date" }),
-  runCount: integer("run_count").default(0).notNull(),
-})
-
-// Agent relations
-export const agentsRelations = relations(agents, ({ one, many }) => ({
-  user: one(users, {
-    fields: [agents.userId],
-    references: [users.id],
-  }),
-  keywords: many(keywords),
-  subreddits: many(subreddits),
-  monitoringResults: many(monitoringResults),
-  notifications: many(notifications),
-}))
-
-// Keywords table - for tracking keywords
-export const keywords = pgTable("keywords", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  agentId: varchar("agent_id", { length: 128 })
-    .notNull()
-    .references(() => agents.id, { onDelete: "cascade" }),
-  keyword: text("keyword").notNull(),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-})
-
-// Keyword relations
-export const keywordsRelations = relations(keywords, ({ one }) => ({
-  agent: one(agents, {
-    fields: [keywords.agentId],
-    references: [agents.id],
-  }),
-}))
-
-// Subreddits table - for tracking subreddits
-export const subreddits = pgTable("subreddits", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  agentId: varchar("agent_id", { length: 128 })
-    .notNull()
-    .references(() => agents.id, { onDelete: "cascade" }),
-  subredditName: text("subreddit_name").notNull(),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-})
-
-// Subreddit relations
-export const subredditsRelations = relations(subreddits, ({ one }) => ({
-  agent: one(agents, {
-    fields: [subreddits.agentId],
-    references: [agents.id],
-  }),
-}))
-
-// Monitoring results table - for storing Reddit monitoring results
-export const monitoringResults = pgTable("monitoring_results", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  agentId: varchar("agent_id", { length: 128 })
-    .notNull()
-    .references(() => agents.id, { onDelete: "cascade" }),
-  redditPostId: text("reddit_post_id").unique(),
-  redditCommentId: text("reddit_comment_id").unique(),
-  content: text("content").notNull(),
-  author: text("author"),
-  subreddit: text("subreddit"),
-  url: text("url"),
-  score: integer("score"),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  matchedKeywords: text("matched_keywords"),
-  relevanceScore: integer("relevance_score"), // AI-determined relevance score
-  numComments: varchar("num_comments"),
-  sentimentScore: integer("sentiment_score"), // Sentiment analysis score
-})
-
-// Monitoring result relations
-export const monitoringResultsRelations = relations(monitoringResults, ({ one }) => ({
-  agent: one(agents, {
-    fields: [monitoringResults.agentId],
-    references: [agents.id],
-  }),
-}))
-
-// Notification settings table - for user notification preferences
-export const notificationSettings = pgTable("notification_settings", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: varchar("user_id", { length: 128 })
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  emailEnabled: boolean("email_enabled").default(true).notNull(),
-  whatsappEnabled: boolean("whatsapp_enabled").default(false).notNull(),
-  whatsappNumber: text("whatsapp_number"),
-  minimumRelevanceScore: integer("minimum_relevance_score").default(70).notNull(), // Only notify if relevance score is above this
-  dailyDigestEnabled: boolean("daily_digest_enabled").default(false).notNull(),
-  digestTime: text("digest_time").default("09:00").notNull(), // Time for daily digest in HH:MM format
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-})
-
-// Notification settings relations
-export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
-  user: one(users, {
-    fields: [notificationSettings.userId],
-    references: [users.id],
-  }),
-}))
-
-// Notifications table - for storing sent notifications
-export const notifications = pgTable("notifications", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: varchar("user_id", { length: 128 })
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  agentId: varchar("agent_id", { length: 128 }).references(() => agents.id, { onDelete: "set null" }),
-  type: text("type").notNull(), // email, whatsapp, digest
-  content: text("content").notNull(),
-  sentAt: timestamp("sent_at", { mode: "date" }).defaultNow().notNull(),
-  status: text("status").notNull(), // sent, delivered, failed
-  resultId: varchar("result_id", { length: 128 }).references(() => monitoringResults.id, { onDelete: "set null" }),
-})
-
-// Notification relations
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
-  }),
-  agent: one(agents, {
-    fields: [notifications.agentId],
-    references: [agents.id],
-  }),
-  result: one(monitoringResults, {
-    fields: [notifications.resultId],
-    references: [monitoringResults.id],
-  }),
-}))
-
-// Usage limits table - for tracking user usage against their subscription limits
-export const usageLimits = pgTable("usage_limits", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: varchar("user_id", { length: 128 })
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  period: text("period").notNull(), // daily, monthly
-  agentCreationCount: integer("agent_creation_count").default(0).notNull(),
-  keywordTrackCount: integer("keyword_track_count").default(0).notNull(),
-  manualRunCount: integer("manual_run_count").default(0).notNull(),
-  scheduledRunCount: integer("scheduled_run_count").default(0).notNull(),
-  lastResetAt: timestamp("last_reset_at", { mode: "date" }).defaultNow().notNull(),
-})
-
-// Usage limits relations
-export const usageLimitsRelations = relations(usageLimits, ({ one }) => ({
-  user: one(users, {
-    fields: [usageLimits.userId],
-    references: [users.id],
-  }),
-}))
-
-
-// Scheduled runs table
-export const scheduledRuns = pgTable("scheduled_runs", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  agentId: varchar("agent_id", { length: 128 })
-    .notNull()
-    .references(() => agents.id, { onDelete: "cascade" }),
-  scheduledFor: timestamp("scheduled_for", { mode: "date" }).notNull(),
-  status: text("status").notNull(), // pending, processing, completed, failed
-  startedAt: timestamp("started_at", { mode: "date" }),
-  completedAt: timestamp("completed_at", { mode: "date" }),
-  result: text("result"), // JSON result of the run
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-})
-
-// Scheduled runs relations
-export const scheduledRunsRelations = relations(scheduledRuns, ({ one }) => ({
-  agent: one(agents, {
-    fields: [scheduledRuns.agentId],
-    references: [agents.id],
-  }),
-}))
-
-// Run history table
-export const runHistory = pgTable("run_history", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  agentId: varchar("agent_id", { length: 128 })
-    .notNull()
-    .references(() => agents.id, { onDelete: "cascade" }),
-  userId: varchar("user_id", { length: 128 })
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  startedAt: timestamp("started_at", { mode: "date" }).defaultNow().notNull(),
-  completedAt: timestamp("completed_at", { mode: "date" }),
-  success: boolean("success"),
-  resultsCount: integer("results_count").default(0),
-  processedKeywords: integer("processed_keywords").default(0),
-  summary: text("summary"),
-  error: text("error"),
-  isScheduled: boolean("is_scheduled").default(false),
-  steps: text("steps"), // JSON array of steps
-})
-
-// Run history relations
-export const runHistoryRelations = relations(runHistory, ({ one }) => ({
-  agent: one(agents, {
-    fields: [runHistory.agentId],
-    references: [agents.id],
-  }),
-  user: one(users, {
-    fields: [runHistory.userId],
-    references: [users.id],
-  }),
-}))
-
-
 
 // Feedback table - combined with testimonial functionality
 export const feedback = pgTable("feedback", {
   id: varchar("id", { length: 128 })
     .primaryKey()
     .$defaultFn(() => createId()),
-  userId: varchar("user_id", { length: 128 }).references(() => users.id, { onDelete: "set null" }),
+  userId: varchar("user_id", { length: 128 }).references(() => users.id, {
+    onDelete: "set null",
+  }),
   rating: integer("rating").notNull(),
   feedbackText: text("feedback_text"),
   email: text("email"),
@@ -378,7 +474,99 @@ export const feedback = pgTable("feedback", {
   eventType: text("event_type"),
   entityId: text("entity_id"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-})
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  agents: many(agents),
+  monitoringResults: many(monitoringResults),
+  notifications: many(notifications),
+  agentExecutions: many(agentExecutions),
+}));
+
+export const agentsRelations = relations(agents, ({ one, many }) => ({
+  user: one(users, {
+    fields: [agents.userId],
+    references: [users.id],
+  }),
+  keywords: many(agentKeywords),
+  platformConfigs: many(agentPlatformConfigs),
+  monitoringResults: many(monitoringResults),
+  executions: many(agentExecutions),
+  notifications: many(notifications),
+}));
+
+export const agentKeywordsRelations = relations(agentKeywords, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentKeywords.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const agentPlatformConfigsRelations = relations(
+  agentPlatformConfigs,
+  ({ one }) => ({
+    agent: one(agents, {
+      fields: [agentPlatformConfigs.agentId],
+      references: [agents.id],
+    }),
+  })
+);
+
+export const monitoringResultsRelations = relations(
+  monitoringResults,
+  ({ one }) => ({
+    agent: one(agents, {
+      fields: [monitoringResults.agentId],
+      references: [agents.id],
+    }),
+    user: one(users, {
+      fields: [monitoringResults.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const agentExecutionsRelations = relations(
+  agentExecutions,
+  ({ one }) => ({
+    agent: one(agents, {
+      fields: [agentExecutions.agentId],
+      references: [agents.id],
+    }),
+    user: one(users, {
+      fields: [agentExecutions.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  agent: one(agents, {
+    fields: [notifications.agentId],
+    references: [agents.id],
+  }),
+}));
+
+// Account relations
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
+// Session relations
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
 
 // Feedback relations
 export const feedbackRelations = relations(feedback, ({ one }) => ({
@@ -386,13 +574,4 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
     fields: [feedback.userId],
     references: [users.id],
   }),
-}))
-
-
-export const waitlist = pgTable("waitlist", {
-  id: varchar("id", { length: 128 })
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  email: varchar("email", { length: 128 }).notNull()
-  
-});
+}));

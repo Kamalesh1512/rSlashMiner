@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1743402295567,
-      "tag": "0000_awesome_grandmaster",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1743833346783,
-      "tag": "0001_spooky_diamondback",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1745602831418,
-      "tag": "0002_petite_scarlet_spider",
+      "when": 1758391232646,
+      "tag": "0000_serious_blockbuster",
       "breakpoints": true
     }
   ]

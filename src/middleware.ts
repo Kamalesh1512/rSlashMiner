@@ -10,11 +10,11 @@ export async function middleware(req: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (isAuthenticated && isAuthPage) {
-    return NextResponse.redirect(new URL("/agents", req.url))
+    return NextResponse.redirect(new URL("/leads", req.url))
   }
 
   // Redirect unauthenticated users to home page if they try to access protected routes
-  if (!isAuthenticated && req.nextUrl.pathname.startsWith("/agents")) {
+  if (!isAuthenticated && req.nextUrl.pathname.startsWith("/leads")) {
     return NextResponse.redirect(new URL("/", req.url))
   }
 

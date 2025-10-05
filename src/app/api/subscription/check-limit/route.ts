@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth"; // adjust to your auth config
-import { canCreateAgent } from "@/lib/payments/check-subscriptions/subscriptions";
+import { canCreateAgent } from "@/lib/payments/check-subscriptions";
 
 export async function GET() {
   const session = await auth();

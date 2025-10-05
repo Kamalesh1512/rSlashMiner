@@ -1,35 +1,86 @@
-version: '3.9'
-
 services:
-  web:
-    container_name: skroub_web
+  # Postgres with pgvector
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: skroub_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Admin1997
+      POSTGRES_DB: skroub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d skroub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: skroub_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-net
+
+  # Shared image for web + worker
+  app:
     build:
       context: .
       dockerfile: src/docker/Dockerfile
-    image: kamalesh1512/skroub:app
-    ports:
-      - '3000:3000'
-    restart: always
-    environment:
-      NODE_ENV: production
-    networks:
-      - app-net
+      target: runner
+    image: kamalesh1512/skroub:latest
     env_file:
       - .env.production
-    command: ["npm", "run", "start"]
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgres://postgres:Admin1997@postgres:5432/skroub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
 
-  worker:
-    container_name: skroub_worker
-    image: kamalesh1512/skroub:app
+  # Web server
+  web:
+    extends:
+      service: app
+    ports:
+      - "3000:3000"
+    command: ["npm", "run", "start"]
     restart: always
-    environment:
-      NODE_ENV: production
-    env_file:
-      - .env.production
-    networks:
-      - app-net
-    command: ["tsx", "src/cron/scheduler.ts"]
+
+  # Worker(s)
+  worker:
+    extends:
+      service: app
+    command: ["npm", "run", "worker"]
+    restart: always
+    deploy:
+      replicas: 2 # scale workers easily
 
 networks:
   app-net:
     driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

@@ -15,7 +15,7 @@ export async function GET() {
       .select({
         slackUserId: users.slackUserId,
         slackAccessToken: users.slackAccessToken,
-        teamId: users.teamId,
+        // teamId: users.teamId,
       })
       .from(users)
       .where(
@@ -23,7 +23,7 @@ export async function GET() {
           eq(users.id, session.user.id),
           isNotNull(users.slackUserId),
           isNotNull(users.slackAccessToken),
-          isNotNull(users.teamId)
+          // isNotNull(users.teamId)
         )
       )
       .limit(1);

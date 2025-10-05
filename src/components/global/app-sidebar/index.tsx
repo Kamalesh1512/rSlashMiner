@@ -9,21 +9,10 @@ import {
   SidebarMenuButton,
   SidebarGroup,
 } from "@/components/ui/sidebar";
-import { Hash, Slash } from "lucide-react";
+import { Slash } from "lucide-react";
 import NavMain from "./nav-main";
 import NavFooter from "./nav-footer";
-import RecentAgents from "./recent-agents";
-
-interface Agent {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  lastRunAt: string | null;
-  runCount: number;
-}
+import { Agent } from "@/lib/constants/types";
 
 interface User {
   id: string;
@@ -37,11 +26,13 @@ interface User {
 interface AppSidebarProps {
   recentAgents?: Agent[];
   user?: User;
+  loading?:boolean
 }
 
 const AppSidebar = ({
-  recentAgents = [],
+  recentAgents = [], 
   user,
+  loading,
   ...props
 }: AppSidebarProps & React.ComponentProps<typeof Sidebar>) => {
   return (
@@ -67,14 +58,8 @@ const AppSidebar = ({
 
       <SidebarContent className="px-2 mt-6 gap-y-6">
         <SidebarGroup>
-          <NavMain />
+          <NavMain agents={recentAgents} loading={loading} />
         </SidebarGroup>
-
-        {recentAgents.length > 0 && (
-          <SidebarGroup>
-            <RecentAgents recentAgents={recentAgents} />
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter>

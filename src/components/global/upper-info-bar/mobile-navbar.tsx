@@ -13,8 +13,6 @@ const MobileNavbar = () => {
 
   // Only show on mobile when sidebar is collapsed
   const isVisible = isMobile
-
-  console.log(isVisible)
   if (!isVisible) return null
 
   return (

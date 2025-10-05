@@ -8,7 +8,7 @@ import { headers } from "next/headers";
 import { WebhookPayload } from "@/lib/constants/types";
 import { dodoClient } from "@/lib/payments/dodo-client";
 import { getPlanByDodoId } from "@/lib/payments/subscription-plans";
-import { createUsageLimitForUser } from "@/lib/payments/check-subscriptions/subscriptions";
+// import { createUsageLimitForUser } from "@/lib/payments/check-subscriptions";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           console.log("Paid User Index Updating...")
           await assignPaidUserIndexIfEligible(payload.data.customer.email)
           console.log("Updating the user Usage Limit based on new subscription plan")
-          await createUsageLimitForUser(session?.user.id as string,planTier)
+          // await createUsageLimitForUser(session?.user.id as string,planTier)
           return NextResponse.json(
             { message: "Webhook processed successfully" },
             { status: 200 }

@@ -6,7 +6,7 @@ import { users, verificationTokens } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
 import { sendVerificationEmail } from "@/lib/services/email"
-import { createUsageLimitForUser } from "@/lib/payments/check-subscriptions/subscriptions"
+// import { createUsageLimitForUser } from "@/lib/payments/check-subscriptions"
 
 export async function POST(request: Request) {
   try {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         })
     
         /// create intial usage limit based on "free" subscription tier
-        await createUsageLimitForUser(newUser[0].id,'free')
+        // await createUsageLimitForUser(newUser[0].id,'free')
 
         
         // Send verification email

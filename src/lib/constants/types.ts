@@ -7,6 +7,8 @@ import {
   HelpCircle,
   BarChart3,
   Clock,
+  LucidePodcast,
+  Archive,
 } from "lucide-react";
 
 import { Payment as BasePayment } from "dodopayments/resources/payments.mjs";
@@ -196,30 +198,25 @@ export function fallbackSubreddits(industry: string): string[] {
 
 export const navItems = [
   {
+    name: "Leads",
+    href: "/leads",
+    icon: LucidePodcast,
+  },
+  {
     name: "Agents",
     href: "/agents",
     icon: Bot,
   },
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
 
-  {
-    name: "Results",
-    href: "/results",
-    icon: BarChart3,
-  },
-  {
-    name: "Monitoring",
-    href: "/monitoring",
-    icon: Clock,
-  },
   {
     name: "Notifications",
     href: "/notifications",
     icon: Bell,
+  },
+  {
+    name: "Archive",
+    href: "/archive",
+    icon: Archive,
   },
   {
     name: "Settings",
@@ -232,47 +229,6 @@ export const navItems = [
     icon: HelpCircle,
   },
 ];
-
-// Define interfaces for our data types
-export interface Agent {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lastRunAt: Date | null;
-  runCount: number;
-  configuration: {
-    notificationMethod?: "email" | "slack" | "both";
-    relevanceThreshold?: number;
-    whatsappNumber?: string;
-    scheduleRuns: {
-      enabled: boolean;
-      interval: string;
-      scheduleTime?: string;
-    };
-  };
-  keywords: { id: string; keyword: string }[];
-  subreddits: { id: string; subredditName: string }[];
-  results?: {
-    id: string;
-    agentId: string;
-    author: string | null;
-    content: string;
-    createdAt: Date;
-    numComments: string;
-    redditCommentId: string;
-    redditPostId: string;
-    subreddit: string;
-    relevanceScore: number;
-    score: number;
-    sentimentScore: number;
-    url: string;
-    matchedKeywords: string;
-    type?: "post" | "comment";
-  }[];
-}
 
 export const businessPatterns = [
   "i want to build",
@@ -348,11 +304,12 @@ export interface RedditPost {
   id: string;
   title: string;
   selftext: string;
-  author: { name: string };
-  subreddit: { display_name: string };
-  permalink: string;
+  author: string;
+  subreddit: string;
+  url: string;
   score: number;
   created_utc: number;
+  num_comments: number;
 }
 
 export interface RedditComment {
@@ -574,16 +531,10 @@ export const testimonials = [
 export type planConfigType = {
   agent: number;
   keywords: number;
-  manualRuns: {
-    runCount: number;
-    interval: string;
-    type: string;
-  };
-  scheduledRuns: {
-    enabled: boolean;
-    interval: string | null;
-    type: string;
-  };
+  monthlyLeads: number;
+  platforms?: string[];
+  notificationFrequency: string[];
+  autoExecution: boolean;
   alerts: string[];
   dataExport: boolean;
   autoReply: boolean;
@@ -591,74 +542,50 @@ export type planConfigType = {
 };
 
 // config/planLimits.ts
-export const planLimits = {
+export const planLimits: Record<string, planConfigType> = {
   free: {
     agent: 1,
     keywords: 5,
-    manualRuns: {
-      runCount: 1,
-      interval: "daily",
-      type: "manual",
-    },
-    scheduledRuns: {
-      enabled: false,
-      interval: null,
-      type: "scheduled",
-    },
+    monthlyLeads: 50,
+    notificationFrequency: ["daily", "weekly"],
+    autoExecution: false,
     alerts: ["email"],
     dataExport: false,
     autoReply: false,
+    planTier: "free",
   },
   starter: {
-    agent: 2,
+    agent: 3,
     keywords: 10,
-    manualRuns: {
-      runCount: 3,
-      interval: "daily",
-      type: "manual",
-    },
-    scheduledRuns: {
-      enabled: true,
-      interval: "8 Hour",
-      type: "scheduled",
-    },
+    monthlyLeads: 200,
+    notificationFrequency: ["immediate", "hourly", "daily", "weekly"],
+    autoExecution: true,
     alerts: ["email", "slack"],
     dataExport: true,
     autoReply: false,
+    planTier: "starter",
   },
   growth: {
-    agent: 5,
+    agent: 10,
     keywords: 25,
-    manualRuns: {
-      runCount: 10,
-      interval: "daily",
-      type: "manual",
-    },
-    scheduledRuns: {
-      enabled: true,
-      interval: "5 Hour",
-      type: "scheduled",
-    },
+    monthlyLeads: 1000,
+    notificationFrequency: ["immediate", "hourly", "daily", "weekly"],
+    autoExecution: true,
     alerts: ["email", "slack"],
     dataExport: true,
     autoReply: true,
+    planTier: "growth",
   },
   enterprise: {
     agent: Infinity,
     keywords: 100,
-    manualRuns: {
-      runCount: Infinity,
-      interval: "daily",
-      type: "manual",
-    },
-    scheduledRuns: {
-      enabled: true,
-      interval: "2 Hour",
-      type: "scheduled",
-    },
+    monthlyLeads: Infinity,
+    notificationFrequency: ["immediate", "hourly", "daily", "weekly"],
+    autoExecution: true,
     alerts: ["email", "slack"],
     dataExport: true,
     autoReply: true,
+    planTier: "enterprise",
   },
 };
 
@@ -683,4 +610,231 @@ export type usageLimitProps = {
     interval: string | null;
     limit: number | null;
   };
+};
+
+export const ALLOWED_PLATFORMS = [
+  "reddit",
+  "twitter",
+  "bluesky",
+  "linkedin",
+] as const;
+export type Platform = (typeof ALLOWED_PLATFORMS)[number];
+
+export interface ProxyConfig {
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+}
+
+export interface PlatformConfig {
+  enabled: boolean;
+  apiEnabled: boolean;
+  scraperEnabled: boolean;
+  rateLimit: {
+    requestsPerMinute: number;
+    requestsPerHour: number;
+  };
+  proxy: {
+    enabled: boolean;
+    rotationInterval: number;
+  };
+}
+
+export interface APICredentials {
+  twitter?: {
+    bearerToken?: string;
+    apiKey?: string;
+    apiSecret?: string;
+  };
+  bluesky?: {
+    identifier?: string;
+    password?: string;
+  };
+  linkedin?: {
+    accessToken?: string;
+    clientId?: string;
+    clientSecret?: string;
+  };
+  reddit?: {
+    accessToken?: string;
+  };
+}
+export type Result = {
+  id: string;
+  agentId: string;
+  userId?: string; // present in DB but optional for client-facing use
+
+  // Core metadata
+  platform: "reddit" | "twitter" | "x" | "bluesky" | "linkedin" | "other";
+  platformPostId: string | null;
+  platformCommentId: string | null;
+  parentPostId?: string | null;
+  title: string | null;
+  content: string;
+  author: string | null;
+  authorHandle: string | null;
+  community: string | null;
+  url: string;
+
+  // AI enrichment
+  matchedKeywords: string | null;
+  relevanceScore: number | null;
+  sentimentScore: number | null;
+
+  semanticScore?: number | null;
+  topicCategories?: string[];
+  isQualifiedLead?: boolean;
+  leadScore?: number | null;
+  buyingIntent?: number | null;
+
+  // Notifications
+  isNotified?: boolean;
+  notificationSentAt?: Date | null;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  postCreatedAt: Date;
+  discoveredAt?: Date;
+
+  // Optional type for differentiating post vs comment
+  type?: "post" | "comment";
+
+  // Extra metadata
+  metadata?: Record<string, any>;
+  isArchived: boolean;
+  archivedAt: Date;
+};
+
+export interface AgentDetails {
+  success: boolean;
+  agent: {
+    id: string;
+    name: string;
+    description: string | null;
+    status: string;
+    platforms: string[];
+
+    notificationsEnabled: boolean;
+    notificationFrequency: string | null;
+    notificationChannels: { email: boolean; slack: boolean; webhook?: string };
+    lastExecutedAt: string | null;
+    nextExecutionAt: string | null;
+    executionCount: number;
+
+    totalLeadsGenerated: number;
+    averageRelevanceScore: number;
+
+    color: string | null;
+    createdAt: string;
+    updatedAt: string;
+
+    keywords: string[];
+    excludedKeywords: string[];
+    platformConfigs: Record<
+      string,
+      {
+        config: any;
+        isEnabled: boolean;
+      }
+    >;
+
+    recentResults: Result[];
+
+    performance: {
+      totalLeads: number;
+      averageRelevanceScore: number;
+      highQualityLeads: number;
+      qualifiedLeads: number;
+      last24Hours: number;
+      last7Days: number;
+      last30Days: number;
+      recentAverageRelevance: number;
+    };
+  };
+}
+
+// The type for state management
+export type Agent = {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  platforms: string[];
+
+  notificationsEnabled: boolean;
+  notificationFrequency: string | null;
+  notificationChannels: { email: boolean; slack: boolean; webhook?: string };
+  lastExecutedAt: string | null;
+  nextExecutionAt: string | null;
+  executionCount: number;
+
+  totalLeadsGenerated: number;
+  averageRelevanceScore: number;
+
+  color: string | null;
+  createdAt: string;
+  updatedAt: string;
+
+  keywords: string[];
+  excludedKeywords: string[];
+  platformConfigs: Record<
+    string,
+    {
+      config: any;
+      isEnabled: boolean;
+    }
+  >;
+
+  recentResults: Result[];
+
+  performance: {
+    totalLeads: number;
+    averageRelevanceScore: number;
+    highQualityLeads: number;
+    qualifiedLeads: number;
+    last24Hours: number;
+    last7Days: number;
+    last30Days: number;
+    recentAverageRelevance: number;
+  };
+};
+
+export interface SemanticMatch {
+  text: string;
+  score: number;
+  matchType: "exact" | "semantic" | "hybrid";
+  matchedKeywords: string[];
+  semanticVariants?: string[];
+  intent: "positive" | "negative" | "neutral";
+  confidence: number;
+  context: string;
+}
+
+export interface ProcessedContent {
+  id: string;
+  content: string;
+  title?: string;
+  url: string;
+  platform: string;
+  author: string;
+  createdAt: Date;
+  metadata: Record<string, any>;
+}
+
+export interface AgentConfig {
+  id: string;
+  keywords: string[];
+  excludedKeywords: string[];
+  platforms: string[];
+  semanticThreshold: number;
+  intentAnalysis: boolean;
+}
+
+export const PLATFORM_ICONS: Record<string, string> = {
+  reddit: "/platform_logos/redditIcon.png",
+  twitter: "/platform_logos/twitterIcon.png",
+  bluesky: "/platform_logos/blueskyIcon.png",
+  linkedin: "/platform_logos/linkedinIcon.png",
 };

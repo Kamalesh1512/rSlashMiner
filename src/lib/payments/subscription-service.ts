@@ -5,6 +5,8 @@ import { dodoClient } from "./dodo-client";
 import { getPlanByDodoId, getPlanById } from "./subscription-plans";
 import { WebhookPayload } from "../constants/types";
 
+type SubscriptionTier = "free" | "starter" | "growth" | "enterprise";
+
 export interface CreateCheckoutOptions {
   planId: string;
   userId: string;
@@ -97,10 +99,11 @@ export class SubscriptionService {
       };
     }
 
-    // Return subscription status
+    const tier = user[0].subscriptionTier as SubscriptionTier;
+
     return {
-      active: !!user[0].subscriptionTier && user[0].subscriptionTier !== "free",
-      plan: user[0].subscriptionTier || null,
+      active: tier !== "free",
+      plan: tier,
       currentPeriodEnd: user[0].subscriptionExpiresAt || null,
       cancelAtPeriodEnd: user[0].cancelAtPeriodEnd || false,
     };

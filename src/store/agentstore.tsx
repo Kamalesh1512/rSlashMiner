@@ -1,29 +1,32 @@
-import { create } from "zustand"
-import {persist} from "zustand/middleware"
-import { Agent } from "@/lib/constants/types"
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { Agent } from "@/lib/constants/types"; // new cleaned type
 
 type AgentStore = {
-  agents: Agent[]
-  setAgents: (agents: Agent[]) => void
-  updateAgentById: (agentId: string, updatedFields: Partial<Agent>) => void
-}
+  agents: Agent[];
+  setAgents: (agents: Agent[]) => void;
+  addAgent: (agent: Agent) => void;
+  updateAgentById: (agentId: string, updatedFields: Partial<Agent>) => void;
+  removeAgent: (agentId: string) => void;
+  // refreshAgents: () => Promise<void>;
+};
 
-// Corrected store with proper typing for persist middleware
 export const useAgentStore = create(
   persist<AgentStore>(
-    (set,get) => ({
+    (set, get) => ({
       agents: [],
+
       setAgents: (agents) => set({ agents }),
+      addAgent: (agent) => set({ agents: [...get().agents, agent] }),
       updateAgentById: (agentId, updatedFields) => {
-        const updatedAgents = get().agents.map((agent) =>
-          agent.id === agentId ? { ...agent, ...updatedFields } : agent
-        )
-        set({ agents: updatedAgents })
+        const updatedAgents = get().agents.map((a) =>
+          a.id === agentId ? { ...a, ...updatedFields } : a
+        );
+        set({ agents: updatedAgents });
       },
+      removeAgent: (agentId) =>
+        set({ agents: get().agents.filter((a) => a.id !== agentId) }),
     }),
-    {
-      name: "agents-storage", // The key used in localStorage
-      // storage: localStorage, // You can also use sessionStorage if you want the data to be cleared when the session ends
-    }
+    { name: "agents-storage" }
   )
-)
+);

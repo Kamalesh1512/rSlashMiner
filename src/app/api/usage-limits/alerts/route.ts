@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { auth, } from "@/lib/auth"; // your own auth util
-import { usageLimits } from "@/lib/db/schema";
-import { getUserPlan } from "@/lib/payments/check-subscriptions/subscriptions";
+import { getUserPlan } from "@/lib/payments/check-subscriptions";
 
 export async function GET() {
   const session = await auth();

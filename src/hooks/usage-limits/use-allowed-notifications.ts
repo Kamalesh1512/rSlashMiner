@@ -1,4 +1,4 @@
-import { allowedAlertChannels } from "@/lib/payments/check-subscriptions/subscriptions";
+import { allowedAlertChannels } from "@/lib/payments/check-subscriptions";
 import { useEffect, useState } from "react";
 
 type NotificationOption = {

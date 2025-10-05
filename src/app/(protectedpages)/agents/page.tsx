@@ -20,7 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Agent } from "@/lib/constants/types";
 import { useAgentStore } from "@/store/agentstore";
-import { QuickRunAgent } from "./[agentId]/_components/quick-agent-run";
+import { CreateAgentButton } from "@/components/agents/create-agent-button";
 
 export default function AgentsPage() {
   const router = useRouter();
@@ -67,28 +67,6 @@ export default function AgentsPage() {
     );
   }
 
-  const handleRunComplete = (
-    agentId: string,
-    success: boolean,
-    resultsCount: number
-  ) => {
-    // Update the agent's run count and last run time
-
-    const count = agents.find((agent) => agent.id === agentId)?.runCount;
-
-    updateAgentById(agentId, {
-      runCount: count && count + 1,
-    });
-    // Remove from running agents
-    setRunningAgents((prev) => {
-      const updated = new Set(prev);
-      updated.delete(agentId);
-      return updated;
-    });
-
-    router.refresh();
-  };
-
   return (
     <div className="flex flex-col justify-center items-center">
       <motion.div
@@ -105,101 +83,50 @@ export default function AgentsPage() {
           </div>
         </div>
 
-        {agents.length === 0 ? (
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-                "No Agents Yet — Time to Build Something Brilliant."
-              </CardTitle>
-              <CardDescription>
-                Set it up in minutes — monitor, analyze, or automate with zero
-                hassle.
-              </CardDescription>
-            </CardHeader>
-            <CardContent></CardContent>
-            <CardFooter className="flex justify-center">
-              <Button asChild>
-                <Link href="/agents/create">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Agent
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {agents.map((agent) => (
-              <Card key={agent.id} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="truncate">{agent.name}</CardTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {agents.map((agent) => (
+            <motion.div
+              key={agent.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    {agent.name}
                     <Badge
-                      variant={agent.isActive ? "premium" : "secondary"}
-                      className="text-primary"
+                      variant={
+                        agent.status === "active" ? "premium" : "destructive"
+                      }
+                      className="text-sm"
                     >
-                      {agent.isActive ? "Active" : "Paused"}
+                      {agent.status === "active" ? "Active" : "Inactive"}
                     </Badge>
-                  </div>
-                  <CardDescription className="line-clamp-2">
-                    {agent.description}
+                  </CardTitle>
+                  <CardDescription>
+                    Leads Generated:{" "}
+                    {agent.totalLeadsGenerated
+                      ? formatDistanceToNow(
+                          new Date(agent.totalLeadsGenerated),
+                          {
+                            addSuffix: true,
+                          }
+                        )
+                      : "Never"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pb-3">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">
-                        Tracking Keywords
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {agent.keywords.slice(0, 3).map((kw) => (
-                          <Badge
-                            key={kw.keyword}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {kw.keyword}
-                          </Badge>
-                        ))}
-                        {agent.keywords.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{agent.keywords.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Clock className="mr-1 h-3 w-3" />
-                        {agent.lastRunAt ? (
-                          <span>
-                            Last run{" "}
-                            {formatDistanceToNow(new Date(agent.lastRunAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        ) : (
-                          <span>Never run</span>
-                        )}
-                      </div>
-                      <div>Runs: {agent.runCount}</div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-3 flex flex-row items-start justify-between space-x-3">
-                  <QuickRunAgent
-                    agentId={agent.id}
-                    onComplete={(success, resultsCount) =>
-                      handleRunComplete(agent.id, success, resultsCount)
-                    }
-                  />
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/agents/${agent.id}`}>View Agent</Link>
-                  </Button>
+                <CardFooter>
+                  <Link href={`/agents/${agent.id}`}>
+                    <Button size="sm" variant="secondary">
+                      View Details
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
     </div>
   );

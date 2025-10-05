@@ -84,7 +84,7 @@ export default function LoginPage() {
           description: "Invalid Credentials",
         });
       } else {
-        router.push("/agents");
+        router.push("/leads");
       }
     } catch (error) {
       toast.error("Login failed", {

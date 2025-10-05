@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     .select({
       slackUserId: users.slackUserId,
       slackAccessToken: users.slackAccessToken,
-      teamId: users.teamId,
+      // teamId: users.teamId,
     })
     .from(users)
     .where(
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
         eq(users.id, session.user.id),
         isNotNull(users.slackUserId),
         isNotNull(users.slackAccessToken),
-        isNotNull(users.teamId)
+        // isNotNull(users.teamId)
       )
     ).limit(1);
 
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     await db.update(users).set({
       slackUserId: authed_user.id,
       slackAccessToken: access_token,
-      teamId: team.id,
+      // teamId: team.id,
     }).where(eq(users.id, session.user.id));
   }
 

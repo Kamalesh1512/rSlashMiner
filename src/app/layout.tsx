@@ -10,8 +10,8 @@ import FeedbackTrigger from "@/components/feedback/feedback-trigger";
 
 export const metadata: Metadata = {
   title: "Skroub",
-  description: "Extract valuable insights from Reddit to inform your business decisions",
-  icons: "/logo.png",
+  description: "AI agents that run continuously to find relevant threads/posts",
+  icons: "/favicon.png",
 };
 const outfit = Outfit({ subsets: ["latin"] });
 export default function RootLayout({

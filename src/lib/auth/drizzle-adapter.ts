@@ -29,7 +29,7 @@ export function DrizzleAdapter(): Adapter {
         email: userData.email,
         emailVerified: userData.emailVerified,
         image: userData.image,
-        subscriptionTier:userData.subscriptionTier as string,
+        subscriptionTier:userData.subscriptionTier as "free" | "starter" | "growth" | "enterprise",
         subscriptionExpiresAt:userData.subscriptionExpiresAt
       });
 
